@@ -2,7 +2,7 @@ from ..pipeline_step_base import PipelineStepBase
 
 from abc import abstractmethod
 
-class LoadPipelineStepBase(PipelineStepBase):
+class LoadStepBase(PipelineStepBase):
 
     @property
     def step_type(self) -> str:

@@ -1,6 +1,6 @@
-from ..load_step_base import LoadPipelineStepBase
+from ..load_step_base import LoadStepBase
 
-class DummyLoadStep(LoadPipelineStepBase):
+class DummyLoadStep(LoadStepBase):
     @property
     def name(self) -> str:
         return "dummy_load_step"
