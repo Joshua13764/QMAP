@@ -1,6 +1,6 @@
 from ..pipeline_step_base import PipelineStepBase
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 class LoadPipelineStepBase(PipelineStepBase):
 
