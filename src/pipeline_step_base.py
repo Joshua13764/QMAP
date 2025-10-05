@@ -12,5 +12,5 @@ class PipelineStepBase(ABC):
         pass
 
     @abstractmethod
-    def run(self):
+    def run(self) -> None:
         pass
