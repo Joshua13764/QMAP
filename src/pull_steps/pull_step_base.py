@@ -1,0 +1,14 @@
+from ..pipeline_step_base import PipelineStepBase
+
+from abc import abstractmethod
+
+
+class PullStepBase(PipelineStepBase):
+
+    @property
+    def step_type(self) -> str:
+        return "pull"
+    
+    @abstractmethod
+    def run(self):
+        pass
