@@ -1,5 +1,4 @@
 from ..pull_step_base import PullStepBase
-
 import os
 import urllib.parse
 import requests
@@ -28,6 +27,17 @@ class PDSPullStep(PullStepBase):
         )
 
     @staticmethod
+    def _download_chunk(url, byte_range, dest_path, logger):
+        headers = {"Range": f"bytes={byte_range[0]}-{byte_range[1]}"}
+        with requests.get(url, headers=headers, stream=True, timeout=120) as r:
+            r.raise_for_status()
+            with open(dest_path, "r+b") as f:
+                f.seek(byte_range[0])
+                for chunk in r.iter_content(chunk_size=16 * 1024 * 1024):
+                    if chunk:
+                        f.write(chunk)
+
+    @staticmethod
     def download_and_extract(url: str, root_dir: str, logger):
         if not url.startswith(PDSPullStep.BASE_URL):
             logger.error(f"URL '{url}' is not under {PDSPullStep.BASE_URL}")
@@ -41,7 +51,6 @@ class PDSPullStep(PullStepBase):
         zip_path = os.path.join(root_dir, rel_path)
         temp_zip_path = zip_path + ".part"
 
-        # Skip if already extracted
         if os.path.exists(extract_dir):
             logger.info(f"Already extracted: {extract_dir}, skipping.")
             return
@@ -49,53 +58,39 @@ class PDSPullStep(PullStepBase):
         os.makedirs(os.path.dirname(zip_path), exist_ok=True)
 
         try:
-            # ---- Download ----
-            logger.info(f"Starting download: {url}")
-            with requests.get(url, stream=True, timeout=120) as r:
-                r.raise_for_status()
+            # ---- HEAD request to get file size ----
+            head = requests.head(url, timeout=60)
+            total_size = int(head.headers.get("Content-Length", 0))
+            supports_range = "bytes" in head.headers.get("Accept-Ranges", "").lower()
 
-                total_size = int(r.headers.get("Content-Length", 0))
-                if total_size == 0:
-                    logger.warning("No Content-Length header found; progress reporting limited.")
-
-                downloaded = 0
-                chunk_size = 16 * 1024 * 1024  # 16 MB chunks
-                next_log_point = 0.05  # log every 5%
+            if not supports_range or total_size == 0:
+                logger.warning("Server does not support Range requests or unknown file size — falling back to single-threaded download.")
+                PDSPullStep._single_stream_download(url, temp_zip_path, logger)
+            else:
+                # ---- Parallel range download ----
+                n_threads = min(8, os.cpu_count() or 4)
+                chunk_size = total_size // n_threads
+                ranges = [
+                    (i * chunk_size, (i + 1) * chunk_size - 1 if i < n_threads - 1 else total_size - 1)
+                    for i in range(n_threads)
+                ]
+                logger.info(f"Downloading {file_name} in {n_threads} parallel chunks (~{chunk_size // (1024**2)} MB each)")
 
                 with open(temp_zip_path, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=chunk_size):
-                        if not chunk:
-                            continue
-                        f.write(chunk)
-                        downloaded += len(chunk)
+                    f.truncate(total_size)
 
-                        # ---- Periodic progress logging ----
-                        if total_size > 0:
-                            progress = downloaded / total_size
-                            if progress >= next_log_point:
-                                mb_done = downloaded / (1024 ** 2)
-                                mb_total = total_size / (1024 ** 2)
-                                mb_left = mb_total - mb_done
-                                logger.info(
-                                    f"Download progress: {progress * 100:.1f}% "
-                                    f"({mb_done:.0f} MB of {mb_total:.0f} MB, ~{mb_left:.0f} MB left)"
-                                )
-                                # Force flush so logs appear live
-                                for h in logger.handlers:
-                                    try:
-                                        h.flush()
-                                    except Exception:
-                                        pass
-                                next_log_point += 0.05
-                        else:
-                            if downloaded % (1024 ** 3) < chunk_size:  # every ~1 GB
-                                mb_done = downloaded / (1024 ** 2)
-                                logger.info(f"Downloaded {mb_done:.0f} MB so far...")
-                                for h in logger.handlers:
-                                    try:
-                                        h.flush()
-                                    except Exception:
-                                        pass
+                with ThreadPoolExecutor(max_workers=n_threads) as ex:
+                    futures = []
+                    for r in ranges:
+                        futures.append(ex.submit(PDSPullStep._download_chunk, url, r, temp_zip_path, logger))
+                    for i, fut in enumerate(futures, 1):
+                        fut.result()
+                        logger.info(f"Chunk {i}/{len(futures)} complete.")
+                        for h in logger.handlers:
+                            try:
+                                h.flush()
+                            except Exception:
+                                pass
 
             os.rename(temp_zip_path, zip_path)
             logger.info(f"Download complete → {zip_path}")
@@ -103,7 +98,6 @@ class PDSPullStep(PullStepBase):
             # ---- Extract ----
             logger.info(f"Extracting {zip_path} to {extract_dir} ...")
             os.makedirs(extract_dir, exist_ok=True)
-
             with zipfile.ZipFile(zip_path, "r") as zf:
                 members = zf.infolist()
 
@@ -121,9 +115,18 @@ class PDSPullStep(PullStepBase):
                 shutil.rmtree(extract_dir, ignore_errors=True)
 
         finally:
-            # Cleanup
             if os.path.exists(temp_zip_path):
                 os.remove(temp_zip_path)
             if os.path.exists(zip_path):
                 os.remove(zip_path)
                 logger.debug(f"Removed temporary file: {zip_path}")
+
+    @staticmethod
+    def _single_stream_download(url, dest_path, logger):
+        """Fallback single-thread download."""
+        with requests.get(url, stream=True, timeout=120) as r:
+            r.raise_for_status()
+            with open(dest_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=16 * 1024 * 1024):
+                    if chunk:
+                        f.write(chunk)
