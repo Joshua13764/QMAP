@@ -60,3 +60,6 @@ This project would suit a student with:
 
 ### Other Planetary Boulder Mapping Efforts  
 - [Comparative planetary boulder mapping](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2023JE008013)  
+
+### Citations
+For all of the download likes the data source will need to be cited

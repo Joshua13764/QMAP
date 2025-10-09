@@ -1,132 +1,227 @@
-from ..pull_step_base import PullStepBase
 import os
-import urllib.parse
-import requests
-import zipfile
+import json
+import math
 import shutil
-from dataclasses import dataclass
-from concurrent.futures import ThreadPoolExecutor
+import zipfile
+import multiprocessing
+from dataclasses import dataclass, field
+from urllib.parse import urlparse
+from typing import Any, Set, Dict, Tuple, List
+from joblib import Parallel, delayed
+from threading import Lock
+from tqdm import tqdm
+
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 @dataclass
-class PDSPullStep(PullStepBase):
+class PDSPullStep:
     DownloadPath: str
     Url: str
-    BASE_URL = "https://sbnarchive.psi.edu"
+    _logger: Any
+    BASE_URL: str = "https://sbnarchive.psi.edu"
+    Workers: int = field(default_factory=lambda: max(1, multiprocessing.cpu_count() - 2))
+    KeepArchive: bool = False
+    ChunkSizeLimitMB: int = 50  # configurable, default 50 MB
 
-    @property
-    def name(self) -> str:
-        return __name__
+    def __post_init__(self):
+        os.makedirs(self.DownloadPath, exist_ok=True)
+        self._session = requests.Session()
+        retries = Retry(
+            total=5, backoff_factor=0.5, status_forcelist=[429, 500, 502, 503, 504]
+        )
+        adapter = HTTPAdapter(max_retries=retries)
+        self._session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
+
+    # ------------------- Public API -------------------
 
     def run(self):
-        self._logger.info("Running PDS Pull Step")
-        self.download_and_extract(
-            url=self.Url,
-            root_dir=self.DownloadPath,
-            logger=self._logger
+        if not self.Url.startswith(self.BASE_URL):
+            raise ValueError(f"URL must start with {self.BASE_URL}")
+
+        zip_path = self._download_file()
+        extract_dir = self._get_extract_dir(zip_path)
+
+        # Skip extraction if folder already exists
+        if os.path.exists(extract_dir):
+            self._logger.info(f"Already extracted: {extract_dir}, skipping extraction.")
+            return
+
+        self._extract_zip(zip_path, extract_dir)
+        if not self.KeepArchive:
+            os.remove(zip_path)
+
+    # ------------------- Internal -------------------
+
+    def _download_file(self) -> str:
+        parsed = urlparse(self.Url)
+        file_name = os.path.basename(parsed.path)
+        file_path = os.path.join(self.DownloadPath, file_name)
+        extract_dir = self._get_extract_dir(file_path)
+        resume_file = os.path.join(self.DownloadPath, f"{file_name}.resume.json")
+
+        # Skip download entirely if extraction exists
+        if os.path.exists(extract_dir):
+            self._logger.info(f"Extraction folder exists ({extract_dir}) — skipping download.")
+            return file_path
+
+        self._logger.info(f"Fetching headers for: {self.Url}")
+        head = self._session.head(self.Url, allow_redirects=True)
+        total_size = int(head.headers.get("Content-Length", 0))
+        supports_range = "bytes" in head.headers.get("Accept-Ranges", "").lower()
+        if total_size == 0:
+            raise ValueError("Unknown file size — cannot proceed.")
+
+        # Determine chunk size
+        n = self.Workers
+        max_chunk = self.ChunkSizeLimitMB * 1024 * 1024
+        chunk_size = min(math.ceil(total_size / n), max_chunk)
+        ranges = [
+            (i * chunk_size, min((i + 1) * chunk_size - 1, total_size - 1))
+            for i in range(math.ceil(total_size / chunk_size))
+        ]
+
+        completed: Set[int] = set()
+        resume_meta: Dict[str, Any] = {}
+
+        # Load resume info if exists
+        if os.path.exists(resume_file):
+            try:
+                with open(resume_file) as f:
+                    resume_meta = json.load(f)
+                    completed = set(resume_meta.get("completed", []))
+            except Exception:
+                self._logger.warning("Corrupt resume file — resetting cache.")
+                self._invalidate_cache(file_path, resume_file, extract_dir)
+                completed.clear()
+
+        # Validate cache metadata
+        valid_cache = (
+            resume_meta.get("url") == self.Url
+            and resume_meta.get("total_size") == total_size
+            and resume_meta.get("chunk_size") == chunk_size
+            and resume_meta.get("workers") == n
         )
 
-    @staticmethod
-    def _download_chunk(url, byte_range, dest_path, logger):
-        headers = {"Range": f"bytes={byte_range[0]}-{byte_range[1]}"}
-        with requests.get(url, headers=headers, stream=True, timeout=120) as r:
-            r.raise_for_status()
-            with open(dest_path, "r+b") as f:
-                f.seek(byte_range[0])
-                for chunk in r.iter_content(chunk_size=16 * 1024 * 1024):
-                    if chunk:
-                        f.write(chunk)
+        if not valid_cache and os.path.exists(resume_file):
+            self._logger.warning("Cache invalid — settings changed. Clearing old partial files.")
+            self._invalidate_cache(file_path, resume_file, extract_dir)
+            completed.clear()
+
+        self._logger.info(
+            f"Downloading with {n} workers, chunk size = {chunk_size / (1024**2):.2f} MB, total chunks = {len(ranges)}"
+        )
+
+        tqdm_bar = tqdm(total=len(ranges), desc="Downloading", initial=len(completed))
+        lock = Lock()
+
+        def _download_chunk(idx: int, start: int, end: int, max_retries: int = 5):
+            if idx in completed:
+                with lock:
+                    tqdm_bar.update(1)
+                return idx
+
+            headers = {"Range": f"bytes={start}-{end}"} if supports_range else {}
+            part_path = f"{file_path}.part{idx}"
+            attempt = 0
+
+            while attempt < max_retries:
+                try:
+                    with self._session.get(self.Url, headers=headers, stream=True, timeout=60) as r:
+                        r.raise_for_status()
+                        with open(part_path, "wb") as f:
+                            for chunk in r.iter_content(chunk_size=16 * 1024 * 1024):
+                                if chunk:
+                                    f.write(chunk)
+
+                    # If download completes without exception
+                    completed.add(idx)
+                    with open(resume_file, "w") as f:
+                        json.dump(
+                            {
+                                "url": self.Url,
+                                "total_size": total_size,
+                                "chunk_size": chunk_size,
+                                "workers": n,
+                                "completed": list(completed),
+                            },
+                            f,
+                        )
+                    break  # exit retry loop if successful
+
+                except (requests.exceptions.RequestException, requests.exceptions.ChunkedEncodingError) as e:
+                    attempt += 1
+                    self._logger.warning(f"Chunk {idx} failed (attempt {attempt}/{max_retries}): {e}")
+                    if attempt >= max_retries:
+                        self._logger.error(f"Chunk {idx} failed after {max_retries} attempts, giving up.")
+                        raise
+                finally:
+                    with lock:
+                        tqdm_bar.update(1)
+
+            return idx
+
+        Parallel(n_jobs=n, prefer="threads")(
+            delayed(_download_chunk)(i, s, e) for i, (s, e) in enumerate(ranges) if i not in completed
+        )
+
+        tqdm_bar.close()
+        self._combine_parts(file_path, ranges, resume_file)
+        self._logger.info(f"✅ Download complete → {file_path}")
+        return file_path
+
+    # ------------------- Helpers -------------------
+
+    def _get_extract_dir(self, zip_path: str) -> str:
+        base_name = os.path.splitext(os.path.basename(zip_path))[0]
+        return os.path.join(self.DownloadPath, base_name)
+
+    def _extract_zip(self, zip_path: str, extract_dir: str):
+        self._logger.info(f"Extracting {zip_path} to {extract_dir}")
+        os.makedirs(extract_dir, exist_ok=True)
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            for m in tqdm(zf.infolist(), desc="Extracting"):
+                zf.extract(m, extract_dir)
+        self._logger.info(f"✅ Extraction complete: {extract_dir}")
 
     @staticmethod
-    def download_and_extract(url: str, root_dir: str, logger):
-        if not url.startswith(PDSPullStep.BASE_URL):
-            logger.error(f"URL '{url}' is not under {PDSPullStep.BASE_URL}")
-            return
+    def _combine_parts(file_path: str, ranges: List[Tuple[int, int]], resume_file: str):
+        tmp_path = file_path + ".part"
+        with open(tmp_path, "wb") as outfile:
+            for i in range(len(ranges)):
+                part_path = f"{file_path}.part{i}"
+                with open(part_path, "rb") as infile:
+                    shutil.copyfileobj(infile, outfile)
+                os.remove(part_path)
+        os.rename(tmp_path, file_path)
+        if os.path.exists(resume_file):
+            os.remove(resume_file)
 
-        parsed_url = urllib.parse.urlparse(url)
-        rel_path = parsed_url.path.lstrip("/")
-        file_name = os.path.basename(rel_path)
-        extract_dir_name = os.path.splitext(file_name)[0]
-        extract_dir = os.path.join(root_dir, os.path.dirname(rel_path), extract_dir_name)
-        zip_path = os.path.join(root_dir, rel_path)
-        temp_zip_path = zip_path + ".part"
-
+    @staticmethod
+    def _invalidate_cache(file_path: str, resume_file: str, extract_dir: str):
+        """
+        Remove any .part files and resume metadata for a given download,
+        unless the extracted folder exists (fully skip if done).
+        """
         if os.path.exists(extract_dir):
-            logger.info(f"Already extracted: {extract_dir}, skipping.")
+            # Extraction exists, nothing to delete
             return
 
-        os.makedirs(os.path.dirname(zip_path), exist_ok=True)
+        base_dir = os.path.dirname(file_path)
+        base_name = os.path.basename(file_path)
 
-        try:
-            # ---- HEAD request to get file size ----
-            head = requests.head(url, timeout=60)
-            total_size = int(head.headers.get("Content-Length", 0))
-            supports_range = "bytes" in head.headers.get("Accept-Ranges", "").lower()
+        for f in os.listdir(base_dir):
+            if f.startswith(base_name) and ".part" in f:
+                try:
+                    os.remove(os.path.join(base_dir, f))
+                except Exception:
+                    pass
 
-            if not supports_range or total_size == 0:
-                logger.warning("Server does not support Range requests or unknown file size — falling back to single-threaded download.")
-                PDSPullStep._single_stream_download(url, temp_zip_path, logger)
-            else:
-                # ---- Parallel range download ----
-                n_threads = min(8, os.cpu_count() or 4)
-                chunk_size = total_size // n_threads
-                ranges = [
-                    (i * chunk_size, (i + 1) * chunk_size - 1 if i < n_threads - 1 else total_size - 1)
-                    for i in range(n_threads)
-                ]
-                logger.info(f"Downloading {file_name} in {n_threads} parallel chunks (~{chunk_size // (1024**2)} MB each)")
-
-                with open(temp_zip_path, "wb") as f:
-                    f.truncate(total_size)
-
-                with ThreadPoolExecutor(max_workers=n_threads) as ex:
-                    futures = []
-                    for r in ranges:
-                        futures.append(ex.submit(PDSPullStep._download_chunk, url, r, temp_zip_path, logger))
-                    for i, fut in enumerate(futures, 1):
-                        fut.result()
-                        logger.info(f"Chunk {i}/{len(futures)} complete.")
-                        for h in logger.handlers:
-                            try:
-                                h.flush()
-                            except Exception:
-                                pass
-
-            os.rename(temp_zip_path, zip_path)
-            logger.info(f"Download complete → {zip_path}")
-
-            # ---- Extract ----
-            logger.info(f"Extracting {zip_path} to {extract_dir} ...")
-            os.makedirs(extract_dir, exist_ok=True)
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                members = zf.infolist()
-
-                def extract_one(member):
-                    zf.extract(member, extract_dir)
-
-                with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:
-                    list(ex.map(extract_one, members))
-
-            logger.info(f"Extraction complete: {extract_dir}")
-
-        except Exception as e:
-            logger.error(f"Failed processing {url}: {e}", exc_info=True)
-            if os.path.exists(extract_dir):
-                shutil.rmtree(extract_dir, ignore_errors=True)
-
-        finally:
-            if os.path.exists(temp_zip_path):
-                os.remove(temp_zip_path)
-            if os.path.exists(zip_path):
-                os.remove(zip_path)
-                logger.debug(f"Removed temporary file: {zip_path}")
-
-    @staticmethod
-    def _single_stream_download(url, dest_path, logger):
-        """Fallback single-thread download."""
-        with requests.get(url, stream=True, timeout=120) as r:
-            r.raise_for_status()
-            with open(dest_path, "wb") as f:
-                for chunk in r.iter_content(chunk_size=16 * 1024 * 1024):
-                    if chunk:
-                        f.write(chunk)
+        if os.path.exists(resume_file):
+            try:
+                os.remove(resume_file)
+            except Exception:
+                pass

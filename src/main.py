@@ -33,5 +33,5 @@ if __name__ == "__main__":
     logger = get_logger("pds_downloader", log_dir=Path("./logs"))
     base_path = Path("./data/PDS")
 
-    # Download all datasets in parallel using joblib
-    Parallel(n_jobs=3)(delayed(download_pds_dataset)(url, logger, base_path) for url in coreDownloads)
+    # Download all datasets
+    [download_pds_dataset(url, logger, base_path) for url in coreDownloads]
