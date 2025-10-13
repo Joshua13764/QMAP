@@ -290,6 +290,18 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "joblib"
+version = "1.5.1"
+description = "Lightweight pipelining with Python functions"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "joblib-1.5.1-py3-none-any.whl", hash = "sha256:4719a31f054c7d766948dcd83e9613686b27114f190f717cec7eaa2084f8a74a"},
+    {file = "joblib-1.5.1.tar.gz", hash = "sha256:f4f86e351f39fe3d0d32a9f2c3d8af1ee4cec285aafcb27003dda5205576b444"},
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.3"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -403,6 +415,21 @@ type = "git"
 url = "https://github.com/astroNils/MLtools.git"
 reference = "78b46c447b963aced7ae21c0703f7b236ede6828"
 resolved_reference = "78b46c447b963aced7ae21c0703f7b236ede6828"
+
+[[package]]
+name = "nodegraphqt"
+version = "0.6.43"
+description = "Node graph framework written in PySide2 that can be re-implemented."
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "nodegraphqt-0.6.43-py3-none-any.whl", hash = "sha256:7ac80b563f6d66e3acc0e217d7de04406e9826a4975895158cdc692d238b5709"},
+    {file = "nodegraphqt-0.6.43.tar.gz", hash = "sha256:a981f579fd02de88bc1b3c60218b7918de3d6d4cccaa3f927b2af40fee301fc7"},
+]
+
+[package.dependencies]
+"Qt.py" = ">=1.4.1"
 
 [[package]]
 name = "packaging"
@@ -631,6 +658,21 @@ pytest = ">=6.2.5"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
+name = "qt-py"
+version = "1.4.7"
+description = "Python 2 & 3 compatibility wrapper around all Qt bindings - PySide, PySide2, PyQt4 and PyQt5."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "qt_py-1.4.7-py2.py3-none-any.whl", hash = "sha256:a8644a551bb66eeda03730400e6034bfe7c7334d1f4ec97b7c316942249ed69b"},
+    {file = "qt_py-1.4.7.tar.gz", hash = "sha256:9436bc92272362b75b27a3251416d17af2dde1ad7beb0e1008cb7c34717390d3"},
+]
+
+[package.dependencies]
+types-PySide2 = "*"
+
+[[package]]
 name = "rastertools-bouldering"
 version = "1.0.0"
 description = "Rastertools is a package that gathers a collection of tools to manipulate and extract metadata from rasters."
@@ -762,6 +804,40 @@ files = [
 ]
 
 [[package]]
+name = "tqdm"
+version = "4.67.1"
+description = "Fast, Extensible Progress Meter"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2"},
+    {file = "tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["nbval", "pytest (>=6)", "pytest-asyncio (>=0.24)", "pytest-cov", "pytest-timeout"]
+discord = ["requests"]
+notebook = ["ipywidgets (>=6)"]
+slack = ["slack-sdk"]
+telegram = ["requests"]
+
+[[package]]
+name = "types-pyside2"
+version = "5.15.2.1.7"
+description = "The most accurate stubs for PySide2"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "types_pyside2-5.15.2.1.7-py2.py3-none-any.whl", hash = "sha256:a7bec4cb4657179415ca7ec7c70a45f9f9938664e22f385c85fd7cd724b07d4d"},
+    {file = "types_pyside2-5.15.2.1.7.tar.gz", hash = "sha256:1d65072deb97481ad481b3414f94d02fd5da07f5e709c2d439ced14f79b2537c"},
+]
+
+[[package]]
 name = "urllib3"
 version = "1.26.20"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -799,4 +875,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "655200586b31998a8517275685fa8c50375694ea4a35ca99162f96cfc5dd1a62"
+content-hash = "65136d66742e71b4015350ee28ca949cfe6e496a806734ef2504857018a8641e"

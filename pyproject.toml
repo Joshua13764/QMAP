@@ -21,6 +21,10 @@ pillow = "*"
 py-linq = "*"
 
 # Git-based dependencies
+joblib = "1.5.1"
+tqdm = "4.67.1"
+nodegraphqt = "0.6.43"
+
 [tool.poetry.dependencies."mltools-bouldering"]
 git = "https://github.com/astroNils/MLtools.git"
 rev = "78b46c447b963aced7ae21c0703f7b236ede6828"
