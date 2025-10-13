@@ -5,6 +5,12 @@ from .pull_steps.pull_step_base import PullStepBase
 from pathlib import Path
 from logging import Logger
 from joblib import Parallel, delayed
+from dataclasses import dataclass
+
+@dataclass
+class Paths:
+    data_path : Path = Path("./data/PDS")
+    models_path : Path = Path("./models/BoulderNet")
 
 # List of OCAMS datasets to download
 coreDownloads = [
@@ -24,7 +30,7 @@ def download_pds_dataset(url: str, logger: Logger, base_path: Path) -> None:
     """
     step: PullStepBase = PullStepFactory.create_PDS_pull_pipeline_step(
         logger=logger,
-        path=str(base_path),
+        path=base_path.as_posix(),
         url=url
     )
     step.run()
@@ -34,4 +40,11 @@ if __name__ == "__main__":
     base_path = Path("./data/PDS")
 
     # Download all datasets
-    [download_pds_dataset(url, logger, base_path) for url in coreDownloads]
+    [download_pds_dataset(url, logger, Paths.data_path) for url in coreDownloads]
+
+    # Download BoulderNet best model
+    PullStepFactory.create_BoulderNetBestModel_pull_pipeline_step(
+        logger = logger,
+        url = "https://zenodo.org/record/8171052/files/best_model.zip",
+        path = Paths.models_path.as_posix()
+    ).run()

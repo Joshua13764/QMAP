@@ -1,3 +1,5 @@
+from ..pull_step_base import PullStepBase
+
 import os
 import json
 import math
@@ -17,7 +19,7 @@ from urllib3.util.retry import Retry
 
 
 @dataclass
-class PDSPullStep:
+class PDSPullStep(PullStepBase):
     DownloadPath: str
     Url: str
     _logger: Any
@@ -25,6 +27,10 @@ class PDSPullStep:
     Workers: int = field(default_factory=lambda: max(1, multiprocessing.cpu_count() - 2))
     KeepArchive: bool = False
     ChunkSizeLimitMB: int = 50  # configurable, default 50 MB
+
+    @property
+    def name(self) -> str:
+        return __name__
 
     def __post_init__(self):
         os.makedirs(self.DownloadPath, exist_ok=True)

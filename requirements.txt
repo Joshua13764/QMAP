@@ -5,3 +5,8 @@ pytest-cov
 customtkinter
 pillow
 py-linq
+
+# BoulderNet
+git+https://github.com/astroNils/MLtools.git
+git+https://github.com/astroNils/rastertools.git
+git+https://github.com/astroNils/shptools.git
