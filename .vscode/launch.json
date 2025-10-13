@@ -8,7 +8,7 @@
             "name": "Run Python Module src.main",
             "type": "debugpy",
             "request": "launch",
-            "module": "src.main",
+            "module": "src.ao33.main",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         }

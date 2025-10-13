@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "ao33"
+version = "0.1.0"
+description = "AO33: Unsupervised Boulder Mapping of Asteroid (101955) Bennu"
+authors = ["univ5399@ox.ac.uk"]
+readme = "README.md"
+
+# Tell Poetry where your source package lives (src layout)
+[[tool.poetry.packages]]
+include = "ao33"
+from = "src"
+
+[tool.poetry.dependencies]
+# Support Python 3.10 through 3.13
+python = ">=3.10,<4.0"
+
+# Core dependencies
+Flask = "2.0.3"
+requests = "2.26.0"
+pillow = "*"
+py-linq = "*"
+
+# Git-based dependencies
+[tool.poetry.dependencies."mltools-bouldering"]
+git = "https://github.com/astroNils/MLtools.git"
+rev = "78b46c447b963aced7ae21c0703f7b236ede6828"
+
+[tool.poetry.dependencies."rastertools-bouldering"]
+git = "https://github.com/astroNils/rastertools.git"
+rev = "19408e6e3bc6c799eca4b8adf67b21194959fd12"
+
+[tool.poetry.dependencies."shptools-bouldering"]
+git = "https://github.com/astroNils/shptools.git"
+rev = "39fc861b96d89bf6da7a2883d15a3247c12b7843"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "6.2.5"
+pytest-cov = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
