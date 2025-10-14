@@ -7,7 +7,6 @@ import uvicorn
 
 app = FastAPI()
 
-
 @app.get("/ping")
 def ping():
     return {"pong": True, "message": "Service alive"}

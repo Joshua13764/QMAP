@@ -3,6 +3,7 @@ from .pull_steps.pull_step_factory import PullStepFactory
 from .pull_steps.pull_step_base import PullStepBase
 from .boulder_inference_steps.boulder_inference_step_factory import BoulderInferenceStepFactory
 from .boulder_inference_steps.steps.BoulderNet_default import BoulderNetDefault
+from .boulder_inference_steps.steps.venv_base import IVenvClient
 
 from pathlib import Path
 from logging import Logger
@@ -54,9 +55,14 @@ if __name__ == "__main__":
     inference_step: BoulderNetDefault = BoulderInferenceStepFactory.create_BoulderNet_default_BoulderInference_pipeline_step(
         logger = logger,
         venvPath = Path("./venvs/BoulderNet_default"),
-        serverPath = Path("./src/ao33/boulder_inference_steps/steps/BoulderNet_default.py"),
+        serverPath = Path("./src/ao33/boulder_inference_steps/steps/servers/BoulderNet_default_server.py"),
     )
 
     # inference_step.setup_venv()
     inference_step.start_venv_server()
+
+    client : IVenvClient = inference_step.get_venv_client()
+
+    client.test()
+
     inference_step.stop_venv_server()

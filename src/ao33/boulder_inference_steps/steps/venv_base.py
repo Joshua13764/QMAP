@@ -1,8 +1,9 @@
 from ..boulder_inference_step_base import BoulderInferenceStepBase
+from .I_venv_client import IVenvClient
 
 from pathlib import Path
 from dataclasses import dataclass
-from abc import abstractmethod, ABC
+from abc import abstractmethod
 import subprocess
 from dataclasses_json import dataclass_json
 
@@ -11,9 +12,6 @@ from dataclasses_json import dataclass_json
 class ServerConfig:
     host: str
     port: int
-
-class IVenvClient(ABC):
-    pass
 
 @dataclass
 class venvBase(BoulderInferenceStepBase):
