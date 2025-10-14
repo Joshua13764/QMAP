@@ -4,10 +4,10 @@ from pathlib import Path
 from dataclasses import dataclass
 from abc import abstractmethod, ABC
 import subprocess
-from jsondataclasses import jsondataclass
-import json
+from dataclasses_json import dataclass_json
 
-@jsondataclass
+@dataclass_json
+@dataclass
 class ServerConfig:
     host: str
     port: int
@@ -41,12 +41,12 @@ class venvBase(BoulderInferenceStepBase):
 
         self._logger.info(f"Using server config: {ServerConfig}")
 
-        with open(self.ServerPath / "server_config.json", "w", encoding="utf-8") as fh:
-            json.dump({"host": self.server_config, "port": self.server_config}, fh, indent=2)
+        with open(self.ServerPath.parent / "server_config.json", "w", encoding="utf-8") as fh:
+            fh.write(self.server_config.to_json())
 
         self._server_handle = subprocess.Popen(
-            [str(venv_python_path), "server.py"],
-            cwd=self.ServerPath,
+            [str(venv_python_path), str(self.ServerPath.name)],
+            cwd=self.ServerPath.parent,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -81,9 +81,17 @@ class venvBase(BoulderInferenceStepBase):
         self.create_path(cwd)
         self._logger.info(f"Running shell command: {command}")
 
+        full_cmd = [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy", "Bypass",
+            "-Command",
+            command
+        ]
+
         try:
             result = subprocess.run(
-                command, 
+                full_cmd, 
                 shell = True, 
                 check = True,
                 text = True, 
