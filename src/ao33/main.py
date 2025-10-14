@@ -58,11 +58,11 @@ if __name__ == "__main__":
         serverPath = Path("./src/ao33/boulder_inference_steps/steps/servers/BoulderNet_default_server.py"),
     )
 
-    # inference_step.setup_venv()
-    inference_step.start_venv_server()
+    inference_step.setup_venv()
+    # inference_step.start_venv_server()
 
-    client : IVenvClient = inference_step.get_venv_client()
+    # client : IVenvClient = inference_step.get_venv_client()
 
-    client.test()
+    # client.test()
 
-    inference_step.stop_venv_server()
+    # inference_step.stop_venv_server()

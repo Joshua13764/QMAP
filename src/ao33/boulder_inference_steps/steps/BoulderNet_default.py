@@ -64,7 +64,7 @@ class BoulderNetDefault(venvBase):
         self.run_pip_shell_command("install -r requirements.txt", self.VenvPath / "MLtools")
 
         # Install other dependencies (for server use)
-        self.run_pip_shell_command("install fastapi uvicorn pydantic dataclasses_json requests", self.VenvPath)
+        self.run_pip_shell_command("install fastapi uvicorn pydantic dataclasses_json requests rich", self.VenvPath)
 
     def validate_venv(self) -> bool:
         return True
