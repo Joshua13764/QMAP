@@ -1,0 +1,30 @@
+# Setup venv
+py -3.10 -m venv venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\venv\Scripts\Activate.ps1
+
+# Install rastertools
+git clone https://github.com/astroNils/rastertools.git
+cd rastertools
+python -m pip install --index-url https://test.pypi.org/simple/ --no-deps rastertools_BOULDERING
+pip install -r requirements.txt
+cd ..
+
+# Install shptools
+git clone https://github.com/astroNils/shptools.git
+cd shptools
+python -m pip install --index-url https://test.pypi.org/simple/ --no-deps shptools_BOULDERING
+pip install -r requirements.txt
+cd ..
+
+# Install Pytorch
+pip install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Install Detectron2
+pip install --no-build-isolation --extra-index-url https://download.pytorch.org/whl/cpu "git+https://github.com/facebookresearch/detectron2.git"
+
+# Install MLtools
+git clone https://github.com/astroNils/MLtools.git
+cd MLtools
+python -m pip install --index-url https://test.pypi.org/simple/ --no-deps MLtools_BOULDERING
+pip install -r requirements.txt
