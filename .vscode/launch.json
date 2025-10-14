@@ -10,7 +10,8 @@
             "request": "launch",
             "module": "src.ao33.main",
             "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "python": "C:\\Users\\Joshu\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\ao33-g6hUMxuX-py3.13\\Scripts\\python.exe"
         }
     ]
 }

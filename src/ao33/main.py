@@ -1,6 +1,8 @@
 from .logger_factory import get_logger
 from .pull_steps.pull_step_factory import PullStepFactory
 from .pull_steps.pull_step_base import PullStepBase
+from .boulder_inference_steps.boulder_inference_step_factory import BoulderInferenceStepFactory
+from .boulder_inference_steps.steps.BoulderNet_default import BoulderNetDefault
 
 from pathlib import Path
 from logging import Logger
@@ -48,3 +50,9 @@ if __name__ == "__main__":
         url = "https://zenodo.org/record/8171052/files/best_model.zip",
         path = Paths.models_path.as_posix()
     ).run()
+
+    inference_step: BoulderNetDefault = BoulderInferenceStepFactory.create_BoulderNet_default_BoulderInference_pipeline_step(
+        logger = logger,
+        venvPath = Path("./venvs/BoulderNet_default"),
+        serverPath = Path("./src/ao33/boulder_inference_steps/steps/BoulderNet_default.py"),
+    )

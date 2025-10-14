@@ -9,7 +9,7 @@ import json
 
 @jsondataclass
 class ServerConfig:
-    host: StopAsyncIteration
+    host: str
     port: int
 
 class IVenvClient(ABC):
@@ -19,8 +19,9 @@ class IVenvClient(ABC):
 class venvBase(BoulderInferenceStepBase):
     VenvPath : Path
     ServerPath : Path
-    server_handle = None
     server_config : ServerConfig
+
+    _server_handle = None
 
     @abstractmethod
     def setup_venv(self):
@@ -31,24 +32,19 @@ class venvBase(BoulderInferenceStepBase):
         pass
 
     def start_venv_server(self) -> None:
-        if self.server_handle and self.server_handle.poll() is None:
+        if self._server_handle and self._server_handle.poll() is None:
             self._logger.warning("Server is already running.")
             return
 
         venv_python_path = self.VenvPath / "venv" / "Scripts" / "python.exe"
         self._logger.info(f"Starting server {self.ServerPath} in venv {self.VenvPath}")
 
-        self.server_config = ServerConfig(
-            host = "127.0.0.1",
-            port = 5000
-        )
-
         self._logger.info(f"Using server config: {ServerConfig}")
 
         with open(self.ServerPath / "server_config.json", "w", encoding="utf-8") as fh:
             json.dump({"host": self.server_config, "port": self.server_config}, fh, indent=2)
 
-        self.server_handle = subprocess.Popen(
+        self._server_handle = subprocess.Popen(
             [str(venv_python_path), "server.py"],
             cwd=self.ServerPath,
             stdout=subprocess.PIPE,
@@ -56,23 +52,23 @@ class venvBase(BoulderInferenceStepBase):
             text=True
         )
 
-        self._logger.info(f"Server started with PID: {self.server_handle.pid}")
+        self._logger.info(f"Server started with PID: {self._server_handle.pid}")
 
     def stop_venv_server(self) -> None:
         
-        if self.server_handle and self.server_handle.poll() is None:
-            self._logger.info(f"Stopping server PID: {self.server_handle.pid}...")
+        if self._server_handle and self._server_handle.poll() is None:
+            self._logger.info(f"Stopping server PID: {self._server_handle.pid}...")
 
-            self.server_handle.terminate()
+            self._server_handle.terminate()
 
             try:
 
-                self.server_handle.wait(timeout=5)
+                self._server_handle.wait(timeout=5)
                 self._logger.info("Server terminated gracefully")
 
             except subprocess.TimeoutExpired:
                 self._logger.warning("Graceful stop timed out. Forcing stop...")
-                self.server_handle.kill()
+                self._server_handle.kill()
                 self._logger.info("Server forcefully stopped")
         else:
             self._logger.info("No running server process to stop.")
