@@ -2,6 +2,9 @@ from .venv_base import venvBase
 from .I_venv_client import IVenvClient
 from .BoulderNet_venv_client import BoulderNetVenvClient
 
+import os
+import shutil
+
 class BoulderNetDefault(venvBase):
     @property
     def name(self) -> str:
@@ -11,50 +14,54 @@ class BoulderNetDefault(venvBase):
         print("Dummy load step executed.")
 
     def setup_venv(self):
+
+        if os.path.exists(self.VenvPath):
+            shutil.rmtree(self.VenvPath)
+            os.makedirs(self.VenvPath)
+
         # Create venv
         self.run_shell_command("py -3.10 -m venv venv", self.VenvPath)
-        
 
-        # self.run_shell_command("Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process", self.VenvPath)
-        self.run_shell_command(".\\venv\\Scripts\\Activate.ps1", self.VenvPath)
+        # Update pip
+        self.run_pip_shell_command("install --upgrade pip", self.VenvPath)
 
-        # # Install Rastertools 
-        # self.run_shell_command("git clone https://github.com/astroNils/rastertools.git", self.VenvPath)
-        # self.run_shell_command(
-        #     "python -m pip install --index-url https://test.pypi.org/simple/ --no-deps rastertools_BOULDERING",
-        #     self.VenvPath / "rastertools"
-        # )
-        # self.run_shell_command("pip install -r requirements.txt", self.VenvPath / "rastertools")
+        # Install Rastertools 
+        self.run_shell_command("git clone https://github.com/astroNils/rastertools.git", self.VenvPath)
+        self.run_pip_shell_command(
+            "install --index-url https://test.pypi.org/simple/ --no-deps rastertools_BOULDERING",
+            self.VenvPath / "rastertools"
+        )
+        self.run_pip_shell_command("install -r requirements.txt", self.VenvPath / "rastertools")
 
-        # # Install Shptools
-        # self.run_shell_command("git clone https://github.com/astroNils/shptools.git", self.VenvPath)
-        # self.run_shell_command(
-        #     "python -m pip install --index-url https://test.pypi.org/simple/ --no-deps shptools_BOULDERING",
-        #     self.VenvPath / "shptools"
-        # )
-        # self.run_shell_command("pip install -r requirements.txt", self.VenvPath / "shptools")
+        # Install Shptools
+        self.run_shell_command("git clone https://github.com/astroNils/shptools.git", self.VenvPath)
+        self.run_pip_shell_command(
+            "install --index-url https://test.pypi.org/simple/ --no-deps shptools_BOULDERING",
+            self.VenvPath / "shptools"
+        )
+        self.run_pip_shell_command("install -r requirements.txt", self.VenvPath / "shptools")
 
-        # # Install Pytorch (CPU)
-        # self.run_shell_command(
-        #     "pip install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1 "
-        #     "--extra-index-url https://download.pytorch.org/whl/cpu",
-        #     self.VenvPath
-        # )
+        # Install Pytorch (CPU)
+        self.run_pip_shell_command(
+            "install torch==1.13.1+cpu torchvision==0.14.1+cpu torchaudio==0.13.1 "
+            "--extra-index-url https://download.pytorch.org/whl/cpu",
+            self.VenvPath
+        )
 
-        # # Install Detectron2 (CPU)
-        # self.run_shell_command(
-        #     'pip install --no-build-isolation --extra-index-url '
-        #     'https://download.pytorch.org/whl/cpu "git+https://github.com/facebookresearch/detectron2.git"',
-        #     self.VenvPath
-        # )
+        # Install Detectron2 (CPU)
+        self.run_pip_shell_command(
+            'install --no-build-isolation --extra-index-url '
+            'https://download.pytorch.org/whl/cpu "git+https://github.com/facebookresearch/detectron2.git"',
+            self.VenvPath
+        )
 
-        # # Install MLtools
-        # self.run_shell_command("git clone https://github.com/astroNils/MLtools.git", self.VenvPath)
-        # self.run_shell_command(
-        #     "python -m pip install --index-url https://test.pypi.org/simple/ --no-deps MLtools_BOULDERING",
-        #     self.VenvPath / "MLtools"
-        # )
-        # self.run_shell_command("pip install -r requirements.txt", self.VenvPath / "MLtools")
+        # Install MLtools
+        self.run_shell_command("git clone https://github.com/astroNils/MLtools.git", self.VenvPath)
+        self.run_pip_shell_command(
+            "install --index-url https://test.pypi.org/simple/ --no-deps MLtools_BOULDERING",
+            self.VenvPath / "MLtools"
+        )
+        self.run_pip_shell_command("install -r requirements.txt", self.VenvPath / "MLtools")
 
         # Install other dependencies (for server use)
         self.run_pip_shell_command("install fastapi uvicorn pydantic dataclasses_json requests", self.VenvPath)
@@ -63,6 +70,6 @@ class BoulderNetDefault(venvBase):
         return True
     
     def get_venv_client(self) -> IVenvClient:
-        self.start_venv_server()
+        # self.start_venv_server()
         return BoulderNetVenvClient(self._logger, self.server_config)
     

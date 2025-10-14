@@ -101,7 +101,8 @@ class venvBase(BoulderInferenceStepBase):
                 cwd = cwd
             )
 
-            self._logger.info(result.stdout.strip())
+            if result.stdout.strip() != "":
+                self._logger.info(result.stdout.strip())
 
             if result.stderr:
                 self._logger.error(result.stderr.strip())

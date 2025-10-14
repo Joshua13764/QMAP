@@ -39,7 +39,7 @@ def download_pds_dataset(url: str, logger: Logger, base_path: Path) -> None:
     step.run()
 
 if __name__ == "__main__":
-    logger = get_logger("pds_downloader", log_dir=Path("./logs"))
+    logger = get_logger("Main log", log_dir=Path("./logs"))
     base_path = Path("./data/PDS")
 
     # Download all datasets
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         serverPath = Path("./src/ao33/boulder_inference_steps/steps/servers/BoulderNet_default_server.py"),
     )
 
-    inference_step.setup_venv()
+    # inference_step.setup_venv()
     inference_step.start_venv_server()
 
     client : IVenvClient = inference_step.get_venv_client()
