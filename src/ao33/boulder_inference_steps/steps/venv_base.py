@@ -34,7 +34,7 @@ class venvBase(BoulderInferenceStepBase):
             self._logger.warning("Server is already running.")
             return
 
-        venv_python_path = self.VenvPath / "venv" / "Scripts" / "python.exe"
+        venv_python_path = (self.VenvPath / "venv" / "Scripts" / "python.exe").resolve()
         self._logger.info(f"Starting server {self.ServerPath} in venv {self.VenvPath}")
 
         self._logger.info(f"Using server config: {ServerConfig}")
@@ -73,6 +73,10 @@ class venvBase(BoulderInferenceStepBase):
 
     def does_venv_exist(self) -> bool:
         return self.VenvPath.exists() and (self.VenvPath / "Scripts" / "python.exe").exists()
+
+    def run_pip_shell_command(self, command : str, cwd : Path):
+        venv_python = (self.VenvPath / "venv" / "Scripts" / "python.exe").resolve()
+        return self.run_shell_command(f"{venv_python} -m pip {command}", cwd)
 
     def run_shell_command(self, command: str, cwd : Path) -> str:
 

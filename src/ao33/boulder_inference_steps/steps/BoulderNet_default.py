@@ -13,6 +13,8 @@ class BoulderNetDefault(venvBase):
     def setup_venv(self):
         # Create venv
         self.run_shell_command("py -3.10 -m venv venv", self.VenvPath)
+        
+
         # self.run_shell_command("Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process", self.VenvPath)
         self.run_shell_command(".\\venv\\Scripts\\Activate.ps1", self.VenvPath)
 
@@ -55,11 +57,12 @@ class BoulderNetDefault(venvBase):
         # self.run_shell_command("pip install -r requirements.txt", self.VenvPath / "MLtools")
 
         # Install other dependencies (for server use)
-        self.run_shell_command("pip install fastapi uvicorn pydantic dataclasses_json requests", self.VenvPath)
+        self.run_pip_shell_command("install fastapi uvicorn pydantic dataclasses_json requests", self.VenvPath)
 
     def validate_venv(self) -> bool:
         return True
     
     def get_venv_client(self) -> IVenvClient:
+        self.start_venv_server()
         return BoulderNetVenvClient(self._logger, self.server_config)
     
