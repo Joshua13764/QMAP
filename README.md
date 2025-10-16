@@ -1,3 +1,11 @@
+# Updating poetry
+
+## Run the following commands
+
+pipreqs . --force --use-local --savepath requirements.txt
+Get-Content requirements.txt | ForEach-Object { poetry add $_ }
+
+
 # AO33 – Unsupervised Boulder Mapping of Asteroid (101955) Bennu
 
 ## Project Overview  
