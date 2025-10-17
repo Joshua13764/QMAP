@@ -6,13 +6,11 @@ from datetime import date
 from rich.console import Console
 from rich.logging import RichHandler
 
-
 class FlushFileHandler(logging.FileHandler):
     """FileHandler that flushes after every write (important for parallel jobs)."""
     def emit(self, record):
         super().emit(record)
         self.flush()
-
 
 def _next_log_file(log_dir: Path, name: str) -> Path:
     """
@@ -37,7 +35,6 @@ def _next_log_file(log_dir: Path, name: str) -> Path:
     next_index = max_index + 1
     filename = f"{name}-{today_str}-{next_index}.log"
     return log_dir / filename
-
 
 def get_logger(
     name: str,

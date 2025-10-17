@@ -1,5 +1,7 @@
-from .venv_base import venvBase
-from .I_venv_client import IVenvClient
+from AO33.step_templates.venv.venv_base import venvBase
+from AO33.step_templates.venv.venv_client_base import VenvClientBase
+from AO33.environment import Environment
+
 from .BoulderNet_venv_client import BoulderNetVenvClient
 
 import os
@@ -9,9 +11,9 @@ class BoulderNetDefault(venvBase):
     @property
     def name(self) -> str:
         return __name__
-    
-    def run(self):
-        print("Dummy load step executed.")
+
+    def run(self, env: Environment) -> Environment:
+        raise NotImplementedError 
 
     def setup_venv(self):
 
@@ -69,7 +71,7 @@ class BoulderNetDefault(venvBase):
     def validate_venv(self) -> bool:
         return True
     
-    def get_venv_client(self) -> IVenvClient:
+    def get_venv_client(self) -> VenvClientBase:
         # self.start_venv_server()
         return BoulderNetVenvClient(self._logger, self.server_config)
     

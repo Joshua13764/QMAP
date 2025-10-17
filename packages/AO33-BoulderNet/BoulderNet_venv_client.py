@@ -1,4 +1,4 @@
-from .I_venv_client import IVenvClient
+from .venv_client_base import IVenvClient
 
 import requests
 
