@@ -1,4 +1,15 @@
-# Updating poetry
+# Adding a new module
+
+## Poetry testing setup commands
+cd packages\bennu-feature-extractor-***
+poetry env list --full-path
+poetry env remove --all
+poetry config virtualenvs.in-project true
+if (Test-Path .\python) { Rename-Item .\python _python_OLD }
+py -3.13 --version
+poetry env use 3.13
+poetry lock
+poetry install -v
 
 ## Run the following commands
 

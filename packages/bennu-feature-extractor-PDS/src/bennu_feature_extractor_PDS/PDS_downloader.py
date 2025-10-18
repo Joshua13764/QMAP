@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from AO33.step_templates.chunked_downloader import ArchiveDownloadBase
+from bennu_feature_extractor.step_templates.chunked_downloader import ArchiveDownloadBase
 
 @dataclass
 class PDSDownloader(ArchiveDownloadBase):

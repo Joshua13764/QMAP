@@ -1,6 +1,6 @@
-from AO33.step_templates.venv.venv_base import venvBase
-from AO33.step_templates.venv.venv_client_base import VenvClientBase
-from AO33.environment import Environment
+from bennu_feature_extractor.step_templates.venv.venv_base import venvBase
+from bennu_feature_extractor.step_templates.venv.venv_client_base import VenvClientBase
+from bennu_feature_extractor.environment import Environment
 
 from .BoulderNet_venv_client import BoulderNetVenvClient
 
