@@ -8,17 +8,18 @@ version = "0.1.0"
 description = "Foo add-on step for bennu-feature-extractor"
 readme = "README.md"
 requires-python = ">=3.9"
+# Runtime deps for PDS itself (do NOT list bennu-feature-extractor here in dev mode)
 dependencies = [
-  "prefect>=2.14",
-  "bennu-feature-extractor>=0.1.0",
+  "prefect>=2.14"
 ]
 
 [tool.poetry]
 packages = [{ include = "bennu_feature_extractor_PDS", from = "src" }]
 
+# Local editable dependency on the core package for monorepo work
+[tool.poetry.dependencies]
+bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true }
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
 assertpy = "^1.1"
-
-[tool.poetry.dependencies]
-bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true }

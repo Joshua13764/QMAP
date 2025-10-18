@@ -1,4 +1,4 @@
-from logger_factory import get_logger
+from .logger_factory import get_logger
 from pathlib import Path
 
 class Environment():
