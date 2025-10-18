@@ -2,16 +2,18 @@
 requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"
 
-# ✅ Poetry 2.x-style metadata (PEP 621)
 [project]
 name = "bennu-feature-extractor"
 version = "0.1.0"
 description = "Core pipeline + step base"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["prefect>=2.14"]
+dependencies = [
+  "prefect>=2.14",
+  "joblib (>=1.5.2,<2.0.0)",
+  "tqdm (>=4.66,<5)"
+]
 
-# 👇 Tell Poetry you're using the src/ layout
 [tool.poetry]
 packages = [{ include = "bennu_feature_extractor", from = "src" }]
 

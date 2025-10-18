@@ -218,23 +218,6 @@ files = [
 ]
 
 [[package]]
-name = "bennu-feature-extractor"
-version = "0.1.0"
-description = "Core pipeline + step base"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = []
-develop = true
-
-[package.dependencies]
-prefect = ">=2.14"
-
-[package.source]
-type = "directory"
-url = "../bennu-feature-extractor"
-
-[[package]]
 name = "cachetools"
 version = "5.5.2"
 description = "Extensible memoizing collections and decorators"
@@ -3094,4 +3077,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "42a26a7a716b1f097c4e075d07ecd600d88dafcc4fc4b0b219d9b125b85d0bad"
+content-hash = "434d473ad18362be19f9d417bb2ef58f86f8182ee4358a3779ef38282b9bbe5c"

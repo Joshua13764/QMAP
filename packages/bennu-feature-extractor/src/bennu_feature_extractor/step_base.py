@@ -4,7 +4,7 @@ from logging import Logger
 from prefect.tasks import Task
 from functools import cached_property
 
-from environment import Environment
+from .environment import Environment
 
 @dataclass
 class StepBase(ABC):
