@@ -13,7 +13,8 @@ poetry install -v
 
 ## Run the following commands
 
-pipreqs . --force --use-local --savepath requirements.txt
+pip install pigar (When opened the poetry venv)
+pigar generate -f requirements.txt
 Get-Content requirements.txt | ForEach-Object { poetry add $_ }
 
 
