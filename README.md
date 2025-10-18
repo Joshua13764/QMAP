@@ -1,6 +1,7 @@
 # Adding a new module
 
 ## Poetry testing setup commands
+```
 cd packages\bennu-feature-extractor-***
 poetry env list --full-path
 poetry env remove --all
@@ -10,13 +11,13 @@ py -3.13 --version
 poetry env use 3.13
 poetry lock
 poetry install -v
-
+```
 ## Run the following commands
-
+```
 pip install pigar (When opened the poetry venv)
 pigar generate -f requirements.txt
 Get-Content requirements.txt | ForEach-Object { poetry add $_ }
-
+```
 
 # AO33 – Unsupervised Boulder Mapping of Asteroid (101955) Bennu
 
