@@ -18,3 +18,4 @@ packages = [{ include = "bennu_feature_extractor", from = "src" }]
 # Dev dependencies (tests, lint, etc.)
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
+assertpy = "^1.1"

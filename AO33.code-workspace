@@ -1,0 +1,7 @@
+{
+  "folders": [
+    { "path": "packages/bennu-feature-extractor" },
+    { "path": "packages/bennu-feature-extractor-PDS" },
+    { "path": "packages/bennu-feature-extractor-BoulderNet" }
+  ]
+}
