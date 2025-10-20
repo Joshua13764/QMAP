@@ -5,6 +5,6 @@ from bennu_feature_extractor.step_templates.chunked_downloader import ArchiveDow
 
 @dataclass
 class BestModelDownloader(ArchiveDownloadBase):
-    BaseUrl: str = ""           # or set one if you want to enforce
-    AllowChunking: bool = False # force single-stream download like the original
+    BaseUrl: str = "https://zenodo.org/records/8171052/files"
+    AllowChunking: bool = True
     KeepArchive: bool = False

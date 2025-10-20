@@ -228,9 +228,13 @@ files = []
 develop = true
 
 [package.dependencies]
-joblib = ">=1.5.2,<2.0.0"
-prefect = ">=2.14"
-tqdm = ">=4.66,<5"
+assertpy = "1.1"
+joblib = "1.5.2"
+prefect = "3.2.15"
+requests = "2.32.5"
+rich = "13.9.4"
+tqdm = "4.67.1"
+urllib3 = "2.5.0"
 
 [package.source]
 type = "directory"
@@ -3130,4 +3134,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "c3759a7863ceb274067bee33e0409ab4adca8aa97f2daddc4c901b409e48d1d9"
+content-hash = "1ab01fa4fb82c4e5dca73da14996efb0f243a886879a83f0d15ccfc36466c09b"
