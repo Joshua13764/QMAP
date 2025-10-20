@@ -12,12 +12,18 @@ poetry env use 3.13
 poetry lock
 poetry install -v
 ```
+
 ## Run the following commands
 ```
 pip install pigar (When opened the poetry venv)
 pigar generate -f requirements.txt
 Get-Content requirements.txt | ForEach-Object { poetry add $_ }
 ```
+
+# V1.1 (block 1) project structure
+
+![Alt text](images/v1.1_images/data_flow_swimlanes_v4.png)
+
 
 # AO33 – Unsupervised Boulder Mapping of Asteroid (101955) Bennu
 
