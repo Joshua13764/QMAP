@@ -120,7 +120,7 @@ version = "1.1"
 description = "Simple assertion library for unit testing in python with a fluent API"
 optional = false
 python-versions = "*"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "assertpy-1.1.tar.gz", hash = "sha256:acc64329934ad71a3221de185517a43af33e373bb44dc05b5a9b174394ef4833"},
 ]
@@ -3130,4 +3130,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "42a26a7a716b1f097c4e075d07ecd600d88dafcc4fc4b0b219d9b125b85d0bad"
+content-hash = "c3759a7863ceb274067bee33e0409ab4adca8aa97f2daddc4c901b409e48d1d9"

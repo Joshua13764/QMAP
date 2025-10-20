@@ -10,7 +10,10 @@ readme = "README.md"
 requires-python = ">=3.9"
 # Runtime deps for PDS itself (do NOT list bennu-feature-extractor here in dev mode)
 dependencies = [
-  "prefect>=2.14"
+  "prefect>=2.14",
+  "assertpy (==1.1)",
+  "pytest (==8.4.2)",
+  "requests (==2.32.5)"
 ]
 
 [tool.poetry]
