@@ -22,9 +22,7 @@ Get-Content requirements.txt | ForEach-Object { poetry add $_ }
 
 # V1.1 (block 1) project structure
 
-![Alt text](images/v1.1_images/data_flow_swimlanes_v4.png)
-
-
+![Flowchart](images/v1.1_images/flowchart.png)
 
 # AO33 – Unsupervised Boulder Mapping of Asteroid (101955) Bennu
 
