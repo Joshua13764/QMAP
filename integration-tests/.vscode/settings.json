@@ -14,5 +14,13 @@
   "python.analysis.completeFunctionParens": true,
   "editor.inlineSuggest.enabled": true,
   "editor.suggestSelection": "recentlyUsedByPrefix",
-  "editor.tabCompletion": "on"
+  "editor.tabCompletion": "on",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8",
+    "editor.formatOnSave": true
+  },
+  "autopep8.args": [
+    "--max-line-length", "79",
+    "--aggressive"
+  ]
 }

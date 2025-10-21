@@ -20,12 +20,18 @@ urls_to_download = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
-    ]
+]
+
 
 @flow()
 def data_loader_flow() -> None:
 
-    BestModelDownloader(logger, dataDownloadPath.as_posix(), Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1").run()
-    [PDSDownloader(logger, dataDownloadPath.as_posix(), Url=url).run() for url in urls_to_download]
+    BestModelDownloader(
+        logger,
+        dataDownloadPath.as_posix(),
+        Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1").run()
+    [PDSDownloader(logger, dataDownloadPath.as_posix(), Url=url).run()
+     for url in urls_to_download]
+
 
 data_loader_flow()
