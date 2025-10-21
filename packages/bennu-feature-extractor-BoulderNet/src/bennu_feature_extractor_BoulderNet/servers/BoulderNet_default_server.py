@@ -1,11 +1,12 @@
+import logging
 from dataclasses import dataclass
+from pathlib import Path
+
+import uvicorn
 from dataclasses_json import dataclass_json
 from fastapi import FastAPI, Request
-from pathlib import Path
-import uvicorn
-import logging
-from rich.logging import RichHandler
 from rich.console import Console
+from rich.logging import RichHandler
 
 
 # === Configure logging ===

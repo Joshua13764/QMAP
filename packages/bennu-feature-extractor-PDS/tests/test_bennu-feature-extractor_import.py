@@ -1,6 +1,8 @@
 # tests/test_imports_simple.py
 from importlib import import_module
+
 from assertpy import assert_that
+
 
 def test_modules_import():
     for name in ("bennu_feature_extractor_PDS", "bennu_feature_extractor"):

@@ -1,11 +1,13 @@
-from bennu_feature_extractor.step_templates.venv.venv_base import venvBase
-from bennu_feature_extractor.step_templates.venv.venv_client_base import VenvClientBase
+import os
+import shutil
+
 from bennu_feature_extractor.environment import Environment
+from bennu_feature_extractor.step_templates.venv.venv_base import venvBase
+from bennu_feature_extractor.step_templates.venv.venv_client_base import \
+    VenvClientBase
 
 from .BoulderNet_venv_client import BoulderNetVenvClient
 
-import os
-import shutil
 
 class BoulderNetDefault(venvBase):
     @property
@@ -13,7 +15,7 @@ class BoulderNetDefault(venvBase):
         return __name__
 
     def run(self, env: Environment) -> Environment:
-        raise NotImplementedError 
+        raise NotImplementedError
 
     def setup_venv(self):
 
@@ -27,21 +29,29 @@ class BoulderNetDefault(venvBase):
         # Update pip
         self.run_pip_shell_command("install --upgrade pip", self.VenvPath)
 
-        # Install Rastertools 
-        self.run_shell_command("git clone https://github.com/astroNils/rastertools.git", self.VenvPath)
+        # Install Rastertools
+        self.run_shell_command(
+            "git clone https://github.com/astroNils/rastertools.git",
+            self.VenvPath)
         self.run_pip_shell_command(
             "install --index-url https://test.pypi.org/simple/ --no-deps rastertools_BOULDERING",
             self.VenvPath / "rastertools"
         )
-        self.run_pip_shell_command("install -r requirements.txt", self.VenvPath / "rastertools")
+        self.run_pip_shell_command(
+            "install -r requirements.txt",
+            self.VenvPath / "rastertools")
 
         # Install Shptools
-        self.run_shell_command("git clone https://github.com/astroNils/shptools.git", self.VenvPath)
+        self.run_shell_command(
+            "git clone https://github.com/astroNils/shptools.git",
+            self.VenvPath)
         self.run_pip_shell_command(
             "install --index-url https://test.pypi.org/simple/ --no-deps shptools_BOULDERING",
             self.VenvPath / "shptools"
         )
-        self.run_pip_shell_command("install -r requirements.txt", self.VenvPath / "shptools")
+        self.run_pip_shell_command(
+            "install -r requirements.txt",
+            self.VenvPath / "shptools")
 
         # Install Pytorch (CPU)
         self.run_pip_shell_command(
@@ -58,20 +68,25 @@ class BoulderNetDefault(venvBase):
         )
 
         # Install MLtools
-        self.run_shell_command("git clone https://github.com/astroNils/MLtools.git", self.VenvPath)
+        self.run_shell_command(
+            "git clone https://github.com/astroNils/MLtools.git",
+            self.VenvPath)
         self.run_pip_shell_command(
             "install --index-url https://test.pypi.org/simple/ --no-deps MLtools_BOULDERING",
             self.VenvPath / "MLtools"
         )
-        self.run_pip_shell_command("install -r requirements.txt", self.VenvPath / "MLtools")
+        self.run_pip_shell_command(
+            "install -r requirements.txt",
+            self.VenvPath / "MLtools")
 
         # Install other dependencies (for server use)
-        self.run_pip_shell_command("install fastapi uvicorn pydantic dataclasses_json requests rich", self.VenvPath)
+        self.run_pip_shell_command(
+            "install fastapi uvicorn pydantic dataclasses_json requests rich",
+            self.VenvPath)
 
     def validate_venv(self) -> bool:
         return True
-    
+
     def get_venv_client(self) -> VenvClientBase:
         # self.start_venv_server()
         return BoulderNetVenvClient(self._logger, self.server_config)
-    

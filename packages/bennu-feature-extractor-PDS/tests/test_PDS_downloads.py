@@ -1,10 +1,12 @@
 # test_downloader.py
 import logging
-import pytest
-import requests
 from pathlib import Path
 
+import pytest
+import requests
+
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
+
 
 def test_run_skips_when_already_extracted(tmp_path, monkeypatch, caplog):
     """
@@ -19,9 +21,15 @@ def test_run_skips_when_already_extracted(tmp_path, monkeypatch, caplog):
 
     # Make any accidental .head() call blow up so we know it wasn't used
     def _boom(*args, **kwargs):
-        raise AssertionError("HEAD should not be called when extract dir exists")
+        raise AssertionError(
+            "HEAD should not be called when extract dir exists")
 
-    monkeypatch.setattr(requests.Session, "head", lambda self, *a, **k: _boom())
+    monkeypatch.setattr(
+        requests.Session,
+        "head",
+        lambda self,
+        *a,
+        **k: _boom())
 
     logger = logging.getLogger("test")
     with caplog.at_level(logging.INFO):
