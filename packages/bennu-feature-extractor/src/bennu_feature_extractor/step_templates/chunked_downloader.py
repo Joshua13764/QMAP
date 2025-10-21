@@ -12,6 +12,7 @@ from typing import Any, Set, Dict, Tuple, List, Optional
 from joblib import Parallel, delayed
 from threading import Lock
 from tqdm import tqdm
+from prefect import task
 
 import requests
 from requests.adapters import HTTPAdapter
