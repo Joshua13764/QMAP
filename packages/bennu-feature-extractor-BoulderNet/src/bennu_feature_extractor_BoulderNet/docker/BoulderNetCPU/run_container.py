@@ -14,9 +14,7 @@ logger: Logger = bennu_feature_extractor.logger_factory.get_logger(
 IMAGE_TAG = "mltools:py3.10"
 CONTAINER_WORKDIR = "/workspace"
 CONTAINER_COMMAND = (
-    'python -c "import platform, MLtools as m; '
-    'print(\'[Python]\', platform.python_version()); '
-    'print(\'[MLtools]\', getattr(m, \'__file__\', \'import-ok\'))"'
+    "python -c \"from MLtools import inference; print('MLtools inference import OK')\""
 )
 
 
