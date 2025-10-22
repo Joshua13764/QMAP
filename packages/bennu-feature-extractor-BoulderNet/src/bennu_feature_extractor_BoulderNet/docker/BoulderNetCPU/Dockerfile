@@ -41,6 +41,30 @@ RUN git clone https://github.com/astroNils/MLtools.git /opt/MLtools && \
     python -m pip install --index-url https://test.pypi.org/simple/ --no-deps MLtools_BOULDERING && \
     pip install -r /opt/MLtools/requirements.txt -c /tmp/constraints.txt
 
+# --- (A) Tools for fetching & unzipping ---
+RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
+
+# --- (B) Get BoulderNet "best_model" (Zenodo) ---
+#   Contents include config.yaml and the recommended weights model_0055999.pth
+#   Ref: Zenodo record 10.5281/zenodo.8171052
+ARG BOULDERNET_ZIP_URL="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
+RUN mkdir -p /models/bouldernet && \
+    curl -L "$BOULDERNET_ZIP_URL" -o /tmp/best_model.zip && \
+    unzip -q /tmp/best_model.zip -d /models/bouldernet && \
+    rm -f /tmp/best_model.zip
+
+ARG BOULDERNET_TEST_URL="https://zenodo.org/records/8171052/files/Apr2023-Mars-Moon-Earth-mask-5px.zip?download=1"
+RUN mkdir -p /data/bouldernet && \
+    curl -L "$BOULDERNET_TEST_URL" -o /tmp/testdata.zip && \
+    unzip -q /tmp/testdata.zip -d /data/bouldernet && \
+    rm -f /tmp/testdata.zip
+
+
+# Pin default env pointing at the recommended checkpoint + config
+ENV BOULDERNET_WEIGHTS=/models/bouldernet/model_0055999.pth \
+    BOULDERNET_CONFIG=/models/bouldernet/config.yaml
+
+
 # Enforce Pillow 9.5.0 last (fixes Image.LINEAR issue in D2 v0.6)
 RUN pip install "Pillow==9.5.0"
 
