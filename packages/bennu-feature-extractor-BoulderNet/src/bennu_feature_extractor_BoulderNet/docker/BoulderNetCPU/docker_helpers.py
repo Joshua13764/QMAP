@@ -4,6 +4,7 @@
 
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Tuple, Union
+
 import docker
 
 
@@ -28,7 +29,8 @@ def build_image(
         buildargs=build_args or {},
     )
     for chunk in logs:
-        line = chunk.get("stream") or chunk.get("status") or chunk.get("message")
+        line = chunk.get("stream") or chunk.get(
+            "status") or chunk.get("message")
         if line:
             print(line, end="")
     print(f"\nBuilt image: {image.id} (tags={image.tags})")
@@ -44,29 +46,43 @@ def run_script(
     env: Optional[Dict[str, str]] = None,
     name: Optional[str] = None,
     extra_args: Optional[Iterable[str]] = None,
+    extra_mounts: Optional[Iterable[tuple]] = None,
+    # [(host_dir, "/in", "ro"), ...]
 ) -> Tuple[int, str]:
-    """Run a local Python script inside the container."""
+    """Run a local Python script inside the container.
+
+    extra_mounts: iterable of (host_dir, container_dir, mode) tuples.
+    Example: [(Path('C:/data/tiles'), '/in', 'ro')]
+    """
     host_script = Path(script_path).resolve(strict=True)
     host_dir = str(host_script.parent)
+
+    volumes = {host_dir: {"bind": mount_into, "mode": "rw"}}
+    if extra_mounts:
+        for host_d, bind_to, mode in extra_mounts:
+            h = str(Path(host_d).resolve())
+            volumes[h] = {"bind": bind_to, "mode": mode}
+
     container_workdir = workdir or mount_into
     container_script = f"{mount_into.rstrip('/')}/{host_script.name}"
 
-    volumes = {host_dir: {"bind": mount_into, "mode": "rw"}}
     client = docker.from_env()
-
     container = client.containers.run(
         image=image,
-        command=["python", container_script] + (list(extra_args) if extra_args else []),
+        command=["python", container_script] +
+        (list(extra_args) if extra_args else []),
         name=name,
         working_dir=container_workdir,
         volumes=volumes,
         environment=env or {},
         detach=True,
     )
-
     result = container.wait()
     exit_code = int(result.get("StatusCode", 1))
-    logs = container.logs(stdout=True, stderr=True)
-    output = logs.decode("utf-8", errors="replace")
+    output = container.logs(
+        stdout=True,
+        stderr=True).decode(
+        "utf-8",
+        errors="replace")
     container.remove(force=True)
     return exit_code, output
