@@ -7,7 +7,7 @@ name = "bennu-feature-extractor"
 version = "0.1.0"
 description = "Core pipeline + step base"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = "<4.0,>=3.9"
 dependencies = [
   "prefect (==3.2.15)",
   "joblib (==1.5.2)",
@@ -15,7 +15,9 @@ dependencies = [
   "assertpy (==1.1)",
   "requests (==2.32.5)",
   "rich (==13.9.4)",
-  "urllib3 (==2.5.0)"
+  "urllib3 (==2.5.0)",
+  "dataclasses-json (>=0.6.7,<0.7.0)",
+  "py-linq (>=1.4.0,<2.0.0)"
 ]
 
 [tool.poetry]
