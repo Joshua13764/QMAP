@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from logging import Logger, getLogger
+from logging import Logger
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 @dataclass
@@ -11,22 +11,8 @@ class EnvFileBase(ABC):
     virtual_path : Path
 
     # Logger is excluded from serialization
-    logger: Logger = field(
-        default_factory=lambda: getLogger(__name__),
-        repr=False,
-        compare=False,
-    )
+    logger: Logger
 
-    # Pickle support
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state.pop("logger", None)
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        self.logger = getLogger(__name__)
-    
     @abstractmethod
     def read(self) -> object:
         raise NotImplementedError()
@@ -35,6 +21,18 @@ class EnvFileBase(ABC):
     def write(self, data: object) -> None:
         raise NotImplementedError()
     
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # remove the logger (it isn't picklable)
+        state.pop("logger", None)
+        return state
+
+    def __setstate__(self, state):
+        # logger will be rehydrated by the cluster after unpickling
+        self.__dict__.update(state)
+        if "logger" not in self.__dict__:
+            self.logger = None
+
     @property
     def file_type(self) -> type:
         return type(self)
