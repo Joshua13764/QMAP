@@ -24,6 +24,14 @@ Get-Content requirements.txt | ForEach-Object { poetry add $_ }
 
 ![Flowchart](images/v1.1_images/flowchart.png)
 
+## Enviroment method
+
+### File validation
+
+In the base class we add currently two methods of file validation
+1. Metadata checks (last modified, name, file size ... etc) -> Fast but not perfect
+2. Hash checks (hashes the entire file) -> Slow but much stronger
+
 # AO33 – Unsupervised Boulder Mapping of Asteroid (101955) Bennu
 
 ## Project Overview  
