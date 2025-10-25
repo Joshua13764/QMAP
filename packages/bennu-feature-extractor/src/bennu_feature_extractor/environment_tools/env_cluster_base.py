@@ -2,13 +2,15 @@ import pickle
 from dataclasses import dataclass, field
 from logging import Logger
 from pathlib import Path
-from typing import List
+from typing import List, Set
 
 from bennu_feature_extractor.environment_tools.env_file_base import EnvFileBase
 from bennu_feature_extractor.environment_tools.env_file_factory import EnvFileFactory
 
 @dataclass
 class EnvCluster():
+    name : str
+    tags : Set[str]
     files: List[EnvFileBase]
     logger: Logger = field(repr=False, compare=False)
 
