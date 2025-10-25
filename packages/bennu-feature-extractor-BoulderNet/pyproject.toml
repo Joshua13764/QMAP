@@ -7,7 +7,7 @@ name = "bennu-feature-extractor-BoulderNet"
 version = "0.1.0"
 description = "Foo add-on step for bennu-feature-extractor"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = "<4.0,>=3.9"
 dependencies = [
   "prefect>=2.14",
   "bennu-feature-extractor>=0.1.0",
@@ -22,9 +22,10 @@ dependencies = [
 [tool.poetry]
 packages = [{ include = "bennu_feature_extractor_BoulderNet", from = "src" }]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0"
-assertpy = "^1.1"
-
 [tool.poetry.dependencies]
 bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^4.1"
+assertpy = "^1.1"

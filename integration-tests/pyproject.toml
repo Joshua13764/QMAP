@@ -7,14 +7,15 @@ package-mode = false
 packages = []
 
 [tool.poetry.dependencies]
-python = ">=3.9"
+python = "<4.0,>=3.9"
 bennu-feature-extractor = { path = "../packages/bennu-feature-extractor", develop = true }
 bennu-feature-extractor-BoulderNet = { path = "../packages/bennu-feature-extractor-BoulderNet", develop = true }
 bennu-feature-extractor-PDS = { path = "../packages/bennu-feature-extractor-PDS", develop = true }
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0"
-
 [build-system]
 requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^4.1"
