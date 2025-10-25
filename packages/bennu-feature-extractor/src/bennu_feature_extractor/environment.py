@@ -1,5 +1,5 @@
 from typing import List
-from .logger_factory import get_logger
+from bennu_feature_extractor.logger_factory import get_logger
 from bennu_feature_extractor.environment_tools.env_cluster_base import EnvCluster
 from pathlib import Path
 
