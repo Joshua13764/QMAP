@@ -38,7 +38,7 @@ class EnvCluster():
 
     @classmethod
     def from_folder(cls, folder_path: Path, virtual_path : Path, logger: Logger) -> "EnvCluster":
-        actual_paths: List[Path] = [p.absolute() for p in folder_path.iterdir() if p.is_file()]
+        actual_paths: List[Path] = [p.resolve() for p in Path(folder_path).rglob('*') if p.is_file()]
         if logger:
             logger.info(f"Found {len(actual_paths)} files in folder {folder_path} to create EnvClusterBase.")
 
@@ -53,7 +53,7 @@ class EnvCluster():
         if logger:
             logger.info(f"Created {len(files)} EnvFileBase instances for EnvClusterBase using EnvFileFactory.")
 
-        return cls(files=files, logger=logger)
+        return cls(files=files, logger=logger, name = folder_path.name, tags=set([files.actual_path.stem for files in files]))
 
     def check_metadata(self) -> bool:
         return all(file.check_metadata_valid() for file in self.files)

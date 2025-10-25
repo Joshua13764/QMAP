@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List, Set
 from bennu_feature_extractor.logger_factory import get_logger
 from bennu_feature_extractor.environment_tools.env_cluster_base import EnvCluster
 from pathlib import Path
@@ -51,3 +51,8 @@ class Environment():
             cluster = EnvCluster.from_pickle_repr(pickle_data, logger=self.Logger)
             self.add_cluster(cluster)
             self.Logger.info(f"Imported cluster with {len(cluster.files)} files from {cluster_file}.")
+
+    def clusters_with_tags(self, tags : Set[str]) -> List[EnvCluster]:
+        matching_clusters = [cluster for cluster in self.clusters.values() if tags.issubset(cluster.tags)]
+        self.Logger.info(f"Found {len(matching_clusters)} clusters with tags {tags}.")
+        return matching_clusters
