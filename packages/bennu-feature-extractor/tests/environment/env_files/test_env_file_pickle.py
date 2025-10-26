@@ -13,7 +13,7 @@ def test_pickle_read_write_roundtrip():
         logger.addHandler(logging.NullHandler())
 
         p = root / "obj.pkl"
-        p.write_bytes(b"")  # touch
+        p.write_bytes(b"")
         f = EnvFilePickle(last_modified=None, actual_path=p, virtual_path=virtual_root / "obj.pkl", logger=logger)
 
         payload = {"answer": 42, "items": [1, 2, 3]}

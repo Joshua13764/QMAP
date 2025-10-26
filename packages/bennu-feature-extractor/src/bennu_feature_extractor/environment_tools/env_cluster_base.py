@@ -1,17 +1,16 @@
-from __future__ import annotations
-
 import pickle
-from abc import ABC
 from dataclasses import dataclass, field
 from logging import Logger
 from pathlib import Path
-from typing import List
+from typing import List, Set
 
 from bennu_feature_extractor.environment_tools.env_file_base import EnvFileBase
 from bennu_feature_extractor.environment_tools.env_file_factory import EnvFileFactory
 
 @dataclass
-class EnvClusterBase(ABC):
+class EnvCluster():
+    name : str
+    tags : Set[str]
     files: List[EnvFileBase]
     logger: Logger = field(repr=False, compare=False)
 
@@ -27,7 +26,7 @@ class EnvClusterBase(ABC):
         return pickle.dumps(self)
 
     @classmethod
-    def from_pickle_repr(cls, data: bytes, logger: Logger) -> "EnvClusterBase":
+    def from_pickle_repr(cls, data: bytes, logger: Logger) -> "EnvCluster":
         obj = pickle.loads(data)
         if not isinstance(obj, cls):
             raise TypeError(f"Loaded object is {type(obj).__name__}, not {cls.__name__}")
@@ -38,8 +37,8 @@ class EnvClusterBase(ABC):
         return obj
 
     @classmethod
-    def from_folder(cls, folder_path: Path, virtual_path : Path, logger: Logger) -> "EnvClusterBase":
-        actual_paths: List[Path] = [p.absolute() for p in folder_path.iterdir() if p.is_file()]
+    def from_folder(cls, folder_path: Path, virtual_path : Path, logger: Logger) -> "EnvCluster":
+        actual_paths: List[Path] = [p.resolve() for p in Path(folder_path).rglob('*') if p.is_file()]
         if logger:
             logger.info(f"Found {len(actual_paths)} files in folder {folder_path} to create EnvClusterBase.")
 
@@ -54,7 +53,7 @@ class EnvClusterBase(ABC):
         if logger:
             logger.info(f"Created {len(files)} EnvFileBase instances for EnvClusterBase using EnvFileFactory.")
 
-        return cls(files=files, logger=logger)
+        return cls(files=files, logger=logger, name = folder_path.name, tags=set([files.actual_path.stem for files in files]))
 
     def check_metadata(self) -> bool:
         return all(file.check_metadata_valid() for file in self.files)

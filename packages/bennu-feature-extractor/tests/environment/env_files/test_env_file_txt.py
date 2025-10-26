@@ -13,13 +13,12 @@ def test_txt_read_write_roundtrip():
         logger.addHandler(logging.NullHandler())
 
         p = root / "sample.txt"
-        p.write_text("")  # touch
+        p.write_text("")
 
         f = EnvFileTxt(last_modified=None, actual_path=p, virtual_path=virtual_root / "sample.txt", logger=logger)
 
         data = "hello world"
         f.write(data)
-        # write() uses repr(); ensure content reflects that
         on_disk = p.read_text()
         assert_that(on_disk).contains("hello world").starts_with("'").ends_with("'")
 
@@ -37,7 +36,6 @@ def test_txt_metadata_size_delete():
         p.write_text("initial")
         f = EnvFileTxt(last_modified=None, actual_path=p, virtual_path=virtual_root / "meta.txt", logger=logger)
 
-        # Initially invalid (no last_modified)
         assert_that(f.check_metadata_valid()).is_false()
 
         lm = f.get_last_modified()

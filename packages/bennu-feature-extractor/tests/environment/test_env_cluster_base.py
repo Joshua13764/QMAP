@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from assertpy import assert_that
 
-from bennu_feature_extractor.environment_tools.env_cluster_base import EnvClusterBase
+from bennu_feature_extractor.environment_tools.env_cluster_base import EnvCluster
 from bennu_feature_extractor.environment_tools.env_files.env_file_txt import EnvFileTxt
 from bennu_feature_extractor.environment_tools.env_files.env_file_pickle import EnvFilePickle
 
@@ -23,7 +23,7 @@ def test_cluster_total_size_and_check_metadata():
         logger.addHandler(logging.NullHandler())
 
         f1, f2 = _make_files(root, virtual_root, logger)
-        cluster = EnvClusterBase(files=[f1, f2], logger=logger)
+        cluster = EnvCluster(files=[f1, f2], logger=logger)
 
         # prime last_modified and then verify metadata validity
         for f in cluster.files:
@@ -41,7 +41,7 @@ def test_cluster_delete_removes_all():
         logger.addHandler(logging.NullHandler())
 
         f1, f2 = _make_files(root, virtual_root, logger)
-        cluster = EnvClusterBase(files=[f1, f2], logger=logger)
+        cluster = EnvCluster(files=[f1, f2], logger=logger)
         cluster.delete()
 
         assert_that(f1.actual_path.exists()).is_false()
@@ -55,11 +55,11 @@ def test_cluster_pickle_roundtrip_strips_and_rehydrates_logger():
         logger.addHandler(logging.NullHandler())
 
         f1, f2 = _make_files(root, virtual_root, logger)
-        cluster = EnvClusterBase(files=[f1, f2], logger=logger)
+        cluster = EnvCluster(files=[f1, f2], logger=logger)
 
         data = cluster.get_pickle_repr()
         assert_that(data).is_instance_of((bytes, bytearray))
 
-        loaded = EnvClusterBase.from_pickle_repr(data, logger=logger)
+        loaded = EnvCluster.from_pickle_repr(data, logger=logger)
         assert_that(loaded.logger).is_equal_to(logger)
         assert_that([f.logger for f in loaded.files]).contains_only(logger)

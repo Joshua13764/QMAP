@@ -25,4 +25,5 @@ bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
+pytest-cov = "^4.1"
 assertpy = "^1.1"

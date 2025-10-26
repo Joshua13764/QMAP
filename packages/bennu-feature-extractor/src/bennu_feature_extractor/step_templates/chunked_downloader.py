@@ -1,4 +1,6 @@
-from ..step_base import StepBase
+from pathlib import Path
+from bennu_feature_extractor.step_base import StepBase
+from bennu_feature_extractor.environment import Environment
 
 import os
 import json
@@ -8,7 +10,7 @@ import zipfile
 import multiprocessing
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
-from typing import Any, Set, Dict, Tuple, List, Optional
+from typing import Any, Set, Dict, Optional
 from joblib import Parallel, delayed
 from threading import Lock
 from tqdm import tqdm
@@ -32,6 +34,7 @@ class ArchiveDownloadBase(StepBase):
     """
     DownloadPath: str
     Url: str
+    
     _logger: Any
 
     # Behavior toggles / options
@@ -39,7 +42,8 @@ class ArchiveDownloadBase(StepBase):
     AllowChunking: bool = True             # If False, force single-stream download
     KeepArchive: bool = False              # If True, leave the .zip on disk after extraction
     Extract: bool = True                   # If True, extract as a zip
-    Resume: bool = True                    # If True, enable resume for chunked downloads
+    Resume: bool = True 
+    virtual_path_root: Path = Path("/data") 
 
     # Performance / networking
     Workers: int = field(default_factory=lambda: max(1, multiprocessing.cpu_count() - 2))
@@ -68,7 +72,7 @@ class ArchiveDownloadBase(StepBase):
 
     # ------------------- Public entrypoint -------------------
 
-    def run(self):
+    def run(self, env: Environment) -> Environment:
         if self.BaseUrl and not self.Url.startswith(self.BaseUrl):
             raise ValueError(f"URL must start with {self.BaseUrl}")
 
@@ -87,6 +91,13 @@ class ArchiveDownloadBase(StepBase):
                     os.remove(zip_path)
                 except Exception:
                     self._logger.warning(f"Could not remove archive {zip_path}")
+
+        env.add_cluster_from_folder(
+            folder_path=Path(extract_dir),
+            virtual_path=self.virtual_path_root / Path(os.path.basename(extract_dir))
+            )
+
+        return env
 
     # ------------------- Download logic -------------------
 
@@ -189,7 +200,7 @@ class ArchiveDownloadBase(StepBase):
             completed.clear()
 
         self._logger.info(
-            f"Downloading with {n} workers, chunk size = {chunk_size / (1024**2):.2f} MB, total chunks = {len(ranges)}"
+            f"Downloading with {n} workers, chunk size = {chunk_size / (1024**2):.2f} MB, total chunks = {len(ranges)}, total size = {total_size / (1024**3):.2f} GB"
         )
 
         bar = tqdm(total=len(ranges), desc="Downloading (chunked)", initial=len(completed))
