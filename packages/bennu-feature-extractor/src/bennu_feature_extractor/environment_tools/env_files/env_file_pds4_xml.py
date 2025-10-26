@@ -10,12 +10,7 @@ class ArrayStructure(Protocol):
 
 StructureList = Sequence[ArrayStructure]
 
-class EnvFilePDS4(EnvFileBase):
-    """For reading .xml files handled by pds4-tools mainly used for the PDS archive format
-
-    Args:
-        EnvFileBase (_type_): Base class for environment files
-    """
+class EnvFilePDS4XML(EnvFileBase):
 
     def read(self) -> StructureList:
         return pds4_tools.read(self.actual_path)
