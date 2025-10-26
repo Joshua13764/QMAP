@@ -7,7 +7,7 @@ name = "bennu-feature-extractor-PDS"
 version = "0.1.0"
 description = "Foo add-on step for bennu-feature-extractor"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11,<4.0"
 # Runtime deps for PDS itself (do NOT list bennu-feature-extractor here in dev mode)
 dependencies = [
   "prefect>=2.14",
