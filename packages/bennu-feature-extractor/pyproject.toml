@@ -18,7 +18,8 @@ dependencies = [
   "urllib3 (==2.5.0)",
   "dataclasses-json (>=0.6.7,<0.7.0)",
   "py-linq (>=1.4.0,<2.0.0)",
-  "pds4-tools (>=1.4,<2.0)"
+  "pds4-tools (>=1.4,<2.0)",
+  "opencv-python (>=4.12.0.88,<5.0.0.0)"
 ]
 
 [tool.poetry]
