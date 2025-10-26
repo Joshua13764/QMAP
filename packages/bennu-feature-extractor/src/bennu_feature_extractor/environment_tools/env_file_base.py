@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from logging import Logger
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 
 @dataclass
 class EnvFileBase(ABC):
@@ -14,11 +14,11 @@ class EnvFileBase(ABC):
     logger: Logger
 
     @abstractmethod
-    def read(self) -> object:
+    def read(self) -> Any:
         raise NotImplementedError()
     
     @abstractmethod
-    def write(self, data: object) -> None:
+    def write(self, data: Any) -> None:
         raise NotImplementedError()
     
     def __getstate__(self):
