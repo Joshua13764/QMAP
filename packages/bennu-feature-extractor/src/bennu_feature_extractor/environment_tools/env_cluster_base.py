@@ -64,5 +64,11 @@ class EnvCluster():
         if self.logger:
             self.logger.info(f"Deleted all files in cluster with {len(self.files)} files.")
 
+    def add_file(self, file: EnvFileBase) -> None:
+        self.files.append(file)
+
+    def add_files(self, files: List[EnvFileBase]) -> None:
+        self.files.extend(files)
+
     def get_total_size(self) -> int:
         return sum(file.get_size() for file in self.files)

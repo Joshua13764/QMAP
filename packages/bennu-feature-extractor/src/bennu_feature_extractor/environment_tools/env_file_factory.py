@@ -27,6 +27,35 @@ class EnvFileFactory:
                     virtual_path=virtual_path,
                     logger = logger
                 )
+            
+            case Path(suffix=".xml"):
+                from bennu_feature_extractor.environment_tools.env_files.env_file_pds4_xml import EnvFilePDS4XML
+
+                return EnvFilePDS4XML(
+                    last_modified=None,
+                    actual_path=file_path,
+                    virtual_path=virtual_path,
+                    logger = logger
+                )
+            
+            case Path(suffix=".png"):
+                from bennu_feature_extractor.environment_tools.env_files.env_file_PNG import EnvFilePNG
+                return EnvFilePNG(
+                    last_modified=None,
+                    actual_path=file_path,
+                    virtual_path=virtual_path,
+                    logger = logger
+                )
+            
+            case Path(suffix = ".fits"):
+                from bennu_feature_extractor.environment_tools.env_files.env_file_pds4_fits import EnvFilePDS4Fits
+
+                return EnvFilePDS4Fits(
+                    last_modified=None,
+                    actual_path=file_path,
+                    virtual_path=virtual_path,
+                    logger = logger
+                )
 
             case _:
                 from bennu_feature_extractor.environment_tools.env_files.env_file_unsupported import EnvFileUnsupported

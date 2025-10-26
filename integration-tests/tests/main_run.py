@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from bennu_feature_extractor.environment import Environment
@@ -5,6 +6,7 @@ from bennu_feature_extractor.logger_factory import get_logger
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
+from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from graphviz import Source
 from prefect import flow
 from prefect.futures import PrefectFuture, wait
@@ -16,11 +18,11 @@ dataDownloadPath = Path("C:\\Users\\Joshu\\Documents\\AO33_DATA")
 
 urls_to_download = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
 ]
 
 
@@ -31,13 +33,13 @@ def data_loader_flow() -> Environment:
 
     tasks: list[PrefectFuture[Environment]] = []
 
-    tasks.append(
-        BestModelDownloader(
-            logger,
-            dataDownloadPath.as_posix(),
-            Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-        ).get_task.submit(Environment.get_empty_environment(logger=logger))
-    )
+    # tasks.append(
+    #     BestModelDownloader(
+    #         logger,
+    #         dataDownloadPath.as_posix(),
+    #         Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
+    #     ).get_task.submit(Environment.get_empty_environment(logger=logger))
+    # )
 
     tasks += [
         PDSDownloader(
@@ -75,5 +77,17 @@ def data_loader_flow() -> Environment:
     return returned_env
 
 
+@flow()
+def data_convert_flow(env: Environment) -> Environment:
+    pds_to_png_task = PDS_to_PNG(
+        _logger=logger,
+        cluster_key="ocams_data_calibrated_detailed_survey",
+        run_path=Path(r"F:\AO33_DATA2")
+    ).get_task.submit(env)
+    converted_env = pds_to_png_task.result()
+    return converted_env
+
+
 if __name__ == "__main__":
-    data_loader_flow()
+    env = data_loader_flow()
+    data_convert_flow(env)
