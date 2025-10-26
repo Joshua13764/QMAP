@@ -36,7 +36,7 @@ def data_loader_flow() -> Environment:
             logger,
             dataDownloadPath.as_posix(),
             Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-        ).get_task(Environment.get_empty_environment(logger=logger)).submit()
+        ).get_task.submit(Environment.get_empty_environment(logger=logger))
     )
 
     tasks += [
@@ -44,7 +44,7 @@ def data_loader_flow() -> Environment:
             logger,
             dataDownloadPath.as_posix(),
             Url=url
-        ).get_task(Environment.get_empty_environment(logger=logger)).submit()
+        ).get_task.submit(Environment.get_empty_environment(logger=logger))
         for url in urls_to_download
     ]
 

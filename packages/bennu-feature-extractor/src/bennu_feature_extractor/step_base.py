@@ -9,12 +9,13 @@ from .environment import Environment
 class StepBase(ABC):
     _logger: Logger
 
-    def get_task(self, env: Environment):
+    @property
+    def get_task(self):
         @task
-        def _inner_step_task() -> Environment:
+        def _step_task(env: Environment) -> Environment:
             return self.run(env)
 
-        return _inner_step_task
+        return _step_task
 
     @abstractmethod
     def run(self, env: Environment) -> Environment:
