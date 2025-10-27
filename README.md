@@ -1,8 +1,108 @@
-# Adding a new module
+# Adding a new module checklist
 
-## Poetry testing setup commands
+## 1) Create file directory in packages
 ```
-cd packages\bennu-feature-extractor-***
+...\AO33\packages\bennu-feature-extractor-{package name}
+```
+
+## 2) Add to workspace
+In AO33.code-workspace add the path to your package
+```
+{
+  "folders": [
+    { "path": "packages/bennu-feature-extractor" },
+    { "path": "packages/bennu-feature-extractor-PDS" },
+    { "path": "packages/bennu-feature-extractor-BoulderNet" },
+    { "path": "packages/bennu-feature-extractor-{package name}" },
+    { "path": "integration-tests" }
+  ]
+}
+```
+
+## 3) Setup directory
+
+The directory needs to have the following basic structure
+
+```
+.
+├── pyproject.toml
+├── pytest.ini
+├── poetry.lock
+├── README.md
+├── requirements.txt
+├── src/
+│   └── bennu_feature_extractor_{package name}/
+│       ├── __init__.py
+│       ├── ... package files
+├── tests/
+│   ├── __init__.py
+│   └── ... tests
+```
+### ```pyproject.toml```
+
+An example of which has been listed below, it should look broadly like this
+```
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "bennu-feature-extractor-{package name}"
+version = "0.1.0"
+description = "Foo add-on step for bennu-feature-extractor"
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+
+dependencies = [
+  "prefect>=2.14",
+  "assertpy (==1.1)",
+  "pytest (==8.4.2)",
+  "requests (==2.32.5)"
+   ... other dependencies (it is better to add using poetry add {package name} in most cases)
+]
+
+[tool.poetry]
+packages = [{ include = "bennu_feature_extractor_{package name}", from = "src" }]
+
+[tool.poetry.dependencies]
+bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true }
+... other packages in this repo
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^4.1"
+assertpy = "^1.1"
+```
+
+### ```pytest.ini```
+Tends to always look the same unless doing something specific
+```
+[pytest]
+addopts = -ra
+testpaths = tests
+python_files = test_*.py
+```
+
+### ```README.md```
+The readme for the package (is required, so make sure it's included even if left blank)
+
+### ```requirements.txt```
+Can be generated in most cases automatically from the following commands (run these in the package directory when ready to publish)
+```
+pip install pigar
+pigar generate -f requirements.txt
+Get-Content requirements.txt | ForEach-Object { poetry add $_ }
+```
+
+### ```poetry.lock```
+This is generated when the environment has been set up
+
+### ```__init__.py```
+These need to be in every folder with Python files; otherwise, those files will not be recognised as part of the package (it is ok to leave them blank).
+
+## Setup poetry (add poetry.lock)
+```
+cd packages\bennu-feature-extractor-{package name}
 poetry env list --full-path
 poetry env remove --all
 poetry config virtualenvs.in-project true
@@ -12,13 +112,8 @@ poetry env use 3.13
 poetry lock
 poetry install -v
 ```
+*run these in the package directory
 
-## Run the following commands
-```
-pip install pigar (When opened the poetry venv)
-pigar generate -f requirements.txt
-Get-Content requirements.txt | ForEach-Object { poetry add $_ }
-```
 
 # V1.1 (block 1) project structure
 
