@@ -1,0 +1,28 @@
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "bennu-feature-extractor-ObjectMapping"
+version = "0.1.0"
+description = "Foo add-on step for bennu-feature-extractor"
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+
+dependencies = [
+  "prefect>=2.14",
+  "assertpy (==1.1)",
+  "pytest (==8.4.2)",
+  "requests (==2.32.5)"
+]
+
+[tool.poetry]
+packages = [{ include = "bennu_feature_extractor_ObjectMapping", from = "src" }]
+
+[tool.poetry.dependencies]
+bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-cov = "^4.1"
+assertpy = "^1.1"
