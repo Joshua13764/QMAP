@@ -35,8 +35,5 @@ class EnvCluster():
 
         return cls(files=tuple(files), name = folder_path.name)
 
-    def check_metadata(self) -> bool:
-        return all(file.check_metadata_valid() for file in self.files)
-
     def get_total_size(self) -> int:
         return sum(file.get_size() for file in self.files)

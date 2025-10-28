@@ -12,7 +12,6 @@ class EnvFileFactory:
                 from bennu_feature_extractor.environment_tools.env_files.env_file_txt import EnvFileTxt
 
                 return EnvFileTxt(
-                    last_modified=None,
                     actual_path_str=file_path.as_posix(),
                     virtual_path_str=virtual_path.as_posix(),
                 )
@@ -21,7 +20,6 @@ class EnvFileFactory:
                 from bennu_feature_extractor.environment_tools.env_files.env_file_pickle import EnvFilePickle
 
                 return EnvFilePickle(
-                    last_modified=None,
                     actual_path_str=file_path.as_posix(),
                     virtual_path_str=virtual_path.as_posix(),
                 )
@@ -30,7 +28,6 @@ class EnvFileFactory:
                 from bennu_feature_extractor.environment_tools.env_files.env_file_pds4_xml import EnvFilePDS4XML
 
                 return EnvFilePDS4XML(
-                    last_modified=None,
                     actual_path_str=file_path.as_posix(),
                     virtual_path_str=virtual_path.as_posix(),
                 )
@@ -38,7 +35,6 @@ class EnvFileFactory:
             case Path(suffix=".png"):
                 from bennu_feature_extractor.environment_tools.env_files.env_file_PNG import EnvFilePNG
                 return EnvFilePNG(
-                    last_modified=None,
                     actual_path_str=file_path.as_posix(),
                     virtual_path_str=virtual_path.as_posix(),
                 )
@@ -47,7 +43,6 @@ class EnvFileFactory:
                 from bennu_feature_extractor.environment_tools.env_files.env_file_pds4_fits import EnvFilePDS4Fits
 
                 return EnvFilePDS4Fits(
-                    last_modified=None,
                     actual_path_str=file_path.as_posix(),
                     virtual_path_str=virtual_path.as_posix(),
                 )
@@ -56,7 +51,6 @@ class EnvFileFactory:
                 from bennu_feature_extractor.environment_tools.env_files.env_file_unsupported import EnvFileUnsupported
 
                 return EnvFileUnsupported(
-                    last_modified=None,
                     actual_path_str=file_path.as_posix(),
                     virtual_path_str=virtual_path.as_posix(),
                 )

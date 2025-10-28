@@ -47,14 +47,6 @@ class Environment():
         self.clusters.clear()
         self.logger.info("Deleted all clusters from environment.")
 
-    def check_all_metadata(self) -> bool:
-        all_valid = all(cluster.check_metadata() for cluster in self.clusters.values())
-        if all_valid:
-            self.logger.info("All clusters have valid metadata.")
-        else:
-            self.logger.warning("Some clusters have invalid metadata.")
-        return all_valid
-    
     def add_cluster_from_folder(self, folder_path : Path, virtual_path : Path) -> None:
         cluster = EnvCluster.from_folder(folder_path=folder_path, virtual_path=virtual_path)
         self.add_cluster(cluster)
