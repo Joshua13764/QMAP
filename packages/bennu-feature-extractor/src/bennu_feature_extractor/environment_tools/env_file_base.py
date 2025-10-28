@@ -22,18 +22,6 @@ class EnvFileBase(ABC):
     @abstractmethod
     def write(self, data: Any) -> None:
         raise NotImplementedError()
-    
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        # remove the logger (it isn't picklable)
-        state.pop("logger", None)
-        return state
-
-    def __setstate__(self, state):
-        # logger will be rehydrated by the cluster after unpickling
-        self.__dict__.update(state)
-        if "logger" not in self.__dict__:
-            self.logger = None
 
     @property
     def file_type(self) -> type:

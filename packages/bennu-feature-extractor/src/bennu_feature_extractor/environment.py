@@ -6,10 +6,10 @@ from logging import Logger
 from prefect import get_run_logger
 import attrs
 
-@attrs.define(frozen=True, slots=True, cache_hash=True)
+@attrs.define(frozen=False, cache_hash=True)
 class Environment():
     self.clusters : Dict[str, EnvCluster] = {}
-        
+    
     @property
     def logger(self) -> Logger:
         return get_run_logger()
@@ -44,26 +44,6 @@ class Environment():
     def add_cluster_from_folder(self, folder_path : Path, virtual_path : Path) -> None:
         cluster = EnvCluster.from_folder(folder_path=folder_path, virtual_path=virtual_path)
         self.add_cluster(cluster)
-    
-    def export_clusters_as_pickle(self, export_path : Path) -> None:
-        for cluster in self.clusters.values():
-            cluster_path = export_path / f"cluster_{cluster.name}.pkl"
-            with open(cluster_path, "wb") as f:
-                f.write(cluster.get_pickle_repr())
-            self.logger.info(f"Exported cluster with {len(cluster.files)} files to {cluster_path}.")
-
-    def import_clusters_from_pickle(self, import_path : Path) -> None:
-        for cluster_file in import_path.glob("cluster_*.pkl"):
-            with open(cluster_file, "rb") as f:
-                pickle_data = f.read()
-            cluster = EnvCluster.from_pickle_repr(pickle_data)
-            self.add_cluster(cluster)
-            self.logger.info(f"Imported cluster with {len(cluster.files)} files from {cluster_file}.")
-
-    def clusters_with_tags(self, tags : Set[str]) -> List[EnvCluster]:
-        matching_clusters = [cluster for cluster in self.clusters.values() if tags.issubset(cluster.tags)]
-        self.logger.info(f"Found {len(matching_clusters)} clusters with tags {tags}.")
-        return matching_clusters
     
     @staticmethod
     def merge_environments(envs : List['Environment']) -> 'Environment':

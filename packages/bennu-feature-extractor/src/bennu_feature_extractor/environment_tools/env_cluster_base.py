@@ -1,8 +1,7 @@
-import pickle
 import attrs
 from logging import Logger
 from pathlib import Path
-from typing import List, Set
+from typing import List, Set, Tuple
 from prefect import get_run_logger
 
 from bennu_feature_extractor.environment_tools.env_file_base import EnvFileBase
@@ -11,22 +10,11 @@ from bennu_feature_extractor.environment_tools.env_file_factory import EnvFileFa
 @attrs.define(frozen=True, slots=True, cache_hash=True)
 class EnvCluster():
     name : str
-    files: List[EnvFileBase]
-
-    @property
-    def tags(Self) -> Set[str]:
-        return set([files.actual_path.stem for files in files]))
+    files: Tuple(EnvFileBase)
 
     @property
     def logger(self) -> Logger:
         return get_run_logger()
-
-    @classmethod
-    def from_pickle_repr(cls, data: bytes) -> "EnvCluster":
-        obj = pickle.loads(data)
-        if not isinstance(obj, cls):
-            raise TypeError(f"Loaded object is {type(obj).__name__}, not {cls.__name__}")
-        return obj
 
     @classmethod
     def from_folder(cls, folder_path: Path, virtual_path : Path) -> "EnvCluster":
@@ -45,22 +33,10 @@ class EnvCluster():
 
         logger.info(f"Created {len(files)} EnvFileBase instances for EnvClusterBase using EnvFileFactory.")
 
-        return cls(files=files, name = folder_path.name)
+        return cls(files=tuple(files), name = folder_path.name)
 
     def check_metadata(self) -> bool:
         return all(file.check_metadata_valid() for file in self.files)
-
-    def delete(self) -> None:
-        for file in self.files:
-            file.delete()
-
-        self.logger.info(f"Deleted all files in cluster with {len(self.files)} files.")
-
-    def add_file(self, file: EnvFileBase) -> None:
-        self.files.append(file)
-
-    def add_files(self, files: List[EnvFileBase]) -> None:
-        self.files.extend(files)
 
     def get_total_size(self) -> int:
         return sum(file.get_size() for file in self.files)
