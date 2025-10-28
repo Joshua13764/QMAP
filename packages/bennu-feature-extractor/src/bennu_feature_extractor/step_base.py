@@ -21,7 +21,7 @@ class StepBase(ABC):
         @task(
             result_storage=self.result_storage,
             result_serializer=PickleSerializer(),
-            cache_key_fn = lambda *args, **kwargs : str((kwargs.get("env"), self.get_hash()).__hash__()),
+            cache_key_fn = lambda context, cfg : str((cfg["env"].get_cache_key(), self.get_hash()).__hash__()),
         )
 
         def _step_task(env: Environment) -> Environment:

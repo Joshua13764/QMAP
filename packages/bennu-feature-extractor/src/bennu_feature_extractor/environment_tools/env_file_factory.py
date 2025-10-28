@@ -5,7 +5,7 @@ from bennu_feature_extractor.environment_tools.env_file_base import EnvFileBase
 
 class EnvFileFactory:
     @staticmethod
-    def create_env_file(file_path: Path, virtual_path : Path, logger : Logger) -> EnvFileBase:
+    def create_env_file(file_path: Path, virtual_path : Path) -> EnvFileBase:
 
         match file_path:
             case Path(suffix=".txt"):
@@ -13,9 +13,8 @@ class EnvFileFactory:
 
                 return EnvFileTxt(
                     last_modified=None,
-                    actual_path=file_path,
-                    virtual_path=virtual_path,
-                    logger = logger
+                    actual_path_str=file_path.as_posix(),
+                    virtual_path_str=virtual_path.as_posix(),
                 )
             
             case Path(suffix=".pkl"):
@@ -23,9 +22,8 @@ class EnvFileFactory:
 
                 return EnvFilePickle(
                     last_modified=None,
-                    actual_path=file_path,
-                    virtual_path=virtual_path,
-                    logger = logger
+                    actual_path_str=file_path.as_posix(),
+                    virtual_path_str=virtual_path.as_posix(),
                 )
             
             case Path(suffix=".xml"):
@@ -33,18 +31,16 @@ class EnvFileFactory:
 
                 return EnvFilePDS4XML(
                     last_modified=None,
-                    actual_path=file_path,
-                    virtual_path=virtual_path,
-                    logger = logger
+                    actual_path_str=file_path.as_posix(),
+                    virtual_path_str=virtual_path.as_posix(),
                 )
             
             case Path(suffix=".png"):
                 from bennu_feature_extractor.environment_tools.env_files.env_file_PNG import EnvFilePNG
                 return EnvFilePNG(
                     last_modified=None,
-                    actual_path=file_path,
-                    virtual_path=virtual_path,
-                    logger = logger
+                    actual_path_str=file_path.as_posix(),
+                    virtual_path_str=virtual_path.as_posix(),
                 )
             
             case Path(suffix = ".fits"):
@@ -52,9 +48,8 @@ class EnvFileFactory:
 
                 return EnvFilePDS4Fits(
                     last_modified=None,
-                    actual_path=file_path,
-                    virtual_path=virtual_path,
-                    logger = logger
+                    actual_path_str=file_path.as_posix(),
+                    virtual_path_str=virtual_path.as_posix(),
                 )
 
             case _:
@@ -62,7 +57,6 @@ class EnvFileFactory:
 
                 return EnvFileUnsupported(
                     last_modified=None,
-                    actual_path=file_path,
-                    virtual_path=virtual_path,
-                    logger = logger
+                    actual_path_str=file_path.as_posix(),
+                    virtual_path_str=virtual_path.as_posix(),
                 )

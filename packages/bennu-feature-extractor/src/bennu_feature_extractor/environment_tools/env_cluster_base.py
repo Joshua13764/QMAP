@@ -10,7 +10,7 @@ from bennu_feature_extractor.environment_tools.env_file_factory import EnvFileFa
 @attrs.define(frozen=True, slots=True, cache_hash=True)
 class EnvCluster():
     name : str
-    files: Tuple(EnvFileBase)
+    files: Tuple[EnvFileBase]
 
     @property
     def logger(self) -> Logger:
@@ -20,18 +20,18 @@ class EnvCluster():
     def from_folder(cls, folder_path: Path, virtual_path : Path) -> "EnvCluster":
         actual_paths: List[Path] = [p.resolve() for p in Path(folder_path).rglob('*') if p.is_file()]
         
-        logger.info(f"Found {len(actual_paths)} files in folder {folder_path} to create EnvClusterBase.")
+        get_run_logger().info(f"Found {len(actual_paths)} files in folder {folder_path} to create EnvClusterBase.")
 
         virtual_paths: List[Path] = [virtual_path / p.relative_to(folder_path) for p in actual_paths]
 
-        logger.info(f"Generated {len(virtual_paths)} virtual paths for EnvClusterBase.")
+        get_run_logger().info(f"Generated {len(virtual_paths)} virtual paths for EnvClusterBase.")
 
         files: List[EnvFileBase] = [
             EnvFileFactory.create_env_file(file_path=actual_path, virtual_path=vpath)
             for actual_path, vpath in zip(actual_paths, virtual_paths)
         ]
 
-        logger.info(f"Created {len(files)} EnvFileBase instances for EnvClusterBase using EnvFileFactory.")
+        get_run_logger().info(f"Created {len(files)} EnvFileBase instances for EnvClusterBase using EnvFileFactory.")
 
         return cls(files=tuple(files), name = folder_path.name)
 

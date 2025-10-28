@@ -1,18 +1,32 @@
 from typing import Dict, List, Set
-from bennu_feature_extractor.logger_factory import get_logger
 from bennu_feature_extractor.environment_tools.env_cluster_base import EnvCluster
 from pathlib import Path
 from logging import Logger
 from prefect import get_run_logger
 import attrs
+import json
+import hashlib
 
-@attrs.define(frozen=False, cache_hash=True)
+@attrs.define(slots=True)
 class Environment():
-    self.clusters : Dict[str, EnvCluster] = {}
+    version = "1.0.0"
+    clusters : Dict[str, EnvCluster] = {}
     
     @property
     def logger(self) -> Logger:
         return get_run_logger()
+    
+    def _serialize_self(self) -> Dict:
+        return {
+            "version" : self.version,
+            "clusters" : {
+                k: attrs.asdict(v) for k, v in self.clusters.items()
+            }
+        }
+
+    def get_cache_key(self) -> str:
+        ser = json.dumps(self._serialize_self())
+        return hashlib.sha256((ser.encode())).hexdigest()
     
     def add_cluster(self, cluster : EnvCluster) -> None:
         self.clusters[cluster.name] = cluster

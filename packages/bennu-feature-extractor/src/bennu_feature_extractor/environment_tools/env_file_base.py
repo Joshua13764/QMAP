@@ -8,12 +8,24 @@ from prefect import get_run_logger
 @attrs.define(frozen=True, slots=True, cache_hash=True)
 class EnvFileBase(ABC):
     last_modified : Optional[float]
-    actual_path : Path
-    virtual_path : Path
+    actual_path_str : str
+    virtual_path_str : str
+
+    @property
+    def actual_path(self) -> Path:
+        return Path(self.actual_path_str)
+
+    @property
+    def virtual_path(self) -> Path:
+        return Path(self.virtual_path_str)
 
     @property
     def logger(self) -> Logger:
         return get_run_logger()
+
+    @property
+    def file_type(self) -> type:
+        return type(self)
 
     @abstractmethod
     def read(self) -> Any:
@@ -23,10 +35,7 @@ class EnvFileBase(ABC):
     def write(self, data: Any) -> None:
         raise NotImplementedError()
 
-    @property
-    def file_type(self) -> type:
-        return type(self)
-    
+
     def exists(self) -> bool:
         return self.actual_path.exists()
     
