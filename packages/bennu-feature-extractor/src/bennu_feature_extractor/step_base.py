@@ -7,16 +7,28 @@ from .environment import Environment
 
 @dataclass
 class StepBase(ABC):
-    _logger: Logger
+    logger: Environment
 
     @property
     def get_task(self):
-        @task
+        @task(persist_result=True)
         def _step_task(env: Environment) -> Environment:
             return self.run(env)
 
         return _step_task
+    
+    @property
+    def get_task_no_cache(self):
+        @task
+        def _step_task_no_cache(env: Environment) -> Environment:
+            return self.run(env)
+        
+        return _step_task_no_cache
 
     @abstractmethod
     def run(self, env: Environment) -> Environment:
         ...
+
+    
+
+    

@@ -18,11 +18,11 @@ dataDownloadPath = Path("C:\\Users\\Joshu\\Documents\\AO33_DATA")
 
 urls_to_download = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
 ]
 
 
@@ -33,13 +33,13 @@ def data_loader_flow() -> Environment:
 
     tasks: list[PrefectFuture[Environment]] = []
 
-    # tasks.append(
-    #     BestModelDownloader(
-    #         logger,
-    #         dataDownloadPath.as_posix(),
-    #         Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-    #     ).get_task.submit(Environment.get_empty_environment(logger=logger))
-    # )
+    tasks.append(
+        BestModelDownloader(
+            logger,
+            dataDownloadPath.as_posix(),
+            Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
+        ).get_task.submit(Environment.get_empty_environment(logger=logger))
+    )
 
     tasks += [
         PDSDownloader(

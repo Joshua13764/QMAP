@@ -10,6 +10,9 @@ class Environment():
         self.Logger = logger
         self.clusters : Dict[str, EnvCluster] = {}
 
+     def get_cache_key(self):
+        raise NotImplementedError()
+
     def add_cluster(self, cluster : EnvCluster) -> None:
         self.clusters[cluster.name] = cluster
         self.Logger.info(f"Added cluster with {len(cluster.files)} files to environment. Total clusters: {len(self.clusters)}.")
@@ -60,7 +63,7 @@ class Environment():
         matching_clusters = [cluster for cluster in self.clusters.values() if tags.issubset(cluster.tags)]
         self.Logger.info(f"Found {len(matching_clusters)} clusters with tags {tags}.")
         return matching_clusters
-    
+
     @staticmethod
     def get_empty_environment(logger : Logger | None = None, log_title : str = "Environment", log_path : Path = Path("./logs")) -> 'Environment':
         if logger is None: return Environment(logger=get_logger(log_title, log_dir=log_path))
