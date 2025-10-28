@@ -1,17 +1,19 @@
 from abc import ABC, abstractmethod
 from logging import Logger
 from pathlib import Path
-from dataclasses import dataclass
+import attrs
 from typing import Optional, Any
+from prefect import get_run_logger
 
-@dataclass
+@attrs.define(frozen=True, slots=True, cache_hash=True)
 class EnvFileBase(ABC):
     last_modified : Optional[float]
     actual_path : Path
     virtual_path : Path
 
-    # Logger is excluded from serialization
-    logger: Logger
+    @property
+    def logger(self) -> Logger:
+        return get_run_logger()
 
     @abstractmethod
     def read(self) -> Any:

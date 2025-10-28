@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 from bennu_feature_extractor.environment import Environment
@@ -9,11 +8,17 @@ from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from graphviz import Source
 from prefect import flow
+from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ThreadPoolTaskRunner
 
 logger = get_logger("main_run", log_dir=Path("./logs"))
 
+# # To be run once
+# run_dir_store = LocalFileSystem(basepath=r".\run_dir_storage")
+# run_dir_store.save("run-dir-storage", overwrite=True)
+
+run_dir_store = LocalFileSystem.load("run-dir-storage")
 dataDownloadPath = Path("C:\\Users\\Joshu\\Documents\\AO33_DATA")
 
 urls_to_download = [
@@ -36,6 +41,7 @@ def data_loader_flow() -> Environment:
     tasks.append(
         BestModelDownloader(
             logger,
+            run_dir_store,
             dataDownloadPath.as_posix(),
             Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
         ).get_task.submit(Environment.get_empty_environment(logger=logger))
@@ -44,6 +50,7 @@ def data_loader_flow() -> Environment:
     tasks += [
         PDSDownloader(
             logger,
+            run_dir_store,
             dataDownloadPath.as_posix(),
             Url=url
         ).get_task.submit(Environment.get_empty_environment(logger=logger))
@@ -80,7 +87,8 @@ def data_loader_flow() -> Environment:
 @flow()
 def data_convert_flow(env: Environment) -> Environment:
     pds_to_png_task = PDS_to_PNG(
-        _logger=logger,
+        logger=logger,
+        result_storage=run_dir_store,
         cluster_key="ocams_data_calibrated_detailed_survey",
         run_path=Path(r"F:\AO33_DATA2")
     ).get_task.submit(env)

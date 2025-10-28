@@ -13,6 +13,7 @@ bennu-feature-extractor-BoulderNet = { path = "../packages/bennu-feature-extract
 bennu-feature-extractor-PDS = { path = "../packages/bennu-feature-extractor-PDS", develop = true }
 graphviz = "^0.21"
 pds4-tools = "^1.4"
+attrs = "^25.4.0"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]

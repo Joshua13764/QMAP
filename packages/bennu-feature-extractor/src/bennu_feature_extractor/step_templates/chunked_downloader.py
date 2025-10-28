@@ -51,6 +51,9 @@ class ArchiveDownloadBase(StepBase):
     # Internal
     _session: Optional[requests.Session] = field(init=False, repr=False, default=None)
 
+    def get_hash(self) -> int:
+        return (self.DownloadPath, self.Url, self.BaseUrl, self.KeepArchive, self.Extract, self.virtual_path_root).__hash__()
+
     @property
     def name(self) -> str:
         return __name__

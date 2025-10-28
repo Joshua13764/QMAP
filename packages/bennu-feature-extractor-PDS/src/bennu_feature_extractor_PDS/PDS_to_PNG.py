@@ -20,6 +20,10 @@ class PDS_to_PNG(StepBase):
     skip_converted: bool = True
     run_path: Path | None = None
 
+    def get_hash(self) -> int:
+        return (self.cluster_key, self.skip_converted,
+                self.run_path).__hash__()
+
     def under_run(self, base: Path, child: Union[Path, str]) -> Path:
         s = str(child)
 
