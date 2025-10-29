@@ -42,9 +42,9 @@ class StepBase(ABC):
         ...
 
     @abstractmethod
-    def run(self, env: Environment) -> Environment:
+    def run(self, env: Environment) -> None:
         ...
 
     
 
-    
+    # Declaring read and writes / order
