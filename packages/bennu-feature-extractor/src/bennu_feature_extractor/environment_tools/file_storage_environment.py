@@ -21,6 +21,14 @@ class FileStorageEnvironment():
         matches : List[FileStorageMediumBase] = [medium for medium in self.mediums if medium.does_path_exist(virtual_path)]
 
         if len(matches) == 0: raise FileNotFoundError(f"The file in path {virtual_path} cannot be found")
-        if len(matches) >= 2: raise FileNotFoundError(f"The file in path {virtual_path} occupies multiple mediums {[type(match).__name__ for match in matches]}")
+        if len(matches) >= 2: raise FileNotFoundError(f"The file in path {virtual_path} occupies multiple mediums {[match.name for match in matches]}")
+
+        return matches[0]
+    
+    def get_medium_by_name(self, name : str):
+        matches : List[FileStorageMediumBase] = [medium for medium in self.mediums if medium.name == name]
+
+        if len(matches) == 0: raise FileNotFoundError(f"The medium {name} cannot be found")
+        if len(matches) >= 2: raise FileNotFoundError(f"The medium {name} occurs multiple times {[match.name for match in matches]}")
 
         return matches[0]
