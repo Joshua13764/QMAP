@@ -5,7 +5,7 @@ from bennu_feature_extractor.environment_tools.fs_environment import \
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
-# from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
+from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from graphviz import Source
 from prefect import flow
 from prefect.filesystems import LocalFileSystem
@@ -77,18 +77,18 @@ def data_loader_flow() -> FSEnvironment:
     return returned_env
 
 
-# @flow()
-# def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
-#     pds_to_png_task = PDS_to_PNG(
-#         result_storage=run_dir_store,
-#         cluster_key="ocams_data_calibrated_detailed_survey",
-#         run_path=Path(r"F:\AO33_DATA2")
-#     ).get_task.submit(env)
+@flow()
+def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
+    pds_to_png_task = PDS_to_PNG(
+        result_storage=run_dir_store,
+        cluster_key="ocams_data_calibrated_detailed_survey",
+        run_path=Path(r"F:\AO33_DATA2")
+    ).get_task_no_cache.submit(env)
 
-#     converted_env = pds_to_png_task.result()
-#     return converted_env
+    converted_env = pds_to_png_task.result()
+    return converted_env
 
 
 if __name__ == "__main__":
     env = data_loader_flow()
-    # data_convert_flow(env)
+    data_convert_flow(env)

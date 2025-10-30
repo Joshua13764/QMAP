@@ -1,48 +1,42 @@
-import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from typing import List
 
-from bennu_feature_extractor.environment import Environment
-from bennu_feature_extractor.environment_tools.env_cluster_base import \
-    EnvCluster
-from bennu_feature_extractor.environment_tools.env_files.env_file_pds4_xml import \
-    EnvFilePDS4XML
-from bennu_feature_extractor.environment_tools.env_files.env_file_PNG import \
-    EnvFilePNG
+from bennu_feature_extractor.environment_tools.file_storage_adapters.png_adapter import \
+    FSPNGAdapter
+from bennu_feature_extractor.environment_tools.fs_environment import \
+    FSEnvironment
+from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
+    FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
 from tqdm import tqdm
+
+from bennu_feature_extractor_PDS.file_storage_adapters.pds4_adapter import \
+    FSPDS4Adapter
 
 
 @dataclass
 class PDS_to_PNG(StepBase):
     cluster_key: str
+    run_path: Path
     skip_converted: bool = True
-    run_path: Path | None = None
 
     def get_hash(self) -> int:
         return (self.cluster_key, self.skip_converted,
                 self.run_path).__hash__()
 
-    def under_run(self, base: Path, child: Union[Path, str]) -> Path:
-        s = str(child)
+    def run(self, env: FSEnvironment) -> FSEnvironment:
 
-        if s.startswith("\\\\?\\"):
-            s = s[4:]
+        xml_files: List[FSPathLocalDisk] = env.get_paths(
+            FSPathLocalDisk, lambda x: x.actual_path.suffix.lower() == ".xml")
 
-        s = re.sub(r"^[A-Za-z]:", "", s)
-
-        s = s.lstrip("\\/")
-
-        return base / Path(s)
-
-    def run(self, env: Environment) -> Environment:
-
-        cluster: EnvCluster | None = env.clusters.get(self.cluster_key)
-        if cluster is None:
-            raise ValueError(f"Cluster for key '{self.cluster_key}' is None.")
-
-        pds_files = [f for f in cluster.files if isinstance(f, EnvFilePDS4XML)]
+        pds_files: List[FSPathLocalDisk] = [
+            f.copy_as_new(
+                new_root_path=self.run_path,
+                new_extension=".png"
+            )
+            for f in xml_files
+        ]
 
         self.logger.info(
             f"Converting {
@@ -50,31 +44,21 @@ class PDS_to_PNG(StepBase):
                 self.cluster_key}' to PNG format..."
         )
 
-        def convert_png(file: EnvFilePDS4XML) -> None:
-            png_actual_path: Path = (
-                self.under_run(self.run_path,
-                               file.virtual_path).with_suffix(".png")
-                if self.run_path else file.actual_path.with_suffix(".png")
-            )
+        def convert_png(xml_path: FSPathLocalDisk,
+                        pds_path: FSPathLocalDisk) -> None:
 
-            if png_actual_path.exists() and self.skip_converted:
+            if pds_path.exists and self.skip_converted:
                 return
 
-            _, img = file.read()
-
-            png_file = EnvFilePNG(
-                last_modified=None,
-                virtual_path=file.virtual_path.with_suffix(".png"),
-                actual_path=png_actual_path,
-                logger=file.logger,
-                overwrite_allowed=False
-            )
-
-            png_file.write(img)
+            _, img = FSEnvironment.load(xml_path, FSPDS4Adapter())
+            FSEnvironment.save(img, pds_path, FSPNGAdapter())
 
         # Progress bar over sequential conversion
-        for f in tqdm(pds_files, desc="Converting PDS4 XML → PNG",
-                      unit="file"):
-            convert_png(f)
+        for xml, pds in tqdm(zip(xml_files, pds_files), desc="Converting PDS4 XML → PNG",
+                             unit="file"):
+            convert_png(xml, pds)
 
-        return env
+        return FSEnvironment.merge([
+            env,
+            FSEnvironment(paths=frozenset(pds_files))
+        ])

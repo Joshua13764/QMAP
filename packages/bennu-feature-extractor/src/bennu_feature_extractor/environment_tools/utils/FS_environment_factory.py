@@ -30,4 +30,4 @@ class FSEnvironmentFactory():
             f"Created {
                 len(fs_paths)} FSPaths from found files")
 
-        return FSEnvironment(paths=set(fs_paths))
+        return FSEnvironment(paths=frozenset(fs_paths))

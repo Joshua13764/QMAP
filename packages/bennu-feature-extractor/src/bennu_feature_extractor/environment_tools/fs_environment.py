@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Set
+from typing import Callable, List, Set
 
 import attr
 
@@ -9,24 +9,30 @@ from bennu_feature_extractor.environment_tools.base_classes.fs_path_base import 
     FSPathBase
 
 
-@attr.define()
+@attr.define(frozen=True, slots=True)
 class FSEnvironment():
-    paths: Set[FSPathBase]
+    paths: frozenset[FSPathBase]
 
-    def save[ObjType, PathType: FSPathBase](
-            self, obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> None:
-        self.paths.add(path)
-        adapter.write(obj, path)
-
-    def load[ObjType, PathType: FSPathBase](
-            self, path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> ObjType:
-        return adapter.read(path)
+    def get_paths[T: FSPathBase](self, cls: type[T], condition: Callable[[
+                                 T], bool] = lambda x: True) -> List[T]:
+        return [f for f in self.paths if isinstance(f, cls) and condition(f)]
 
     @classmethod
     def empty(cls) -> 'FSEnvironment':
-        return cls(paths=set())
+        return cls(paths=frozenset())
+
+    @staticmethod
+    def save[ObjType, PathType: FSPathBase](
+            obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> None:
+        adapter.write(obj, path)
+
+    @staticmethod
+    def load[ObjType, PathType: FSPathBase](
+            path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> ObjType:
+        return adapter.read(path)
 
     @staticmethod
     def merge(envs: List['FSEnvironment']) -> 'FSEnvironment':
-        merged_paths: Set[FSPathBase] = {p for e in envs for p in e.paths}
+        merged_paths: frozenset[FSPathBase] = frozenset({
+            p for e in envs for p in e.paths})
         return FSEnvironment(paths=merged_paths)
