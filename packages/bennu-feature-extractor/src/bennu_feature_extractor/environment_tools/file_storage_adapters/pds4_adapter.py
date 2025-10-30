@@ -18,7 +18,7 @@ class ArrayStructure(Protocol):
 
 StructureList = Sequence[ArrayStructure]
 
-class PDS4Adapter(FileStorageAdapterBase):
+class PDS4Adapter(FileStorageAdapterBase[Tuple[StructureList, NDArray[Any]]]):
 
     def save(self, obj: Tuple[StructureList, NDArray[Any]], virtual_path: Path, persist: FileStoragePersistBase, medium: FileStorageMediumBase) -> None:
         match medium:

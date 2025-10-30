@@ -8,7 +8,7 @@ from bennu_feature_extractor.environment_tools.file_storage_environment import F
 from bennu_feature_extractor.environment_tools.file_storage_mediums.local_disk import LocalDisk
 from bennu_feature_extractor.environment_tools.file_storage_mediums.runtime_memory import RuntimeMemory
 
-class PickleAdapter(FileStorageAdapterBase):
+class PickleAdapter(FileStorageAdapterBase[Any]):
 
     def save(self, obj: Any, virtual_path: Path, persist: FileStoragePersistBase, medium: FileStorageMediumBase) -> None:
         match medium:

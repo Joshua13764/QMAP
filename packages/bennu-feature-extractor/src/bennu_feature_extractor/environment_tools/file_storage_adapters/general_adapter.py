@@ -6,7 +6,7 @@ from bennu_feature_extractor.environment_tools.base_classes.file_storage_persist
 from bennu_feature_extractor.environment_tools.file_storage_environment import FileStorageEnvironment
 from bennu_feature_extractor.environment_tools.file_storage_mediums.runtime_memory import RuntimeMemory
 
-class GeneralAdapter(FileStorageAdapterBase):
+class GeneralAdapter(FileStorageAdapterBase[Any]):
 
     def save(self, obj: Any, virtual_path: Path, persist: FileStoragePersistBase, medium: FileStorageMediumBase) -> None:
         match medium:
