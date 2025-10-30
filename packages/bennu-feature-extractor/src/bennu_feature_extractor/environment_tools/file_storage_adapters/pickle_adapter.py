@@ -1,6 +1,6 @@
 from typing import Any
 import pickle
-from bennu_feature_extractor.environment_tools.base_classes.file_storage_adapter_base import FSAdapterBase
+from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import FSAdapterBase
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import FSPathLocalDisk
 
 class FSPickleAdapter(FSAdapterBase[Any, FSPathLocalDisk]):

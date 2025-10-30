@@ -2,7 +2,7 @@ from typing import Dict
 from pathlib import Path
 
 import attr
-from bennu_feature_extractor.environment_tools.base_classes.file_storage_medium_base import FileStorageMediumBase
+from bennu_feature_extractor.environment_tools.base_classes.fs_medium_base import FileStorageMediumBase
 
 @attr.define()
 class LocalDiskFile():

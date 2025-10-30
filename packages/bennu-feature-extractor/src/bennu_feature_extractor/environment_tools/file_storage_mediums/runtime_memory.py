@@ -1,9 +1,9 @@
 from pathlib import Path
 import attr
-from bennu_feature_extractor.environment_tools.base_classes.file_storage_medium_base import FileStorageMediumBase
+from bennu_feature_extractor.environment_tools.base_classes.fs_medium_base import FileStorageMediumBase
 from typing import Any, Dict
 
-from bennu_feature_extractor.environment_tools.base_classes.file_storage_persist_base import FileStoragePersistBase
+from bennu_feature_extractor.environment_tools.base_classes.fs_persist_base import FileStoragePersistBase
 
 @attr.define(slots=True)
 class MemoryBlock():

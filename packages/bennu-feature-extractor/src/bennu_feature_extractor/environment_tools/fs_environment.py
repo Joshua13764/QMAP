@@ -1,6 +1,6 @@
 from typing import Set
 import attr
-from bennu_feature_extractor.environment_tools.base_classes.file_storage_adapter_base import FSAdapterBase
+from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import FSAdapterBase
 from bennu_feature_extractor.environment_tools.file_storage_persists.runtime_only_persist import 
 from bennu_feature_extractor.environment_tools.base_classes.fs_path_base import FSPathBase
 
