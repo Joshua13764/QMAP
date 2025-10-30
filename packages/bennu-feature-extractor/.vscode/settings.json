@@ -7,5 +7,20 @@
   "python.analysis.diagnosticSeverityOverrides": {
     "reportMissingTypeStubs": "none"
   },
-  "python.analysis.autoImportCompletions": true
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.completeFunctionParens": true,
+  "editor.inlineSuggest.enabled": true,
+  "editor.suggestSelection": "recentlyUsedByPrefix",
+  "editor.tabCompletion": "on",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.autopep8",
+    "editor.formatOnSave": true
+  },
+  "autopep8.args": [
+    "--max-line-length", "79",
+    "--aggressive"
+  ]
 }

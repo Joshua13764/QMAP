@@ -1,16 +1,13 @@
-from typing import Any, Mapping, Sequence, Protocol, Tuple
-from pathlib import Path
-import pds4_tools
-from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import FSAdapterBase
-from bennu_feature_extractor.environment_tools.base_classes.fs_medium_base import FileStorageMediumBase
-from bennu_feature_extractor.environment_tools.base_classes.fs_persist_base import FileStoragePersistBase
-from bennu_feature_extractor.environment_tools.fs_environment import FileStorageEnvironment
-from bennu_feature_extractor.environment_tools.file_storage_mediums.local_disk import LocalDisk
-from bennu_feature_extractor.environment_tools.file_storage_mediums.runtime_memory import RuntimeMemory
+from typing import Any, Mapping, Protocol, Sequence, Tuple
+
 import numpy as np
+import pds4_tools
+from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
+    FSAdapterBase
+from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
+    FSPathLocalDisk
 from numpy.typing import NDArray
 
-from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import FSPathLocalDisk
 
 class ArrayStructure(Protocol):
     data: NDArray[Any]
@@ -18,26 +15,36 @@ class ArrayStructure(Protocol):
 
     def as_masked(self) -> "ArrayStructure": ...
 
+
 StructureList = Sequence[ArrayStructure]
 
-class FSPDS4Adapter(FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLocalDisk]):
 
-    def read(self, path: FSPathLocalDisk) -> Tuple[StructureList, NDArray[Any]]:
-        sl : StructureList = pds4_tools.read(path.actual_path.as_posix(), lazy_load=True)
-        img : NDArray[Any] = FSPDS4Adapter._to_viewable(sl)
+class FSPDS4Adapter(
+        FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLocalDisk]):
+
+    def read(
+            self, path: FSPathLocalDisk) -> Tuple[StructureList, NDArray[Any]]:
+        sl: StructureList = pds4_tools.read(
+            path.actual_path.as_posix(), lazy_load=True)
+        img: NDArray[Any] = FSPDS4Adapter._to_viewable(sl)
         return sl, img
 
-    def write(self, obj: Tuple[StructureList, NDArray[Any]], path: FSPathLocalDisk) -> None:
-        raise NotImplementedError()    
+    def write(self, obj: Tuple[StructureList,
+              NDArray[Any]], path: FSPathLocalDisk) -> None:
+        raise NotImplementedError()
 
     @staticmethod
     def _to_viewable(sl: StructureList) -> NDArray[Any]:
         # 1) pick first Array_* with NumPy data
-        s = next((x for x in sl if hasattr(x, "data") and isinstance(x.data, np.ndarray)), None)
+        s = next(
+            (x for x in sl if hasattr(
+                x, "data") and isinstance(
+                x.data, np.ndarray)), None)
         if s is None:
             raise ValueError("No Array_* structure with NumPy data found.")
 
-        # 2) use masked data if available (fill masked with 0), keep original dtype/range
+        # 2) use masked data if available (fill masked with 0), keep original
+        # dtype/range
         data = getattr(s.as_masked(), "data", s.data)
         if np.ma.isMaskedArray(data):
             data = data.filled(0)
@@ -46,7 +53,8 @@ class FSPDS4Adapter(FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLoca
         # 3) reorder axes to (Line, Sample, *rest) if names exist
         aa = getattr(s, "meta_data", {}).get("Axis_Array")
         if aa:
-            names = [aa["axis_name"]] if isinstance(aa, dict) else [d["axis_name"] for d in aa]
+            names = [aa["axis_name"]] if isinstance(
+                aa, dict) else [d["axis_name"] for d in aa]
             if "Line" in names and "Sample" in names:
                 vi, hi = names.index("Line"), names.index("Sample")
                 if img.ndim == 2:
@@ -56,7 +64,7 @@ class FSPDS4Adapter(FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLoca
                     img = np.transpose(img, (vi, hi, *rest))
 
         return img
-    
+
     # def show(self) -> None:
     #     _, img = self.read()  # already squeezed + (Line, Sample, ...)
     #     disp = img
@@ -73,4 +81,3 @@ class FSPDS4Adapter(FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLoca
     #     cv2.imshow("PDS4 Image", np.ascontiguousarray(disp))
     #     cv2.waitKey(0)
     #     cv2.destroyAllWindows()
-
