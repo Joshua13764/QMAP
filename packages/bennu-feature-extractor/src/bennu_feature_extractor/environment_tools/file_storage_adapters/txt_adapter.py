@@ -11,5 +11,6 @@ class FSTXTAdapter(FSAdapterBase[str, FSPathLocalDisk]):
             return f.read().decode('utf-8')
 
     def write(self, obj: str, path: FSPathLocalDisk) -> None:
+        path.make_directory()
         with path.actual_path.open("wb") as f:
             f.write(obj.__repr__().encode('utf-8'))

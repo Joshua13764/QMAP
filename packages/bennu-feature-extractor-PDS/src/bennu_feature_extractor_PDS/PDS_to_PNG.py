@@ -1,3 +1,7 @@
+import logging
+import os
+import warnings
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
@@ -9,7 +13,8 @@ from bennu_feature_extractor.environment_tools.fs_environment import \
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
-from tqdm import tqdm
+from joblib import delayed
+from tqdm_joblib import ParallelPbar
 
 from bennu_feature_extractor_PDS.file_storage_adapters.pds4_adapter import \
     FSPDS4Adapter
@@ -38,25 +43,40 @@ class PDS_to_PNG(StepBase):
             for f in xml_files
         ]
 
-        self.logger.info(
-            f"Converting {
-                len(pds_files)} PDS4 XML files in cluster '{
-                self.cluster_key}' to PNG format..."
-        )
+        def _quiet_call(fn, *args, **kwargs):
+            # Silence prints, stderr, warnings, and logging inside the worker
+            with open(os.devnull, "w") as devnull, \
+                    redirect_stdout(devnull), \
+                    redirect_stderr(devnull), \
+                    warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                logging.disable(logging.CRITICAL)
+                try:
+                    return fn(*args, **kwargs)
+                finally:
+                    logging.disable(logging.NOTSET)
 
         def convert_png(xml_path: FSPathLocalDisk,
                         pds_path: FSPathLocalDisk) -> None:
 
-            if pds_path.exists and self.skip_converted:
-                return
-
             _, img = FSEnvironment.load(xml_path, FSPDS4Adapter())
             FSEnvironment.save(img, pds_path, FSPNGAdapter())
 
-        # Progress bar over sequential conversion
-        for xml, pds in tqdm(zip(xml_files, pds_files), desc="Converting PDS4 XML → PNG",
-                             unit="file"):
-            convert_png(xml, pds)
+        pairs = [
+            (xml, pds)
+            for xml, pds in zip(xml_files, pds_files)
+            if not (pds.exists and self.skip_converted)
+        ]
+
+        self.logger.info(
+            f"Converting {
+                len(pairs)} PDS4 XML files in cluster '{
+                self.cluster_key}' to PNG format..."
+        )
+
+        ParallelPbar(desc="Converting PDS4 to PNG", unit="img")(n_jobs=-1, verbose=0, prefer="processes")(
+            delayed(_quiet_call)(convert_png, xml, pds) for xml, pds in pairs
+        )
 
         return FSEnvironment.merge([
             env,

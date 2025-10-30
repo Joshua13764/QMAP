@@ -14,6 +14,7 @@ bennu-feature-extractor-PDS = { path = "../packages/bennu-feature-extractor-PDS"
 graphviz = "^0.21"
 pds4-tools = "^1.4"
 attrs = "^25.4.0"
+tqdm-joblib = "^0.0.5"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]

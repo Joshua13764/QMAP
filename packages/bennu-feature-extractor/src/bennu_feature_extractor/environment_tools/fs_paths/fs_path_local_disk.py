@@ -18,6 +18,9 @@ class FSPathLocalDisk(FSPathBase):
     def exists(self) -> bool:
         return self.actual_path.exists()
 
+    def make_directory(self) -> None:
+        self.actual_path.parent.mkdir(parents=True, exist_ok=True)
+
     def copy_as_new(self, new_root_path: Path,
                     new_extension: str) -> 'FSPathLocalDisk':
         return FSPathLocalDisk(

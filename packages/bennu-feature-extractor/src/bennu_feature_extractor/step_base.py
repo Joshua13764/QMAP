@@ -29,7 +29,7 @@ class StepBase(ABC):
 
     @property
     def get_task_no_cache(self):
-        @task
+        @task()
         def _step_task_no_cache(env: FSEnvironment) -> FSEnvironment:
             return self.run(env)
 

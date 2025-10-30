@@ -14,5 +14,6 @@ class FSPickleAdapter(FSAdapterBase[Any, FSPathLocalDisk]):
             return pickle.load(f)
 
     def write(self, obj: Any, path: FSPathLocalDisk) -> None:
+        path.make_directory()
         with path.actual_path.open("wb") as f:
             pickle.dump(obj, f)
