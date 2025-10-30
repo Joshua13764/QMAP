@@ -6,4 +6,4 @@ import attr
 
 @attr.define(frozen=True, slots=True)
 class FSPathBase(ABC):
-    path: Tuple[str]
+    path: Tuple[str, ...]
