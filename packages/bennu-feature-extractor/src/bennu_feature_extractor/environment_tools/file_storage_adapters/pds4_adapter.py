@@ -1,14 +1,16 @@
 from typing import Any, Mapping, Sequence, Protocol, Tuple
 from pathlib import Path
 import pds4_tools
-from bennu_feature_extractor.environment_tools.base_classes.file_storage_adapter_base import FileStorageAdapterBase
+from bennu_feature_extractor.environment_tools.base_classes.file_storage_adapter_base import FSAdapterBase
 from bennu_feature_extractor.environment_tools.base_classes.file_storage_medium_base import FileStorageMediumBase
 from bennu_feature_extractor.environment_tools.base_classes.file_storage_persist_base import FileStoragePersistBase
-from bennu_feature_extractor.environment_tools.file_storage_environment import FileStorageEnvironment
+from bennu_feature_extractor.environment_tools.fs_environment import FileStorageEnvironment
 from bennu_feature_extractor.environment_tools.file_storage_mediums.local_disk import LocalDisk
 from bennu_feature_extractor.environment_tools.file_storage_mediums.runtime_memory import RuntimeMemory
 import numpy as np
 from numpy.typing import NDArray
+
+from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import FSPathLocalDisk
 
 class ArrayStructure(Protocol):
     data: NDArray[Any]
@@ -18,26 +20,15 @@ class ArrayStructure(Protocol):
 
 StructureList = Sequence[ArrayStructure]
 
-class PDS4Adapter(FileStorageAdapterBase[Tuple[StructureList, NDArray[Any]]]):
+class FSPDS4Adapter(FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLocalDisk]):
 
-    def save(self, obj: Tuple[StructureList, NDArray[Any]], virtual_path: Path, persist: FileStoragePersistBase, medium: FileStorageMediumBase) -> None:
-        match medium:
-            case _:
-                raise NotImplementedError(f"The adapter {type(self).__name__} has no method to handel saving to the medium {type(medium).__name__}")
-                
-    
-    def load(self, virtual_path: Path, env : FileStorageEnvironment) -> Tuple[StructureList, NDArray[Any]]:
-        match env.get_medium(virtual_path):
-            case RuntimeMemory() as rm:
-                return rm.load(virtual_path)
-            
-            case LocalDisk() as ld:
-                sl : StructureList = pds4_tools.read(ld.get_file_path_to_write(virtual_path).as_posix(), lazy_load=True)
-                img : NDArray[Any] = PDS4Adapter._to_viewable(sl)
-                return sl, img
+    def read(self, path: FSPathLocalDisk) -> Tuple[StructureList, NDArray[Any]]:
+        sl : StructureList = pds4_tools.read(path.actual_path.as_posix(), lazy_load=True)
+        img : NDArray[Any] = FSPDS4Adapter._to_viewable(sl)
+        return sl, img
 
-            case _ as medium:
-                raise NotImplementedError(f"The adapter {type(self).__name__} has no method to handel loading to the medium {type(medium).__name__}")
+    def write(self, obj: Tuple[StructureList, NDArray[Any]], path: FSPathLocalDisk) -> None:
+        raise NotImplementedError()    
 
     @staticmethod
     def _to_viewable(sl: StructureList) -> NDArray[Any]:
