@@ -1,24 +1,28 @@
-from pathlib import Path
-from bennu_feature_extractor.step_base import StepBase
-from bennu_feature_extractor.environment import Environment
-
-import os
 import json
 import math
+import multiprocessing
+import os
 import shutil
 import zipfile
-import multiprocessing
 from dataclasses import dataclass, field
-from urllib.parse import urlparse
-from typing import Any, Set, Dict, Optional
-from joblib import Parallel, delayed
+from pathlib import Path
 from threading import Lock
-from tqdm import tqdm
-from prefect import task
+from typing import Any, Dict, Optional, Set
+from urllib.parse import urlparse
 
 import requests
+from joblib import Parallel, delayed
+from prefect import task
 from requests.adapters import HTTPAdapter
+from tqdm import tqdm
 from urllib3.util.retry import Retry
+
+from bennu_feature_extractor.environment_tools.fs_environment import \
+    FSEnvironment
+from bennu_feature_extractor.environment_tools.utils.FS_environment_factory import \
+    FSEnvironmentFactory
+from bennu_feature_extractor.step_base import StepBase
+
 
 @dataclass
 class ArchiveDownloadBase(StepBase):
@@ -34,24 +38,31 @@ class ArchiveDownloadBase(StepBase):
     """
     DownloadPath: str
     Url: str
-    
-    _logger: Any
 
     # Behavior toggles / options
-    BaseUrl: str = ""                      # If non-empty, enforce Url.startswith(BaseUrl)
+    # If non-empty, enforce Url.startswith(BaseUrl)
+    BaseUrl: str = ""
     AllowChunking: bool = True             # If False, force single-stream download
-    KeepArchive: bool = False              # If True, leave the .zip on disk after extraction
+    # If True, leave the .zip on disk after extraction
+    KeepArchive: bool = False
     Extract: bool = True                   # If True, extract as a zip
-    Resume: bool = True 
-    virtual_path_root: Path = Path("/data") 
+    Resume: bool = True
+    virtual_path_root: Path = Path("/data")
 
     # Performance / networking
-    Workers: int = field(default_factory=lambda: max(1, multiprocessing.cpu_count() - 2))
+    Workers: int = field(
+        default_factory=lambda: max(
+            1, multiprocessing.cpu_count() - 2))
     ChunkSizeLimitMB: int = 50             # Cap per-chunk size
     TimeoutSeconds: int = 60               # Request timeout per chunk/stream
 
     # Internal
-    _session: Optional[requests.Session] = field(init=False, repr=False, default=None)
+    _session: Optional[requests.Session] = field(
+        init=False, repr=False, default=None)
+
+    def get_hash(self) -> int:
+        return (self.DownloadPath, self.Url, self.BaseUrl, self.KeepArchive,
+                self.Extract, self.virtual_path_root).__hash__()
 
     @property
     def name(self) -> str:
@@ -72,7 +83,7 @@ class ArchiveDownloadBase(StepBase):
 
     # ------------------- Public entrypoint -------------------
 
-    def run(self, env: Environment) -> Environment:
+    def run(self, env: FSEnvironment) -> FSEnvironment:
         if self.BaseUrl and not self.Url.startswith(self.BaseUrl):
             raise ValueError(f"URL must start with {self.BaseUrl}")
 
@@ -82,7 +93,8 @@ class ArchiveDownloadBase(StepBase):
 
             # Skip extraction if folder already exists
             if os.path.exists(extract_dir):
-                self._logger.info(f"Already extracted: {extract_dir}, skipping extraction.")
+                self.logger.info(
+                    f"Already extracted: {extract_dir}, skipping extraction.")
             else:
                 self._extract_zip(zip_path, extract_dir)
 
@@ -90,14 +102,13 @@ class ArchiveDownloadBase(StepBase):
                 try:
                     os.remove(zip_path)
                 except Exception:
-                    self._logger.warning(f"Could not remove archive {zip_path}")
+                    self.logger.warning(f"Could not remove archive {zip_path}")
 
-        env.add_cluster_from_folder(
-            folder_path=Path(extract_dir),
-            virtual_path=self.virtual_path_root / Path(os.path.basename(extract_dir))
-            )
-
-        return env
+        return FSEnvironment.merge([
+            env,
+            FSEnvironmentFactory.from_folder(
+                Path(extract_dir), extensions=".xml")
+        ])
 
     # ------------------- Download logic -------------------
 
@@ -106,22 +117,31 @@ class ArchiveDownloadBase(StepBase):
         file_name = os.path.basename(parsed.path) or "download.zip"
         file_path = os.path.join(self.DownloadPath, file_name)
         extract_dir = self._get_extract_dir(file_path)
-        resume_file = os.path.join(self.DownloadPath, f"{file_name}.resume.json")
+        resume_file = os.path.join(
+            self.DownloadPath,
+            f"{file_name}.resume.json")
 
         # If already extracted, skip download entirely
         if self.Extract and os.path.exists(extract_dir):
-            self._logger.info(f"Extraction folder exists ({extract_dir}) — skipping download.")
+            self.logger.info(
+                f"Extraction folder exists ({extract_dir}) — skipping download.")
             return file_path
 
         # HEAD request for size + range support
-        self._logger.info(f"Fetching headers for: {self.Url}")
-        head = self._session.head(self.Url, allow_redirects=True, timeout=self.TimeoutSeconds)
+        self.logger.info(f"Fetching headers for: {self.Url}")
+        head = self._session.head(
+            self.Url,
+            allow_redirects=True,
+            timeout=self.TimeoutSeconds)
         total_size = int(head.headers.get("Content-Length", 0))
-        supports_range = "bytes" in head.headers.get("Accept-Ranges", "").lower()
+        supports_range = "bytes" in head.headers.get(
+            "Accept-Ranges", "").lower()
 
         if total_size == 0:
-            # Fall back to streaming without known size (still show a spinner-like bar)
-            self._logger.warning("Unknown file size from server; proceeding with single-stream download.")
+            # Fall back to streaming without known size (still show a
+            # spinner-like bar)
+            self.logger.warning(
+                "Unknown file size from server; proceeding with single-stream download.")
             self._download_single_stream(file_path, total_size=0)
             return file_path
 
@@ -130,12 +150,14 @@ class ArchiveDownloadBase(StepBase):
             self._download_in_chunks(file_path, total_size, resume_file)
         else:
             if self.AllowChunking and not supports_range:
-                self._logger.info("Server does not support Range requests; falling back to single-stream.")
+                self.logger.info(
+                    "Server does not support Range requests; falling back to single-stream.")
             elif not self.AllowChunking:
-                self._logger.info("AllowChunking=False; using single-stream download.")
+                self.logger.info(
+                    "AllowChunking=False; using single-stream download.")
             self._download_single_stream(file_path, total_size)
 
-        self._logger.info(f"✅ Download complete → {file_path}")
+        self.logger.info(f"✅ Download complete → {file_path}")
         return file_path
 
     def _download_single_stream(self, file_path: str, total_size: int):
@@ -144,7 +166,8 @@ class ArchiveDownloadBase(StepBase):
         try:
             with self._session.get(self.Url, stream=True, timeout=self.TimeoutSeconds) as r:
                 r.raise_for_status()
-                # tqdm works with unknown totals; if total_size=0, it will behave like an indeterminate bar
+                # tqdm works with unknown totals; if total_size=0, it will
+                # behave like an indeterminate bar
                 with tqdm(total=total_size if total_size > 0 else None,
                           unit="B", unit_scale=True, desc=desc) as bar, open(tmp_path, "wb") as f:
                     for chunk in r.iter_content(chunk_size=16 * 1024 * 1024):
@@ -154,7 +177,7 @@ class ArchiveDownloadBase(StepBase):
                                 bar.update(len(chunk))
             os.replace(tmp_path, file_path)
         except Exception as exc:
-            self._logger.error(f"Single-stream download failed: {exc}")
+            self.logger.error(f"Single-stream download failed: {exc}")
             try:
                 if os.path.exists(tmp_path):
                     os.remove(tmp_path)
@@ -162,7 +185,8 @@ class ArchiveDownloadBase(StepBase):
                 pass
             raise
 
-    def _download_in_chunks(self, file_path: str, total_size: int, resume_file: str):
+    def _download_in_chunks(self, file_path: str,
+                            total_size: int, resume_file: str):
         # Build ranges
         n = self.Workers
         max_chunk = self.ChunkSizeLimitMB * 1024 * 1024
@@ -182,8 +206,9 @@ class ArchiveDownloadBase(StepBase):
                     resume_meta = json.load(f)
                     completed = set(resume_meta.get("completed", []))
             except Exception:
-                self._logger.warning("Corrupt resume file — resetting cache.")
-                self._invalidate_cache(file_path, resume_file, self._get_extract_dir(file_path))
+                self.logger.warning("Corrupt resume file — resetting cache.")
+                self._invalidate_cache(
+                    file_path, resume_file, self._get_extract_dir(file_path))
                 completed.clear()
 
         valid_cache = (
@@ -195,18 +220,28 @@ class ArchiveDownloadBase(StepBase):
         )
 
         if not valid_cache and os.path.exists(resume_file):
-            self._logger.warning("Cache invalid — settings changed. Clearing old partial files.")
-            self._invalidate_cache(file_path, resume_file, self._get_extract_dir(file_path))
+            self.logger.warning(
+                "Cache invalid — settings changed. Clearing old partial files.")
+            self._invalidate_cache(
+                file_path,
+                resume_file,
+                self._get_extract_dir(file_path))
             completed.clear()
 
-        self._logger.info(
-            f"Downloading with {n} workers, chunk size = {chunk_size / (1024**2):.2f} MB, total chunks = {len(ranges)}, total size = {total_size / (1024**3):.2f} GB"
+        self.logger.info(
+            f"Downloading with {n} workers, chunk size = {chunk_size /
+                                                          (1024**2):.2f} MB, total chunks = {len(ranges)}, total size = {total_size /
+                                                                                                                         (1024**3):.2f} GB"
         )
 
-        bar = tqdm(total=len(ranges), desc="Downloading (chunked)", initial=len(completed))
+        bar = tqdm(
+            total=len(ranges),
+            desc="Downloading (chunked)",
+            initial=len(completed))
         lock = Lock()
 
-        def _download_chunk(idx: int, start: int, end: int, max_retries: int = 5):
+        def _download_chunk(idx: int, start: int, end: int,
+                            max_retries: int = 5):
             if idx in completed:
                 with lock:
                     bar.update(1)
@@ -221,7 +256,8 @@ class ArchiveDownloadBase(StepBase):
                     with self._session.get(self.Url, headers=headers, stream=True, timeout=self.TimeoutSeconds) as r:
                         r.raise_for_status()
                         with open(part_path, "wb") as f:
-                            for chunk in r.iter_content(chunk_size=16 * 1024 * 1024):
+                            for chunk in r.iter_content(
+                                    chunk_size=16 * 1024 * 1024):
                                 if chunk:
                                     f.write(chunk)
 
@@ -244,9 +280,11 @@ class ArchiveDownloadBase(StepBase):
                     return
                 except (requests.exceptions.RequestException, requests.exceptions.ChunkedEncodingError) as e:
                     attempt += 1
-                    self._logger.warning(f"Chunk {idx} failed (attempt {attempt}/{max_retries}): {e}")
+                    self.logger.warning(
+                        f"Chunk {idx} failed (attempt {attempt}/{max_retries}): {e}")
                     if attempt >= max_retries:
-                        self._logger.error(f"Chunk {idx} failed after {max_retries} attempts.")
+                        self.logger.error(
+                            f"Chunk {idx} failed after {max_retries} attempts.")
                         raise
 
         # Parallel downloads for incomplete chunks
@@ -264,7 +302,7 @@ class ArchiveDownloadBase(StepBase):
         return os.path.join(self.DownloadPath, base_name)
 
     def _extract_zip(self, zip_path: str, extract_dir: str):
-        self._logger.info(f"Extracting {zip_path} → {extract_dir}")
+        self.logger.info(f"Extracting {zip_path} → {extract_dir}")
         os.makedirs(extract_dir, exist_ok=True)
         with zipfile.ZipFile(zip_path, "r") as zf:
             members = zf.infolist()
@@ -272,7 +310,7 @@ class ArchiveDownloadBase(StepBase):
                 for m in members:
                     zf.extract(m, extract_dir)
                     bar.update(1)
-        self._logger.info(f"✅ Extraction complete: {extract_dir}")
+        self.logger.info(f"Extraction complete: {extract_dir}")
 
     @staticmethod
     def _combine_parts(file_path: str, n_parts: int, resume_file: str):

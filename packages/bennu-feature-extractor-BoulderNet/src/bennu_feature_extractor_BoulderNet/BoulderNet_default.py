@@ -89,4 +89,4 @@ class BoulderNetDefault(venvBase):
 
     def get_venv_client(self) -> VenvClientBase:
         # self.start_venv_server()
-        return BoulderNetVenvClient(self._logger, self.server_config)
+        return BoulderNetVenvClient(self.logger, self.server_config)

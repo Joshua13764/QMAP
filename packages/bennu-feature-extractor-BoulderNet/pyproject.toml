@@ -7,7 +7,7 @@ name = "bennu-feature-extractor-BoulderNet"
 version = "0.1.0"
 description = "Foo add-on step for bennu-feature-extractor"
 readme = "README.md"
-requires-python = "<4.0,>=3.9"
+requires-python = ">=3.11,<4.0"
 dependencies = [
   "prefect>=2.14",
   "bennu-feature-extractor>=0.1.0",

@@ -1,22 +1,44 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
-from prefect import task
 
-from .environment import Environment
+from prefect import get_run_logger, task
+from prefect.results import ResultStorage
+from prefect.serializers import PickleSerializer
+
+from bennu_feature_extractor.environment_tools.fs_environment import \
+    FSEnvironment
+
 
 @dataclass
 class StepBase(ABC):
-    _logger: Logger
+    result_storage: ResultStorage
 
     @property
-    def get_task(self):
-        @task
-        def _step_task(env: Environment) -> Environment:
+    def logger(self) -> Logger:
+        return get_run_logger()
+
+    # @property
+    # def get_task(self):
+
+    #     @task(result_storage=self.result_storage, persist_result=True)
+    #     def _step_task(env: FSEnvironment) -> FSEnvironment:
+    #         return self.run(env)
+
+    #     return _step_task
+
+    @property
+    def get_task_no_cache(self):
+        @task()
+        def _step_task_no_cache(env: FSEnvironment) -> FSEnvironment:
             return self.run(env)
 
-        return _step_task
+        return _step_task_no_cache
 
     @abstractmethod
-    def run(self, env: Environment) -> Environment:
+    def get_hash(self) -> int:
+        ...
+
+    @abstractmethod
+    def run(self, env: FSEnvironment) -> FSEnvironment:
         ...
