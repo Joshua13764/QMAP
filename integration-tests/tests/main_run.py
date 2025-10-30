@@ -38,7 +38,7 @@ def data_loader_flow() -> FSEnvironment:
             run_dir_store,
             dataDownloadPath.as_posix(),
             Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-        ).get_task.submit(FSEnvironment.empty())
+        ).get_task_no_cache.submit(FSEnvironment.empty())
     )
 
     tasks += [
@@ -46,7 +46,7 @@ def data_loader_flow() -> FSEnvironment:
             run_dir_store,
             dataDownloadPath.as_posix(),
             Url=url
-        ).get_task.submit(FSEnvironment.empty())
+        ).get_task_no_cache.submit(FSEnvironment.empty())
         for url in urls_to_download
     ]
 

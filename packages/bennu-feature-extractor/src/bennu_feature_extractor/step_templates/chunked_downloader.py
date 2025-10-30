@@ -104,10 +104,11 @@ class ArchiveDownloadBase(StepBase):
                 except Exception:
                     self.logger.warning(f"Could not remove archive {zip_path}")
 
-        return FSEnvironment.merge(
+        return FSEnvironment.merge([
             env,
-            FSEnvironmentFactory.from_folder(Path(extract_dir))
-        )
+            FSEnvironmentFactory.from_folder(
+                Path(extract_dir), extensions=".xml")
+        ])
 
     # ------------------- Download logic -------------------
 
