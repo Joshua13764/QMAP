@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
-from prefect import task
+
+from prefect import get_run_logger, task
 from prefect.results import ResultStorage
 from prefect.serializers import PickleSerializer
-from prefect import get_run_logger
-from bennu_feature_extractor.environment import Environment
+
+from bennu_feature_extractor.environment_tools.fs_environment import \
+    FSEnvironment
+
 
 @dataclass
 class StepBase(ABC):
@@ -21,20 +24,20 @@ class StepBase(ABC):
         @task(
             result_storage=self.result_storage,
             result_serializer=PickleSerializer(),
-            cache_key_fn = lambda context, cfg : str((cfg["env"].get_cache_key(), self.get_hash()).__hash__()),
+            cache_key_fn=lambda context, cfg: str(
+                (cfg["env"].get_cache_key(), self.get_hash()).__hash__()),
         )
-
-        def _step_task(env: Environment) -> Environment:
+        def _step_task(env: FSEnvironment) -> FSEnvironment:
             return self.run(env)
 
         return _step_task
-    
+
     @property
     def get_task_no_cache(self):
         @task
-        def _step_task_no_cache(env: Environment) -> Environment:
+        def _step_task_no_cache(env: FSEnvironment) -> FSEnvironment:
             return self.run(env)
-        
+
         return _step_task_no_cache
 
     @abstractmethod
@@ -42,9 +45,5 @@ class StepBase(ABC):
         ...
 
     @abstractmethod
-    def run(self, env: Environment) -> None:
+    def run(self, env: FSEnvironment) -> FSEnvironment:
         ...
-
-    
-
-    # Declaring read and writes / order

@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from bennu_feature_extractor.environment import Environment
+from bennu_feature_extractor.environment_tools.fs_environment import \
+    FSEnvironment
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
@@ -29,15 +30,15 @@ urls_to_download = [
 
 
 @flow(task_runner=ThreadPoolTaskRunner(max_workers=20))
-def data_loader_flow() -> Environment:
-    tasks: list[PrefectFuture[Environment]] = []
+def data_loader_flow() -> FSEnvironment:
+    tasks: list[PrefectFuture[FSEnvironment]] = []
 
     tasks.append(
         BestModelDownloader(
             run_dir_store,
             dataDownloadPath.as_posix(),
             Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-        ).get_task.submit(Environment())
+        ).get_task.submit(FSEnvironment.empty())
     )
 
     tasks += [
@@ -45,14 +46,14 @@ def data_loader_flow() -> Environment:
             run_dir_store,
             dataDownloadPath.as_posix(),
             Url=url
-        ).get_task.submit(Environment())
+        ).get_task.submit(FSEnvironment.empty())
         for url in urls_to_download
     ]
 
     wait(tasks)
-    envs: list[Environment] = [f.result() for f in tasks]
+    envs: list[FSEnvironment] = [f.result() for f in tasks]
 
-    returned_env: Environment = Environment.merge_environments(envs)
+    returned_env: FSEnvironment = FSEnvironment.merge(envs)
 
     # labels = ["BestModelDownloader: best_model.zip"] + [
     #     f"PDSDownloader: {Path(u).name}" for u in urls_to_download
@@ -77,7 +78,7 @@ def data_loader_flow() -> Environment:
 
 
 @flow()
-def data_convert_flow(env: Environment) -> Environment:
+def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
     pds_to_png_task = PDS_to_PNG(
         result_storage=run_dir_store,
         cluster_key="ocams_data_calibrated_detailed_survey",
