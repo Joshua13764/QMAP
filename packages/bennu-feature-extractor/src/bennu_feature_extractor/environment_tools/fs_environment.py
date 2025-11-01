@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Callable, List, Set
 
 import attr
+from jinja2 import Environment
 
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
@@ -36,3 +37,7 @@ class FSEnvironment():
         merged_paths: frozenset[FSPathBase] = frozenset({
             p for e in envs for p in e.paths})
         return FSEnvironment(paths=merged_paths)
+
+    def __iadd__(self, other_env: 'FSEnvironment') -> 'FSEnvironment':
+        self = Environment.merge(self, other_env)
+        return self

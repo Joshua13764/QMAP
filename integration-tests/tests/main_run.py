@@ -6,6 +6,8 @@ from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
+from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
+    SPICEKernelGrabber
 from graphviz import Source
 from prefect import flow
 from prefect.filesystems import LocalFileSystem
@@ -18,12 +20,13 @@ from prefect.task_runners import ThreadPoolTaskRunner
 
 run_dir_store = LocalFileSystem.load("run-dir-storage")
 dataDownloadPath = Path("C:\\Users\\Joshu\\Documents\\AO33_DATA")
+spice_download_path: Path = Path(r"F:\AO33_SPICE")
 
 urls_to_download = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
+    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
     # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
     # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
 ]
@@ -89,6 +92,31 @@ def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
     return converted_env
 
 
+# Published 2019 metakernel (covers Detailed Survey, Orbit B, Recon in 2019)
+MK_URLS = [
+    "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/mk/orx_2019_v08.tm",
+]
+
+# Optional: add a Bennu DSK as a plain file (no extraction)
+EXTRA_URLS = [
+    # "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds"
+]
+
+
+@flow(task_runner=ThreadPoolTaskRunner(max_workers=20))
+def spice_kernals_loader_flow() -> FSEnvironment:
+    # One task that mirrors everything referenced by the MK(s)
+    fut: PrefectFuture[FSEnvironment] = SPICEKernelGrabber(
+        result_storage=run_dir_store,
+        DownloadPath=dataDownloadPath.as_posix(),
+        MkUrls=MK_URLS,
+        ExtraUrls=EXTRA_URLS,
+    ).get_task_no_cache.submit(FSEnvironment.empty())
+
+    return fut.result()
+
+
 if __name__ == "__main__":
-    env = data_loader_flow()
-    data_convert_flow(env)
+    # env = data_loader_flow()
+    # data_convert_flow(env)
+    spice_kernals_loader_flow()
