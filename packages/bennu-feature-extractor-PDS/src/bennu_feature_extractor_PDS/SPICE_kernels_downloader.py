@@ -6,7 +6,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional
 
 import requests
 from bennu_feature_extractor.environment_tools.fs_environment import \
@@ -14,10 +14,9 @@ from bennu_feature_extractor.environment_tools.fs_environment import \
 from bennu_feature_extractor.environment_tools.utils.FS_environment_factory import \
     FSEnvironmentFactory
 from bennu_feature_extractor.step_base import StepBase
-from joblib import Parallel, delayed
+from joblib import delayed
 from requests.adapters import HTTPAdapter
-from tqdm import tqdm
-from tqdm_joblib import ParallelPbar, tqdm_joblib  # per your assumption
+from tqdm_joblib import ParallelPbar
 from urllib3.util.retry import Retry
 
 
@@ -329,14 +328,9 @@ class SPICEKernelGrabber(StepBase):
                 self.Overwrite,
                 self.logger)
 
-            # Use ParallelPbar per your requirement (or tqdm_joblib context
-            # equivalently)
             ParallelPbar(desc)(n_jobs=self.Workers)(
                 delayed(downloader)(item) for item in plan.items
             )
-            # If you prefer the context style, it would be:
-            # with tqdm_joblib(tqdm(total=len(plan.items), desc=desc)):
-            #     Parallel(n_jobs=self.Workers, prefer="threads")(delayed(downloader)(it) for it in plan.items)
         else:
             self.logger.info(
                 "Nothing to download — everything already present.")
