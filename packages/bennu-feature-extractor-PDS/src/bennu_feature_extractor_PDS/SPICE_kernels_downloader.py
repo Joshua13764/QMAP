@@ -318,6 +318,7 @@ class SPICEKernelGrabber(StepBase):
             self.logger.info(f"  {g:>4}: {b / (1 << 30):.2f} GB")
 
         # 3) Download with a single global progress bar (ParallelPbar)
+
         if plan.items:
             desc = f"Downloading SPICE ({plan.total_bytes /
                                          (1 << 30):.2f} GB, {len(plan.items)} files)"
@@ -328,9 +329,14 @@ class SPICEKernelGrabber(StepBase):
                 self.Overwrite,
                 self.logger)
 
-            ParallelPbar(desc)(n_jobs=self.Workers)(
-                delayed(downloader)(item) for item in plan.items
-            )
+            try:
+                ParallelPbar(desc)(n_jobs=self.Workers)(
+                    delayed(downloader)(item) for item in plan.items
+                )
+            except Exception as e:
+                print("Got an error:", e)
+                self.run(env)  # Re-run usually fixes download errors
+
         else:
             self.logger.info(
                 "Nothing to download — everything already present.")
