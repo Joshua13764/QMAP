@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1700.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<?xml-model href="https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1700.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<?xml-model href="https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1700_1401.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<?xml-model href="https://pds.nasa.gov/pds4/orex/v1/orex_ldd_OREX_1300.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<Product_Observational
+    xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:pds="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:disp="http://pds.nasa.gov/pds4/disp/v1"
+    xmlns:geom="http://pds.nasa.gov/pds4/geom/v1"
+    xmlns:orex="http://pds.nasa.gov/pds4/mission/orex/v1"
+    xsi:schemaLocation=
+    "http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1700.xsd
+    http://pds.nasa.gov/pds4/disp/v1 https://pds.nasa.gov/pds4/disp/v1/PDS4_DISP_1700.xsd
+    http://pds.nasa.gov/pds4/geom/v1 https://pds.nasa.gov/pds4/geom/v1/PDS4_GEOM_1700_1401.xsd
+    http://pds.nasa.gov/pds4/mission/orex/v1 https://pds.nasa.gov/pds4/mission/orex/v1/PDS4_OREX_1300.xsd">
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:orex.ocams:data_calibrated:20190923t070112s750_map_radl2pan.fits</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>OSIRIS-REx OCAMS Level 2 (Calibrated) Radiance Science Image Data Product 2019-09-23T07:01:12.750Z</title>
+        <information_model_version>1.7.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2019-02-01</modification_date>
+                <version_id>1.0</version_id>
+                <description>Initial version.</description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>2019-09-23T07:01:12.750Z</start_date_time>
+            <stop_date_time>2019-09-23T07:01:12.750Z</stop_date_time>
+        </Time_Coordinates>
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Calibrated</processing_level>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>OSIRIS-REx</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.orex</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>OSIRIS-REx Camera Suite (OCAMS)</name>
+            <Observing_System_Component>
+                <name>OSIRIS-REx</name>
+                <type>Spacecraft</type>
+                <description>Origins, Spectral Interpretation, Resource Identification, Security - Regolith Explorer Spacecraft</description>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.orex</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>OCAMS</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:ocams.orex</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+        <Target_Identification>
+            <name>(101955) BENNU</name>
+            <alternate_designation>1999 RQ36</alternate_designation>
+            <type>Asteroid</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:asteroid.101955_bennu</lid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+        <Mission_Area>
+            <orex:Data_Processing_Information>
+                <orex:control_file>control.csv</orex:control_file>
+                <orex:creator>SPOC-fdb40c164313f0cb75fa8e41561f87333e219042</orex:creator>
+                <orex:data_source>FLIGHT</orex:data_source>
+                <orex:dispornt>bottom-left</orex:dispornt>
+                <orex:file_creation>2020-04-09T20:48:32.490Z</orex:file_creation>
+                <orex:linearity_limit>3.70782229622</orex:linearity_limit>
+                <orex:max_pixel_value>4.4584</orex:max_pixel_value>
+                <orex:min_pixel_value>-0.0235437</orex:min_pixel_value>
+                <orex:ocams_pl_ver>59e53cb573c589b0e53257f297dde0dfe1056fe7</orex:ocams_pl_ver>
+                <orex:proc_desc_flag>1</orex:proc_desc_flag>
+                <orex:rad_units>Radiance (W/m^2/sr)</orex:rad_units>
+                <orex:saturation_limit>5.28219558631</orex:saturation_limit>
+                <orex:spoc_version>fdb40c164313f0cb75fa8e41561f87333e219042</orex:spoc_version>
+            </orex:Data_Processing_Information>
+            <orex:Data_Quality>
+                <orex:ckqual>RECONSTRUCT</orex:ckqual>
+                <orex:meta_ker>spoc-digest-2019-09-26T01_09_03.869Z.mk</orex:meta_ker>
+                <orex:misspxla>0</orex:misspxla>
+                <orex:quality_flag>0</orex:quality_flag>
+            </orex:Data_Quality>
+            <orex:Time>
+                <orex:date_of_observation>2019-09-23T07:01:12.750Z</orex:date_of_observation>
+                <orex:delta_obs unit="s">0.0026426375</orex:delta_obs>
+                <orex:effective_exposure>4.24127497044</orex:effective_exposure>
+                <orex:exposec unit="s">0.005285275</orex:exposec>
+                <orex:exposure unit="ms">5.285275</orex:exposure>
+                <orex:ground_receipt_time>2019-09-23T14:38:43.099Z</orex:ground_receipt_time>
+                <orex:mid_obs>2019-09-23T07:01:12.752Z</orex:mid_obs>
+                <orex:mid_obs_et unit="s">622494141.934382</orex:mid_obs_et>
+                <orex:sclk_string>3/0622494024.11023</orex:sclk_string>
+            </orex:Time>
+            <orex:Mission_Information>
+                <orex:mission_phase_identifier>rec</orex:mission_phase_identifier>
+                <orex:mission_phase_name>Recon</orex:mission_phase_name>
+            </orex:Mission_Information>
+            <orex:Instrument_Telemetry_Identification>
+                <orex:apid>78</orex:apid>
+            </orex:Instrument_Telemetry_Identification>
+            <orex:Spatial>
+                <orex:bennana unit="deg">103.913365543761</orex:bennana>
+                <orex:bennu_dec unit="deg">-50.7009387187453</orex:bennu_dec>
+                <orex:bennu_naxis1_offset unit="pixel">33.7684644848177</orex:bennu_naxis1_offset>
+                <orex:bennu_naxis2_offset unit="pixel">-404.693799742288</orex:bennu_naxis2_offset>
+                <orex:bennu_ra unit="deg">123.110542255377</orex:bennu_ra>
+                <orex:bennu_radec_quality>BEST:  SPK</orex:bennu_radec_quality>
+                <orex:bennu_radec_target>BENNU</orex:bennu_radec_target>
+                <orex:boresight_lat>-53.9553186121172</orex:boresight_lat>
+                <orex:boresight_lon>-8.90734903119397</orex:boresight_lon>
+                <orex:cd1_1 unit="deg">-0.00342908557852884</orex:cd1_1>
+                <orex:cd1_2 unit="deg">-0.00183629997455223</orex:cd1_2>
+                <orex:cd2_1 unit="deg">-0.00183629997455223</orex:cd2_1>
+                <orex:cd2_2 unit="deg">0.00342908557852884</orex:cd2_2>
+                <orex:ctype1>RA---TAN</orex:ctype1>
+                <orex:ctype2>DEC--TAN</orex:ctype2>
+                <orex:cunit1 unit="deg">deg</orex:cunit1>
+                <orex:cunit2 unit="deg">deg</orex:cunit2>
+                <orex:equinox>2000</orex:equinox>
+                <orex:object>BENNU</orex:object>
+                <orex:radesys>ICRS</orex:radesys>
+                <orex:sc2sun_phi_deg unit="deg">5.84782381624138</orex:sc2sun_phi_deg>
+                <orex:sc2sun_range_km unit="km">199347093.730895</orex:sc2sun_range_km>
+                <orex:sc2sun_theta_deg unit="deg">0.00322869572379307</orex:sc2sun_theta_deg>
+                <orex:sc2sun_uvx>0.994796010715734</orex:sc2sun_uvx>
+                <orex:sc2sun_uvy>0.0000560581190541388</orex:sc2sun_uvy>
+                <orex:sc2sun_uvz>0.101886671952466</orex:sc2sun_uvz>
+            </orex:Spatial>
+            <orex:OCAMS_Instrument_Attributes>
+                <orex:camera_id>0</orex:camera_id>
+                <orex:detector_mode>13</orex:detector_mode>
+                <orex:filtname>PAN</orex:filtname>
+                <orex:lut>0</orex:lut>
+                <orex:mapcam_ccd_temp_x unit="degC">-23.4752840809993</orex:mapcam_ccd_temp_x>
+                <orex:mapcam_fwh_temp_x unit="degC">-25.7366560989715</orex:mapcam_fwh_temp_x>
+                <orex:mapcam_fwm_temp_x unit="degC">-22.9937533682831</orex:mapcam_fwm_temp_x>
+                <orex:mapcam_len_temp_x unit="degC">-32.2680093543492</orex:mapcam_len_temp_x>
+                <orex:mapcam_roe_temp_x unit="degC">-23.7756067236362</orex:mapcam_roe_temp_x>
+                <orex:motor_pos>270</orex:motor_pos>
+                <orex:polycam_ccd_temp_x unit="degC">10.3452671154618</orex:polycam_ccd_temp_x>
+                <orex:polycam_foh_temp_x unit="degC">4.97891220598075</orex:polycam_foh_temp_x>
+                <orex:polycam_fom_temp_x unit="degC">3.21766014840409</orex:polycam_fom_temp_x>
+                <orex:polycam_mirror_1_temp_x unit="degC">-3.29880188892491</orex:polycam_mirror_1_temp_x>
+                <orex:polycam_roe_temp_x unit="degC">8.20269601883132</orex:polycam_roe_temp_x>
+                <orex:readout_mode>1</orex:readout_mode>
+                <orex:samcam_ccd_temp_x unit="degC">-20.2346256670625</orex:samcam_ccd_temp_x>
+                <orex:samcam_fwh_temp_x unit="degC">-27.6112268669866</orex:samcam_fwh_temp_x>
+                <orex:samcam_fwm_temp_x unit="degC">-27.4530787912973</orex:samcam_fwm_temp_x>
+                <orex:samcam_len_temp_x unit="degC">-26.3343173212376</orex:samcam_len_temp_x>
+                <orex:samcam_roe_temp_x unit="degC">-23.6724353675774</orex:samcam_roe_temp_x>
+                <orex:secondary_ik_num>-64364</orex:secondary_ik_num>
+                <orex:seconds_raw unit="s">622494024</orex:seconds_raw>
+                <orex:subseconds_raw>1682</orex:subseconds_raw>
+            </orex:OCAMS_Instrument_Attributes>
+            <orex:Common_Instrument_Attributes>
+                <orex:image_id>6757</orex:image_id>
+            </orex:Common_Instrument_Attributes>
+            <orex:OCAMS_Image_Properties>
+                <orex:image_type_code>LIGHT</orex:image_type_code>
+            </orex:OCAMS_Image_Properties>
+        </Mission_Area>
+        <Discipline_Area>
+            <disp:Display_Settings>
+                <Local_Internal_Reference>
+                    <local_identifier_reference>Radiometrically Calibrated Active Array</local_identifier_reference>
+                    <local_reference_type>display_settings_to_array</local_reference_type>
+                </Local_Internal_Reference>
+                <disp:Display_Direction>
+                    <disp:horizontal_display_axis>Sample</disp:horizontal_display_axis>
+                    <disp:horizontal_display_direction>Left to Right</disp:horizontal_display_direction>
+                    <disp:vertical_display_axis>Line</disp:vertical_display_axis>
+                    <disp:vertical_display_direction>Bottom to Top</disp:vertical_display_direction>
+                </disp:Display_Direction>
+            </disp:Display_Settings>
+            <geom:Geometry>
+                <geom:SPICE_Kernel_Files>
+                    <geom:SPICE_Kernel_Identification>
+                        <geom:kernel_type>MK</geom:kernel_type>
+                        <geom:spice_kernel_file_name>spoc-digest-2019-09-26T01_09_03.869Z.mk</geom:spice_kernel_file_name>
+                        <geom:kernel_provenance>Reconstructed</geom:kernel_provenance>
+                    </geom:SPICE_Kernel_Identification>
+                </geom:SPICE_Kernel_Files>
+                <geom:Image_Display_Geometry>
+                    <geom:Display_Direction>
+                        <geom:horizontal_display_axis>Sample</geom:horizontal_display_axis>
+                        <geom:horizontal_display_direction>Left to Right</geom:horizontal_display_direction>
+                        <geom:vertical_display_axis>Line</geom:vertical_display_axis>
+                        <geom:vertical_display_direction>Bottom to Top</geom:vertical_display_direction>
+                    </geom:Display_Direction>
+                    <geom:Object_Orientation_RA_Dec>
+                        <geom:Reference_Pixel>
+                            <geom:vertical_coordinate_pixel unit="pixel">512.5</geom:vertical_coordinate_pixel>
+                            <geom:horizontal_coordinate_pixel unit="pixel">512.5</geom:horizontal_coordinate_pixel>
+                        </geom:Reference_Pixel>
+                        <geom:right_ascension_angle unit="deg">122.120380149582</geom:right_ascension_angle>
+                        <geom:declination_angle unit="deg">-49.2557028994179</geom:declination_angle>
+                        <geom:celestial_north_clock_angle unit="deg">331.83063052636</geom:celestial_north_clock_angle>
+                        <geom:Reference_Frame_Identification>
+                            <geom:name>J2000</geom:name>
+                        </geom:Reference_Frame_Identification>
+                    </geom:Object_Orientation_RA_Dec>
+                    <geom:Quaternion_Plus_To_From>
+                        <geom:qcos>0.336144197666418</geom:qcos>
+                        <geom:qsin1>-0.640661320038423</geom:qsin1>
+                        <geom:qsin2>-0.684795079575037</geom:qsin2>
+                        <geom:qsin3>-0.087268839637323</geom:qsin3>
+                        <geom:Rotate_From>
+                            <geom:name>J2000</geom:name>
+                        </geom:Rotate_From>
+                        <geom:Rotate_To>
+                            <geom:name>Spacecraft</geom:name>
+                        </geom:Rotate_To>
+                    </geom:Quaternion_Plus_To_From>
+                    <geom:Quaternion_Plus_To_From>
+                        <geom:qcos>0.336481359741031</geom:qcos>
+                        <geom:qsin1>-0.639633310268488</geom:qsin1>
+                        <geom:qsin2>-0.685335103964888</geom:qsin2>
+                        <geom:qsin3>-0.0892486314474289</geom:qsin3>
+                        <geom:Rotate_From>
+                            <geom:name>J2000</geom:name>
+                        </geom:Rotate_From>
+                        <geom:Rotate_To>
+                            <geom:name>Instrument</geom:name>
+                        </geom:Rotate_To>
+                    </geom:Quaternion_Plus_To_From>
+                </geom:Image_Display_Geometry>
+                <geom:Geometry_Orbiter>
+                    <geom:geometry_reference_time_utc>2019-09-23T07:01:12.752Z</geom:geometry_reference_time_utc>
+                    <geom:geometry_reference_time_tdb unit="s">622494141.934382</geom:geometry_reference_time_tdb>
+                </geom:Geometry_Orbiter>
+            </geom:Geometry>
+        </Discipline_Area>
+    </Observation_Area>
+    <Reference_List>
+        <Internal_Reference>
+            <lidvid_reference>urn:nasa:pds:orex.ocams:calibration:ocams_map_l_all_5p285275_bd_20190715t000000_20191105t235900_v001.fits::1.0</lidvid_reference>
+            <reference_type>data_to_calibration_product</reference_type>
+            <comment>Dark file used in processing. The file can be found in the OCAMS calibration collection.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lidvid_reference>urn:nasa:pds:orex.ocams:calibration:ocams_map_a_pan_ff_20150120t000000_20500101t000000_v003.fits::1.0</lidvid_reference>
+            <reference_type>data_to_calibration_product</reference_type>
+            <comment>Flat file used in processing. The file can be found in the OCAMS calibration collection.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lidvid_reference>urn:nasa:pds:orex.ocams:calibration:ocams_map_a_pan_r_20180817t000000_20500101t000000_v003.fits::1.0</lidvid_reference>
+            <reference_type>data_to_calibration_product</reference_type>
+            <comment>Radiometric Calibration file used in processing. The file can be found in the OCAMS calibration collection.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lidvid_reference>urn:nasa:pds:orex.ocams:data_raw:20190923t070112s750_map_l0pan.fits::1.0</lidvid_reference>
+            <reference_type>data_to_raw_product</reference_type>
+            <comment>The lidvid_reference is the identifier of the raw data product from which this data product has been derived.</comment>
+        </Internal_Reference>
+        <Internal_Reference>
+            <lidvid_reference>urn:nasa:pds:orex.ocams:data_reduced:20190923t070112s750_map_l1pan.fits::1.0</lidvid_reference>
+            <reference_type>data_to_associate</reference_type>
+            <comment>The lidvid_reference is the identifier of the reduced or converted data product form which this data product has been derived.</comment>
+        </Internal_Reference>
+    </Reference_List>
+    <File_Area_Observational>
+        <File>
+            <file_name>20190923T070112S750_map_radL2pan.fits</file_name>
+            <creation_date_time>2020-04-09T20:48:32.995Z</creation_date_time>
+            <file_size unit="byte">4207680</file_size>
+        </File>
+        <Header>
+            <offset unit="byte">0</offset>
+            <object_length unit="byte">11520</object_length>
+            <parsing_standard_id>FITS 3.0</parsing_standard_id>
+        </Header>
+        <Array_2D_Image>
+            <local_identifier>Radiometrically Calibrated Active Array</local_identifier>
+            <offset unit="byte">11520</offset>
+            <axes>2</axes>
+            <axis_index_order>Last Index Fastest</axis_index_order>
+            <description>The OCAMS image format contains the 1024 by 1024 active array radiometrically corrected image in units of radiance (W m-2sr-1) or spectral radiance (W m-2sr-1μm-1).</description>
+            <Element_Array>
+                <data_type>IEEE754MSBSingle</data_type>
+                <unit>W*m**-2*sr**-1</unit>
+            </Element_Array>
+            <Axis_Array>
+                <axis_name>Line</axis_name>
+                <elements>1024</elements>
+                <sequence_number>1</sequence_number>
+            </Axis_Array>
+            <Axis_Array>
+                <axis_name>Sample</axis_name>
+                <elements>1024</elements>
+                <sequence_number>2</sequence_number>
+            </Axis_Array>
+        </Array_2D_Image>
+    </File_Area_Observational>
+</Product_Observational>

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, Optional, Set
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import requests
 from joblib import Parallel, delayed
