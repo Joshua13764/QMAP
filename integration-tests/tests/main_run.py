@@ -102,5 +102,5 @@ def spice_kernals_loader_flow() -> FSEnvironment:
 
 if __name__ == "__main__":
     env = data_loader_flow()
-    # data_convert_flow(env)
+    data_convert_flow(env)
     # spice_kernals_loader_flow()

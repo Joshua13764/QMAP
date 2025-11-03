@@ -13,8 +13,10 @@ class FSEnvironmentFactory():
     @staticmethod
     def from_folder(folder: Path,
                     extensions: Set[str] = set()) -> FSEnvironment:
-        paths: List[Path] = [
-            p for p in folder.rglob("*") if p.is_file()]
+
+        paths: List[Path] = [root / name
+                             for root, dirs, files in folder.walk()
+                             for name in files]
 
         get_run_logger().info(f"Found {len(paths)} files in {folder}")
 
