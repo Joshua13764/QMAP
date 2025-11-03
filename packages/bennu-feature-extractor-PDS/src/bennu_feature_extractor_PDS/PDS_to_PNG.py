@@ -62,10 +62,12 @@ class PDS_to_PNG(StepBase):
             _, img = FSEnvironment.load(xml_path, FSPDS4Adapter())
             FSEnvironment.save(img, pds_path, FSPNGAdapter())
 
+        exits = FSEnvironment.quick_exists(pds_files)
+
         pairs = [
             (xml, pds)
             for xml, pds in zip(xml_files, pds_files)
-            if not (pds.exists and self.skip_converted)
+            if not (exits[pds] and self.skip_converted)
         ]
 
         self.logger.info(
