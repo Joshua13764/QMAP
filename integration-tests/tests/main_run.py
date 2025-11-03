@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
@@ -9,16 +8,10 @@ from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
     SPICEKernelGrabber
-from graphviz import Source
 from prefect import flow
 from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ThreadPoolTaskRunner
-
-warnings.filterwarnings(
-    "ignore",
-    message="Config key `toml_file` is set in model_config"
-)
 
 # # To be run once
 # run_dir_store = LocalFileSystem(basepath=".\\.run_dir_storage")
@@ -68,25 +61,6 @@ def data_loader_flow() -> FSEnvironment:
 
     returned_env: FSEnvironment = FSEnvironment.merge(envs)
 
-    # labels = ["BestModelDownloader: best_model.zip"] + [
-    #     f"PDSDownloader: {Path(u).name}" for u in urls_to_download
-    # ]
-    # dot = [
-    #     "digraph data_loader {",
-    #     "  rankdir=LR;",
-    #     '  node [shape=box, style=rounded];',
-    #     *(f'  "{name}";' for name in labels),
-    #     '  "merge_environments" [shape=ellipse];',
-    #     *(f'  "{name}" -> "merge_environments";' for name in labels),
-    #     "}"
-    # ]
-    # Source(
-    #     "\n".join(dot)).render(
-    #     filename="flow_graph",
-    #     format="svg",
-    #     cleanup=True)
-    # logger.info("Wrote flow_graph.png")
-
     return returned_env
 
 
@@ -127,6 +101,6 @@ def spice_kernals_loader_flow() -> FSEnvironment:
 
 
 if __name__ == "__main__":
-    # env = data_loader_flow()
+    env = data_loader_flow()
     # data_convert_flow(env)
-    spice_kernals_loader_flow()
+    # spice_kernals_loader_flow()

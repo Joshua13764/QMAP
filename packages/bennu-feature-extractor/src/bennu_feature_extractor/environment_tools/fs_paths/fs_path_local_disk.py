@@ -25,7 +25,7 @@ class FSPathLocalDisk(FSPathBase):
         self.actual_path.parent.mkdir(parents=True, exist_ok=True)
 
     def copy_as_new(self, new_root_path: Path,
-                    new_extension: str, markers: List[FSMarkerBase]) -> 'FSPathLocalDisk':
+                    new_extension: str, markers: List[FSMarkerBase] = []) -> 'FSPathLocalDisk':
         return FSPathLocalDisk(
             path=Path(*self.path).with_suffix(new_extension).parts,
             markers=frozenset(markers),
