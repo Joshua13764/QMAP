@@ -18,6 +18,7 @@ tqdm-joblib = "^0.0.5"
 requests = "^2.32.5"
 imageio = "^2.37.0"
 opencv-python = "^4.12.0.88"
+pydantic = "2.12.3"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]

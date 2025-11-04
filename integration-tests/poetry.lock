@@ -262,9 +262,13 @@ develop = true
 
 [package.dependencies]
 assertpy = "1.1"
+imageio = ">=2.37.0,<3.0.0"
+opencv-python = ">=4.12.0.88,<5.0.0.0"
+pds4-tools = ">=1.4,<2.0"
 prefect = ">=2.14"
 pytest = "8.4.2"
 requests = "2.32.5"
+tqdm-joblib = ">=0.0.5,<0.0.6"
 
 [package.source]
 type = "directory"
@@ -3587,4 +3591,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "39b6c5451b660436733088af3c41fe719808840c31d6266535722c241108d8f2"
+content-hash = "227de9c930596fcc45c257ac9d821dd0887612f001f2f44ac74ffd7b29441a59"
