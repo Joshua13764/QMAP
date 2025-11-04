@@ -2,6 +2,7 @@ from pathlib import Path
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
+from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
@@ -56,6 +57,12 @@ def data_loader_flow() -> FSEnvironment:
         for url in urls_to_download
     ]
 
+    # tasks += [
+    #     SimpleRequest(
+    #         url=""
+    #     ).get_task_no_cache.submit(FSEnvironment.empty())
+    # ]
+
     wait(tasks)
     envs: list[FSEnvironment] = [f.result() for f in tasks]
 
@@ -102,5 +109,5 @@ def spice_kernals_loader_flow() -> FSEnvironment:
 
 if __name__ == "__main__":
     env = data_loader_flow()
-    data_convert_flow(env)
-    # spice_kernals_loader_flow()
+    # data_convert_flow(env)
+    spice_kernals_loader_flow()
