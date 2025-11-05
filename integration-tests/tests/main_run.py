@@ -65,7 +65,17 @@ def data_loader_flow() -> FSEnvironment:
             url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
             fs_path=pds_download_path,
             sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
-            markers=frozenset([FSMarkerString(value="PAN Mosaic")])
+            markers=frozenset([FSMarkerString(value="OCAMS Mosaic")])
+        ).submit_task()
+    )
+
+    tasks.append(
+        SimpleRequest(
+            run_dir_store,
+            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
+            fs_path=pds_download_path,
+            sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
+            markers=frozenset([FSMarkerString(value="OCAMS Model")])
         ).submit_task()
     )
 
