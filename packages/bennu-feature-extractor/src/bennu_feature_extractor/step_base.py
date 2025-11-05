@@ -2,7 +2,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 
+from attr import define
 from prefect import get_run_logger, task
+from prefect.futures import PrefectFuture
 from prefect.results import ResultStorage
 from prefect.serializers import PickleSerializer
 
@@ -35,9 +37,13 @@ class StepBase(ABC):
 
         return _step_task_no_cache
 
-    @abstractmethod
-    def get_hash(self) -> int:
-        ...
+    def submit_task(self, env: FSEnvironment = FSEnvironment.empty()
+                    ) -> PrefectFuture[FSEnvironment]:
+        return self.get_task_no_cache.submit(env)
+
+    # @abstractmethod
+    # def get_hash(self) -> int:
+    #     ...
 
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:

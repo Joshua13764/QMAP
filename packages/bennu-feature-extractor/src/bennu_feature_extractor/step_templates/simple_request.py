@@ -1,7 +1,9 @@
+import os
+from dataclasses import dataclass
 from pathlib import Path
 
-import attr
 import requests
+from tqdm import tqdm
 
 from bennu_feature_extractor.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
@@ -11,9 +13,8 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
     FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
 
-attr.define()
 
-
+@dataclass
 class SimpleRequest(StepBase):
     url: str
     fs_path: Path
@@ -34,9 +35,25 @@ class SimpleRequest(StepBase):
 
         with requests.get(self.url, stream=True) as r:
             r.raise_for_status()
-            with file.actual_path.open("wb") as f:
+            file.make_directory()
+            tmp_dir: Path = file.actual_path.with_name(
+                file.actual_path.name + ".part")
+
+            total = int(r.headers.get("content-length", 0))
+
+            with tmp_dir.open("wb") as f, tqdm(
+                total=total or None,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                desc=f"Downloading {file.actual_path.name}",
+                dynamic_ncols=True,
+            ) as pbar:
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
+                        pbar.update(len(chunk))
+
+            os.replace(tmp_dir, file.actual_path)
 
         return FSEnvironment(paths=frozenset([file]))

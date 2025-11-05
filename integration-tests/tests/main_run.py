@@ -2,6 +2,8 @@ from pathlib import Path
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
+from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
+    FSMarkerString
 from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
@@ -45,7 +47,7 @@ def data_loader_flow() -> FSEnvironment:
             run_dir_store,
             model_download_path.as_posix(),
             Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-        ).get_task_no_cache.submit(FSEnvironment.empty())
+        ).submit_task()
     )
 
     tasks += [
@@ -53,15 +55,19 @@ def data_loader_flow() -> FSEnvironment:
             run_dir_store,
             pds_download_path.as_posix(),
             Url=url
-        ).get_task_no_cache.submit(FSEnvironment.empty())
+        ).submit_task()
         for url in urls_to_download
     ]
 
-    # tasks += [
-    #     SimpleRequest(
-    #         url=""
-    #     ).get_task_no_cache.submit(FSEnvironment.empty())
-    # ]
+    tasks.append(
+        SimpleRequest(
+            run_dir_store,
+            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
+            fs_path=pds_download_path,
+            sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
+            markers=frozenset([FSMarkerString(value="PAN Mosaic")])
+        ).submit_task()
+    )
 
     wait(tasks)
     envs: list[FSEnvironment] = [f.result() for f in tasks]
@@ -77,7 +83,7 @@ def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
         result_storage=run_dir_store,
         cluster_key="ocams_data_calibrated_detailed_survey",
         run_path=pipeline_working_path
-    ).get_task_no_cache.submit(env)
+    ).submit_task(env)
 
     converted_env = pds_to_png_task.result()
     return converted_env
@@ -102,7 +108,7 @@ def spice_kernals_loader_flow() -> FSEnvironment:
         DownloadPath=spice_download_path.as_posix(),
         MkUrls=MK_URLS,
         ExtraUrls=EXTRA_URLS,
-    ).get_task_no_cache.submit(FSEnvironment.empty())
+    ).submit_task()
 
     return fut.result()
 
@@ -110,4 +116,4 @@ def spice_kernals_loader_flow() -> FSEnvironment:
 if __name__ == "__main__":
     env = data_loader_flow()
     # data_convert_flow(env)
-    spice_kernals_loader_flow()
+    # spice_kernals_loader_flow()
