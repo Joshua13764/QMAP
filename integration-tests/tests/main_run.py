@@ -7,6 +7,7 @@ from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string impor
 from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
+from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
@@ -42,22 +43,22 @@ urls_to_download = [
 def data_loader_flow() -> FSEnvironment:
     tasks: list[PrefectFuture[FSEnvironment]] = []
 
-    tasks.append(
-        BestModelDownloader(
-            run_dir_store,
-            model_download_path.as_posix(),
-            Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-        ).submit_task()
-    )
+    # tasks.append(
+    #     BestModelDownloader(
+    #         run_dir_store,
+    #         model_download_path.as_posix(),
+    #         Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
+    #     ).submit_task()
+    # )
 
-    tasks += [
-        PDSDownloader(
-            run_dir_store,
-            pds_download_path.as_posix(),
-            Url=url
-        ).submit_task()
-        for url in urls_to_download
-    ]
+    # tasks += [
+    #     PDSDownloader(
+    #         run_dir_store,
+    #         pds_download_path.as_posix(),
+    #         Url=url
+    #     ).submit_task()
+    #     for url in urls_to_download
+    # ]
 
     tasks.append(
         SimpleRequest(
@@ -65,7 +66,7 @@ def data_loader_flow() -> FSEnvironment:
             url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
             fs_path=pds_download_path,
             sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
-            markers=frozenset([FSMarkerString(value="OCAMS Mosaic")])
+            markers=frozenset([FSMarkerString(value="PAN_texture")])
         ).submit_task()
     )
 
@@ -123,7 +124,20 @@ def spice_kernals_loader_flow() -> FSEnvironment:
     return fut.result()
 
 
+@flow()
+def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
+    fut: PrefectFuture[FSEnvironment] = PANToLOD(
+        result_storage=run_dir_store,
+        root_path=pipeline_working_path,
+        lod_res=1024,
+        skip_if_exists=True
+    ).submit_task(env)
+
+    return fut.result()
+
+
 if __name__ == "__main__":
     env = data_loader_flow()
+    pp_tasks_flow(env)
     # data_convert_flow(env)
     # spice_kernals_loader_flow()
