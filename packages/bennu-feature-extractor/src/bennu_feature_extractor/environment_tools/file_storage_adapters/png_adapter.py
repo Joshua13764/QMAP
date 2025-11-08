@@ -26,6 +26,7 @@ class FSPNGAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
             path.actual_path.as_posix(),
             _to_imwrite_dtype(obj))
         if not write_state:
+
             raise IOError(f"Failed to write PNG: {path.actual_path}")
 
 
