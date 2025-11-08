@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from logging import Logger
 from pathlib import Path
+from warnings import deprecated
 
 import attr
 from prefect import get_run_logger
 
 
+@deprecated()
 @attr.define()
 class FileStorageMediumBase(ABC):
     name: str

@@ -1,30 +1,29 @@
-import warnings
 from pathlib import Path
+from typing import Any, Coroutine
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
+from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
+    FSMarkerString
+from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
+from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
     SPICEKernelGrabber
-from graphviz import Source
 from prefect import flow
 from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ThreadPoolTaskRunner
 
-warnings.filterwarnings(
-    "ignore",
-    message="Config key `toml_file` is set in model_config"
-)
-
 # # To be run once
 # run_dir_store = LocalFileSystem(basepath=".\\.run_dir_storage")
 # run_dir_store.save("run-dir-storage", overwrite=True)
 
-run_dir_store = LocalFileSystem.load("run-dir-storage")
+run_dir_store: LocalFileSystem | Coroutine[Any, Any,
+                                           LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
@@ -32,7 +31,7 @@ pipeline_working_path: Path = Path(r"F:\AO33\AO33_pipeline_DATA")
 spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 
-urls_to_download = [
+urls_to_download: list[str] = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
@@ -46,59 +45,60 @@ urls_to_download = [
 def data_loader_flow() -> FSEnvironment:
     tasks: list[PrefectFuture[FSEnvironment]] = []
 
+    # tasks.append(
+    #     BestModelDownloader(
+    #         run_dir_store,
+    #         model_download_path.as_posix(),
+    #         Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
+    #     ).submit_task()
+    # )
+
+    # tasks += [
+    #     PDSDownloader(
+    #         run_dir_store,
+    #         pds_download_path.as_posix(),
+    #         Url=url
+    #     ).submit_task()
+    #     for url in urls_to_download
+    # ]
+
     tasks.append(
-        BestModelDownloader(
+        SimpleRequest(
             run_dir_store,
-            model_download_path.as_posix(),
-            Url="https://zenodo.org/records/8171052/files/best_model.zip?download=1"
-        ).get_task_no_cache.submit(FSEnvironment.empty())
+            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
+            fs_path=pds_download_path,
+            sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
+            markers=frozenset([FSMarkerString(value="PAN_texture")])
+        ).submit_task()
     )
 
-    tasks += [
-        PDSDownloader(
+    tasks.append(
+        SimpleRequest(
             run_dir_store,
-            pds_download_path.as_posix(),
-            Url=url
-        ).get_task_no_cache.submit(FSEnvironment.empty())
-        for url in urls_to_download
-    ]
+            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
+            fs_path=pds_download_path,
+            sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
+            markers=frozenset([FSMarkerString(value="OCAMS Model")])
+        ).submit_task()
+    )
 
     wait(tasks)
     envs: list[FSEnvironment] = [f.result() for f in tasks]
 
     returned_env: FSEnvironment = FSEnvironment.merge(envs)
 
-    # labels = ["BestModelDownloader: best_model.zip"] + [
-    #     f"PDSDownloader: {Path(u).name}" for u in urls_to_download
-    # ]
-    # dot = [
-    #     "digraph data_loader {",
-    #     "  rankdir=LR;",
-    #     '  node [shape=box, style=rounded];',
-    #     *(f'  "{name}";' for name in labels),
-    #     '  "merge_environments" [shape=ellipse];',
-    #     *(f'  "{name}" -> "merge_environments";' for name in labels),
-    #     "}"
-    # ]
-    # Source(
-    #     "\n".join(dot)).render(
-    #     filename="flow_graph",
-    #     format="svg",
-    #     cleanup=True)
-    # logger.info("Wrote flow_graph.png")
-
     return returned_env
 
 
 @flow()
 def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
-    pds_to_png_task = PDS_to_PNG(
+    pds_to_png_task: PrefectFuture[FSEnvironment] = PDS_to_PNG(
         result_storage=run_dir_store,
         cluster_key="ocams_data_calibrated_detailed_survey",
         run_path=pipeline_working_path
-    ).get_task_no_cache.submit(env)
+    ).submit_task(env)
 
-    converted_env = pds_to_png_task.result()
+    converted_env: FSEnvironment = pds_to_png_task.result()
     return converted_env
 
 
@@ -121,12 +121,25 @@ def spice_kernals_loader_flow() -> FSEnvironment:
         DownloadPath=spice_download_path.as_posix(),
         MkUrls=MK_URLS,
         ExtraUrls=EXTRA_URLS,
-    ).get_task_no_cache.submit(FSEnvironment.empty())
+    ).submit_task()
+
+    return fut.result()
+
+
+@flow()
+def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
+    fut: PrefectFuture[FSEnvironment] = PANToLOD(
+        result_storage=run_dir_store,
+        root_path=pipeline_working_path,
+        lod_res=1024,
+        skip_if_exists=True
+    ).submit_task(env)
 
     return fut.result()
 
 
 if __name__ == "__main__":
-    # env = data_loader_flow()
+    env: FSEnvironment = data_loader_flow()
+    pp_tasks_flow(env)
     # data_convert_flow(env)
-    spice_kernals_loader_flow()
+    # spice_kernals_loader_flow()

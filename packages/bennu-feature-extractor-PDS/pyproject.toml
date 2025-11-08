@@ -16,7 +16,11 @@ dependencies = [
   "requests (==2.32.5)",
   "pds4-tools (>=1.4,<2.0)",
   "tqdm-joblib (>=0.0.5,<0.0.6)",
-  "opencv-python (>=4.12.0.88,<5.0.0.0)"
+  "opencv-python (>=4.12.0.88,<5.0.0.0)",
+  "imageio (>=2.37.0,<3.0.0)",
+  "pydantic (==2.12.3)",
+  "trimesh (>=4.9.0,<5.0.0)",
+  "polars (>=1.35.1,<2.0.0)"
 ]
 
 [tool.poetry]

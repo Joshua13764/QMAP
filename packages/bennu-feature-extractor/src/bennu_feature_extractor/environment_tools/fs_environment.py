@@ -1,13 +1,19 @@
+from functools import reduce
+from os import listdir, path, scandir
 from pathlib import Path
-from typing import Callable, List, Set
+from typing import Callable, Counter, Dict, List, Set
 
 import attr
 from jinja2 import Environment
+from joblib import delayed
+from tqdm_joblib import ParallelPbar
 
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
 from bennu_feature_extractor.environment_tools.base_classes.fs_path_base import \
     FSPathBase
+from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
+    FSPathLocalDisk
 
 
 @attr.define(frozen=True, slots=True)
@@ -17,6 +23,38 @@ class FSEnvironment():
     def get_paths[T: FSPathBase](self, cls: type[T], condition: Callable[[
                                  T], bool] = lambda x: True) -> List[T]:
         return [f for f in self.paths if isinstance(f, cls) and condition(f)]
+
+    @staticmethod
+    def quick_exists(paths: List[FSPathLocalDisk],
+                     threshold=1000) -> Dict[FSPathLocalDisk, bool]:
+
+        item_counts: Counter = Counter(
+            p.actual_path.parent.as_posix() for p in paths)
+
+        filtered_folders: Dict[str, List[FSPathLocalDisk]] = {
+            parent: [] for parent,
+            n in item_counts.items() if n >= threshold}
+
+        def scan_folder(folder_path: str,
+                        _paths: List[FSPathLocalDisk]) -> Dict[FSPathLocalDisk, bool]:
+            folder_files: Set[str] = {
+                e.name for e in scandir(folder_path) if e.is_file()}
+
+            return {p: p.actual_path.name in folder_files for p in _paths}
+
+        other_folders: List[FSPathLocalDisk] = []
+
+        for p in paths:
+            if p.actual_path.parent.as_posix() in filtered_folders:
+                filtered_folders[p.actual_path.parent.as_posix()].append(p)
+            else:
+                other_folders.append(p)
+
+        results = ParallelPbar(desc=f"Scanning paths", unit="folders")(n_jobs=-1, verbose=0, prefer="threads")(
+            delayed(scan_folder)(folder, _paths) for folder, _paths in filtered_folders.items()
+        ) + [{p: p.exists for p in other_folders}]
+
+        return reduce(lambda a, b: a | b, results, {})
 
     @classmethod
     def empty(cls) -> 'FSEnvironment':

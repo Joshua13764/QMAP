@@ -1882,14 +1882,14 @@ files = [
 
 [[package]]
 name = "pydantic"
-version = "2.12.2"
+version = "2.12.3"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "pydantic-2.12.2-py3-none-any.whl", hash = "sha256:25ff718ee909acd82f1ff9b1a4acfd781bb23ab3739adaa7144f19a6a4e231ae"},
-    {file = "pydantic-2.12.2.tar.gz", hash = "sha256:7b8fa15b831a4bbde9d5b84028641ac3080a4ca2cbd4a621a661687e741624fd"},
+    {file = "pydantic-2.12.3-py3-none-any.whl", hash = "sha256:6986454a854bc3bc6e5443e1369e06a3a456af9d339eda45510f517d9ea5c6bf"},
+    {file = "pydantic-2.12.3.tar.gz", hash = "sha256:1da1c82b0fc140bb0103bc1441ffe062154c8d38491189751ee00fd8ca65ce74"},
 ]
 
 [package.dependencies]
@@ -3006,6 +3006,21 @@ slack = ["slack-sdk"]
 telegram = ["requests"]
 
 [[package]]
+name = "tqdm-joblib"
+version = "0.0.5"
+description = "Tracking progress of joblib.Parallel execution"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "tqdm_joblib-0.0.5-py3-none-any.whl", hash = "sha256:5948fccca627970cc8340dd56ac49d29222ed110b9ee39fd310b76a1483b471f"},
+    {file = "tqdm_joblib-0.0.5.tar.gz", hash = "sha256:34dd63c92e1b88b5118661a41eaf91001cac2687bfe217a4b6a9ab1bbf0f1c64"},
+]
+
+[package.dependencies]
+tqdm = "*"
+
+[[package]]
 name = "typer"
 version = "0.15.4"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
@@ -3358,4 +3373,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "07160b62907b5c798d7f9de02d14c89f44243086a67e542aa488d2d52ad312c9"
+content-hash = "715e748e7cd036813d1bca336130df2bb78b7bab9a0623f2bf1da8c74576b9eb"

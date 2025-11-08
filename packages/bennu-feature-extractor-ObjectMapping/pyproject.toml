@@ -8,19 +8,27 @@ version = "0.1.0"
 description = "Foo add-on step for bennu-feature-extractor"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
-
 dependencies = [
   "prefect>=2.14",
+  "bennu-feature-extractor>=0.1.0",
   "assertpy (==1.1)",
-  "pytest (==8.4.2)",
-  "requests (==2.32.5)"
+  "fastapi (==0.119.0)",
+  "uvicorn (==0.38.0)",
+  "joblib (>=1.5.2,<2.0.0)",
+  "docker (>=7.1.0,<8.0.0)",
+  "colorama (>=0.4.6,<0.5.0)",
+  "tqdm-joblib (>=0.0.5,<0.0.6)",
+  "pydantic (==2.12.3)",
 ]
 
-[tool.poetry]
-packages = [{ include = "bennu_feature_extractor_ObjectMapping", from = "src" }]
-
 [tool.poetry.dependencies]
-bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true }
+bennu-feature-extractor = { path = "../packages/bennu-feature-extractor", develop = true }
+bennu-feature-extractor-BoulderNet = { path = "../packages/bennu-feature-extractor-BoulderNet", develop = true }
+bennu-feature-extractor-PDS = { path = "../packages/bennu-feature-extractor-PDS", develop = true }
+
+[tool.poetry]
+packages = [{ include = "bennu_feature_extractor_BoulderNet", from = "src" }]
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"

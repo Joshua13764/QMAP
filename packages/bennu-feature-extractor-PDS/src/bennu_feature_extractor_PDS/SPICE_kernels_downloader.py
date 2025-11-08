@@ -344,7 +344,7 @@ class SPICEKernelGrabber(StepBase):
         # 4) Return environment
         return FSEnvironment.merge([
             env,
-            FSEnvironmentFactory.from_folder(download_root, extensions=None),
+            FSEnvironmentFactory.from_folder(download_root),
         ])
 
     # ---- small helper ----
