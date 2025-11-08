@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Coroutine
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
@@ -21,7 +22,8 @@ from prefect.task_runners import ThreadPoolTaskRunner
 # run_dir_store = LocalFileSystem(basepath=".\\.run_dir_storage")
 # run_dir_store.save("run-dir-storage", overwrite=True)
 
-run_dir_store = LocalFileSystem.load("run-dir-storage")
+run_dir_store: LocalFileSystem | Coroutine[Any, Any,
+                                           LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
@@ -29,7 +31,7 @@ pipeline_working_path: Path = Path(r"F:\AO33\AO33_pipeline_DATA")
 spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 
-urls_to_download = [
+urls_to_download: list[str] = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
@@ -90,13 +92,13 @@ def data_loader_flow() -> FSEnvironment:
 
 @flow()
 def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
-    pds_to_png_task = PDS_to_PNG(
+    pds_to_png_task: PrefectFuture[FSEnvironment] = PDS_to_PNG(
         result_storage=run_dir_store,
         cluster_key="ocams_data_calibrated_detailed_survey",
         run_path=pipeline_working_path
     ).submit_task(env)
 
-    converted_env = pds_to_png_task.result()
+    converted_env: FSEnvironment = pds_to_png_task.result()
     return converted_env
 
 
@@ -137,7 +139,7 @@ def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
 
 
 if __name__ == "__main__":
-    env = data_loader_flow()
+    env: FSEnvironment = data_loader_flow()
     pp_tasks_flow(env)
     # data_convert_flow(env)
     # spice_kernals_loader_flow()
