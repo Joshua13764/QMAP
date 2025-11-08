@@ -8,11 +8,11 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
 
 
 class FSTrimeshAdapter(
-        FSAdapterBase[Any, FSPathLocalDisk]):
+        FSAdapterBase[trimesh.Trimesh, FSPathLocalDisk]):
 
-    def read(self, path: FSPathLocalDisk) -> Any:
-        return trimesh.load(path.actual_path.as_posix(),
-                            force='mesh', process=True)
+    def read(self, path: FSPathLocalDisk) -> trimesh.Trimesh:
+        return trimesh.load_mesh(
+            path.actual_path.as_posix(), file_type="obj", process=False)
 
-    def write(self, obj: Any, path: FSPathLocalDisk) -> None:
+    def write(self, obj: trimesh.Trimesh, path: FSPathLocalDisk) -> None:
         raise NotImplementedError()
