@@ -24,7 +24,7 @@ class FSPolarsObjAdapter(
             tris : with headers "0", "1", "2"
         """
         mesh: trimesh.Trimesh = trimesh.load_mesh(
-            path.actual_path.as_posix(), file_type="obj", process=False)
+            path.actual_path.as_posix(), file_type="obj", process=True)
 
         points: pl.DataFrame = pl.DataFrame(
             mesh.vertices.tolist(), schema=[

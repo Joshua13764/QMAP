@@ -12,7 +12,7 @@ class FSTrimeshAdapter(
 
     def read(self, path: FSPathLocalDisk) -> trimesh.Trimesh:
         return trimesh.load_mesh(
-            path.actual_path.as_posix(), file_type="obj", process=False)
+            path.actual_path.as_posix(), file_type="obj", process=True)
 
     def write(self, obj: trimesh.Trimesh, path: FSPathLocalDisk) -> None:
         raise NotImplementedError()
