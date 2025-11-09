@@ -10,6 +10,40 @@ VERT_ID_COLS: List[str] = ["0", "1", "2"]
 class Polars3DExpressions:
 
     @staticmethod
+    def filter_faces_for_rasterization(
+            tris: pl.DataFrame, face: str, eps_uv=1e-12) -> pl.DataFrame:
+        ensure_not_back_facing: pl.Expr = (
+            (pl.col(f"{face}_N0") > 0) &
+            (pl.col(f"{face}_N1") > 0) &
+            (pl.col(f"{face}_N2") > 0)
+        )
+
+        ensure_non_degenerate: pl.Expr = pl.col(f"{face}_area_uv") > eps_uv
+
+        return tris.filter(ensure_not_back_facing & ensure_non_degenerate)
+
+    @staticmethod
+    def process_mesh(points: pl.DataFrame, tris: pl.DataFrame):
+
+        points = points.with_columns(
+            Polars3DExpressions.get_project_points_expression())
+
+        points = points.with_columns(
+            Polars3DExpressions.get_gather_points_to_tris_expression(points))
+
+        points = points.with_columns(
+            Polars3DExpressions.get_gather_unprojected_tri_positions_expressions(points))
+
+        points = points.with_columns(
+            Polars3DExpressions.get_calculate_unprojected_tri_area_expression())
+
+        points = points.with_columns(
+            Polars3DExpressions.get_calculate_projected_tri_area_expressions())
+
+        points = points.with_columns(
+            Polars3DExpressions.get_calculate_tri_area_ratios_expressions())
+
+    @staticmethod
     def get_project_points_expression() -> List[pl.Expr]:
         """Projects a polars dataframe with headers of "x", "y", "z" onto a cube of side length 2 centered at the origin
 
