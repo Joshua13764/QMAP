@@ -8,6 +8,7 @@ from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string impor
 from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
+from bennu_feature_extractor_PDS.OBJ_to_LAS import OBJToLAS
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
@@ -78,7 +79,8 @@ def data_loader_flow() -> FSEnvironment:
             url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
             fs_path=pds_download_path,
             sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
-            markers=frozenset([FSMarkerString(value="OCAMS Model")])
+            markers=frozenset(
+                [FSMarkerString(value="OCAMS Model"), FSMarkerString("ProjectModel")])
         ).submit_task()
     )
 
@@ -128,14 +130,22 @@ def spice_kernals_loader_flow() -> FSEnvironment:
 
 @flow()
 def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
-    fut: PrefectFuture[FSEnvironment] = PANToLOD(
+    # PANToLOD(
+    #     result_storage=run_dir_store,
+    #     root_path=pipeline_working_path,
+    #     lod_res=1024,
+    #     skip_if_exists=True
+    # ).submit_task(env).result()
+
+    OBJToLAS(
         result_storage=run_dir_store,
         root_path=pipeline_working_path,
         lod_res=1024,
+        depth=4,
         skip_if_exists=True
-    ).submit_task(env)
+    ).submit_task(env).result()
 
-    return fut.result()
+    return None
 
 
 if __name__ == "__main__":

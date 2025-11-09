@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Any, List, Tuple
 
 import datashader as ds
 import datashader.transfer_functions as tf
@@ -10,18 +11,68 @@ from bennu_feature_extractor.environment import *
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 from bennu_feature_extractor.step_base import StepBase
-from colorcet import fire
+from joblib import Parallel, delayed
+from tqdm_joblib import ParallelPbar
 
 from bennu_feature_extractor_PDS.file_storage_adapters.polars_obj_adapter import \
     FSPolarsObjAdapter
-from bennu_feature_extractor_PDS.file_storage_adapters.trimesh_obj_adapter import \
-    FSTrimeshAdapter
+from bennu_feature_extractor_PDS.file_storage_adapters.tiff_adapter import \
+    FSTiffAdapter
+from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
+from bennu_feature_extractor_PDS.utils.cubemap_lod_base import CubeMapLodBase
 from bennu_feature_extractor_PDS.utils.polars_3D_expressions import (
     FACES, Polars3DExpressions)
 
+Pair = Tuple[int, int]
+PairGroups = Tuple[Pair, ...]
 
+
+@dataclass(frozen=True, slots=True)
+class LodNode(CubeMapLodBase):
+
+    def render_region(self, face: str,
+                      target_width: int) -> FSPathLocalDisk:
+        posX, posY, depth, _ = self.get_proportion_roi()
+        roi, total = self.get_region(target_width)
+
+        x_range: Tuple[float, float] = (posX, posX + depth)
+        y_range: Tuple[float, float] = (posY, posY + depth)
+
+        tile = OBJToLAS.rasterize_tris(
+            *self.img, face, x_range, y_range, (target_width, target_width))
+
+        relative_path: Path = Path(*self.src_file.path).parent / Path(f"{Path(*self.src_file.path).name} LAS_lod_extract", f"lod_{len(self.shape)}",
+                                                                      f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.png")
+
+        export_file = FSPathLocalDisk(
+            path=relative_path.parts,
+            markers=frozenset([FSMarkerString(value="ProjectModel_lod")]),
+            root_path=self.src_file.root_path
+        )
+
+        export_file.make_directory()
+        if not (export_file.exists and self.skip_if_exists):
+            FSEnvironment.save(tile, export_file, FSTiffAdapter())
+
+        return export_file
+
+    def get_proportion_roi(self) -> Tuple[float, float, float, float]:
+        posX = sum(xb / (2 ** (i + 1))
+                   for i, (xb, yb) in enumerate(self.shape))
+        posY = sum(yb / (2 ** (i + 1))
+                   for i, (xb, yb) in enumerate(self.shape))
+
+        depth = 2 ** (-len(self.shape))
+
+        return (posX, posY, depth, depth)
+
+
+@dataclass()
 class OBJToLAS(StepBase):
+    lod_res: int
+    depth: int
     root_path: Path
+    skip_if_exists: bool
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -40,10 +91,16 @@ class OBJToLAS(StepBase):
 
         Polars3DExpressions.process_mesh(points, tris)
 
-        for face in FACES:
-            rasterized_array = self.rasterize_tris(points, tris, face)
+        img: Tuple[pl.DataFrame, pl.DataFrame] = (points, tris)
 
-            rasterized_array.save
+        for lod_depth in range(self.depth + 1):
+            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth}")(n_jobs=-1)(
+                delayed(
+                    LodNode.render_on_all_faces)(
+                    LodNode(shape, img, file, self.skip_if_exists),
+                    target_width=self.lod_res)
+                for shape in PANToLOD.all_binaries(bits=2 * lod_depth)
+            )
 
     @staticmethod
     def rasterize_tris(points: pl.DataFrame,
@@ -63,8 +120,6 @@ class OBJToLAS(StepBase):
                                  .to_pandas())
 
         mesh = du.mesh(pd_verts, pd_tris)
-
-        tifffile.imwrite('tri_ratio.tiff', arr)
 
         W, H = res
         cvs = ds.Canvas(

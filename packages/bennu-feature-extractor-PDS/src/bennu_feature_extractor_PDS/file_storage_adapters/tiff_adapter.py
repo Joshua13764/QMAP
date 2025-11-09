@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 
 
 class FSTiffAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
+    """Uses the tifffile module to read / write images with a wide range of precision (including float 64)"""
 
     def read(self, path: FSPathLocalDisk) -> NDArray[Any]:
         return tifffile.imread(path.actual_path.as_posix())
