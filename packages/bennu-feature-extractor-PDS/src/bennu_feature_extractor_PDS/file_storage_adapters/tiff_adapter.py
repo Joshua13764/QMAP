@@ -15,4 +15,4 @@ class FSTiffAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
         return tifffile.imread(path.actual_path.as_posix())
 
     def write(self, obj: NDArray[Any], path: FSPathLocalDisk) -> None:
-        raise tifffile.imwrite(path.actual_path.as_posix(), obj)
+        return tifffile.imwrite(path.actual_path.as_posix(), obj)

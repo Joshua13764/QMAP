@@ -7,6 +7,9 @@ from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base impo
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
+from bennu_feature_extractor_PDS.utils.polars_3D_expressions import (
+    POINT_ATTRS, VERT_ID_COLS)
+
 IDX_COL_HEADERS: List[str] = ["0", "1", "2"]
 
 
@@ -29,11 +32,9 @@ class FSPolarsObjAdapter(
             path.actual_path.as_posix(), file_type="obj", process=True)
 
         points: pl.DataFrame = pl.DataFrame(
-            mesh.vertices.tolist(), schema=[
-                "x", "y", "z"], orient="row").with_row_index("vid")
+            mesh.vertices.tolist(), schema=POINT_ATTRS, orient="row").with_row_index("vid")
         tris: pl.DataFrame = pl.DataFrame(
-            mesh.faces.tolist(), schema=[
-                "0", "1", "2"], orient="row")
+            mesh.faces.tolist(), schema=VERT_ID_COLS, orient="row")
 
         return (points, tris)
 

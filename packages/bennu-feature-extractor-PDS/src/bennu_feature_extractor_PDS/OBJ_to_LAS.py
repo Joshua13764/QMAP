@@ -10,6 +10,8 @@ import polars as pl
 from bennu_feature_extractor.environment import *
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
+from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
+    FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
 from joblib import Parallel, delayed
 from tqdm_joblib import ParallelPbar
@@ -20,6 +22,7 @@ from bennu_feature_extractor_PDS.file_storage_adapters.tiff_adapter import \
     FSTiffAdapter
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.utils.cubemap_lod_base import CubeMapLodBase
+# from bennu_feature_extractor_PDS.file_storage_adapters.polars_obj_adapter_fast import FS
 from bennu_feature_extractor_PDS.utils.polars_3D_expressions import (
     FACES, Polars3DExpressions)
 
@@ -76,8 +79,13 @@ class OBJToLAS(StepBase):
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
-        files: List[FSPathLocalDisk] = env.get_paths(
+        paths: List[FSPathLocalDisk] = env.get_paths(
             FSPathLocalDisk, lambda x: FSMarkerString("ProjectModel") in x.markers)
+
+        for path in paths:
+            self.project_model(path)
+
+        # exports: List[List[FSPathLocalDisk]] = [self.project_model(file) for file in files]
 
         return FSEnvironment.merge([env])
 
@@ -86,21 +94,19 @@ class OBJToLAS(StepBase):
         fileData: tuple[pl.DataFrame, pl.DataFrame] = FSEnvironment.load(
             file, FSPolarsObjAdapter())
 
-        points: pl.DataFrame = fileData[0]
-        tris: pl.DataFrame = fileData[1]
+        fileData = Polars3DExpressions.process_mesh(*fileData)
 
-        Polars3DExpressions.process_mesh(points, tris)
-
-        img: Tuple[pl.DataFrame, pl.DataFrame] = (points, tris)
-
+        export_groups = []
         for lod_depth in range(self.depth + 1):
-            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth}")(n_jobs=-1)(
+            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=-1)(
                 delayed(
                     LodNode.render_on_all_faces)(
-                    LodNode(shape, img, file, self.skip_if_exists),
+                    LodNode(shape, fileData, file, self.skip_if_exists),
                     target_width=self.lod_res)
                 for shape in PANToLOD.all_binaries(bits=2 * lod_depth)
             )
+
+        return export_groups
 
     @staticmethod
     def rasterize_tris(points: pl.DataFrame,

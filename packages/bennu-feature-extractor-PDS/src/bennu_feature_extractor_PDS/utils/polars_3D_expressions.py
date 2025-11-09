@@ -3,6 +3,7 @@ from typing import List
 import polars as pl
 
 FACES: List[str] = ["posx", "negx", "posy", "negy", "posz", "negz"]
+POINT_ATTRS: List[str] = ["x", "y", "z"]
 PROJECTED_POINT_ATTRS: List[str] = ["u", "v", "N"]
 VERT_ID_COLS: List[str] = ["0", "1", "2"]
 
@@ -23,25 +24,28 @@ class Polars3DExpressions:
         return tris.filter(ensure_not_back_facing & ensure_non_degenerate)
 
     @staticmethod
-    def process_mesh(points: pl.DataFrame, tris: pl.DataFrame):
+    def process_mesh(points: pl.DataFrame,
+                     tris: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
 
         points = points.with_columns(
             Polars3DExpressions.get_project_points_expression())
 
-        points = points.with_columns(
+        tris = tris.with_columns(
             Polars3DExpressions.get_gather_points_to_tris_expression(points))
 
-        points = points.with_columns(
+        tris = tris.with_columns(
             Polars3DExpressions.get_gather_unprojected_tri_positions_expressions(points))
 
-        points = points.with_columns(
+        tris = tris.with_columns(
             Polars3DExpressions.get_calculate_unprojected_tri_area_expression())
 
-        points = points.with_columns(
+        tris = tris.with_columns(
             Polars3DExpressions.get_calculate_projected_tri_area_expressions())
 
-        points = points.with_columns(
+        tris = tris.with_columns(
             Polars3DExpressions.get_calculate_tri_area_ratios_expressions())
+
+        return (points, tris)
 
     @staticmethod
     def get_project_points_expression() -> List[pl.Expr]:
@@ -99,10 +103,10 @@ class Polars3DExpressions:
         return [
             pl.lit(
                 points.get_column(
-                    f"{face}_{projected_point_attr}").gather(
-                    pl.col(vert_id).cast(
-                        pl.UInt32)).alias(
-                    f"{face}_{projected_point_attr}{vert_id}"))
+                    f"{face}_{projected_point_attr}")).gather(
+                pl.col(vert_id).cast(
+                    pl.UInt32)).alias(
+                f"{face}_{projected_point_attr}{vert_id}")
             for projected_point_attr in PROJECTED_POINT_ATTRS
             for vert_id in VERT_ID_COLS
             for face in FACES
@@ -121,11 +125,11 @@ class Polars3DExpressions:
         """
         return [
             pl.lit(
-                points.get_column(projected_point_attr)).gather(
+                points.get_column(point_attr)).gather(
                 pl.col(vert_id).cast(
                     pl.UInt32)).alias(
-                f"{projected_point_attr}{vert_id}")
-            for projected_point_attr in PROJECTED_POINT_ATTRS
+                f"{point_attr}{vert_id}")
+            for point_attr in POINT_ATTRS
             for vert_id in VERT_ID_COLS
         ]
 

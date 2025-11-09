@@ -5,6 +5,8 @@ from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base impo
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
+from bennu_feature_extractor_PDS.utils.polars_3D_expressions import POINT_ATTRS, VERT_ID_COLS
+
 
 class FSPolarsObjAdapter(
         FSAdapterBase[tuple[pl.DataFrame, pl.DataFrame], FSPathLocalDisk]):
@@ -25,9 +27,8 @@ class FSPolarsObjAdapter(
         verts, faces = igl.read_triangle_mesh(path.actual_path.as_posix())
 
         points: pl.DataFrame = pl.DataFrame(
-            verts, schema=[
-                "x", "y", "z"]).with_row_index("vid")
-        tris = pl.DataFrame(faces, schema=["0", "1", "2"])
+            verts, schema=POINT_ATTRS).with_row_index("vid")
+        tris = pl.DataFrame(faces, schema=VERT_ID_COLS)
 
         return (points, tris)
 
