@@ -1,5 +1,3 @@
-from typing import Any
-
 import igl
 import polars as pl
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
@@ -26,7 +24,7 @@ class FSPolarsObjAdapter(
 
         verts, faces = igl.read_triangle_mesh(path.actual_path.as_posix())
 
-        points = pl.DataFrame(
+        points: pl.DataFrame = pl.DataFrame(
             verts, schema=[
                 "x", "y", "z"]).with_row_index("vid")
         tris = pl.DataFrame(faces, schema=["0", "1", "2"])

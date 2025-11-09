@@ -1,4 +1,4 @@
-from typing import Any
+from typing import List
 
 import polars as pl
 import trimesh
@@ -6,6 +6,8 @@ from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base impo
     FSAdapterBase
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
+
+IDX_COL_HEADERS: List[str] = ["0", "1", "2"]
 
 
 class FSPolarsObjAdapter(

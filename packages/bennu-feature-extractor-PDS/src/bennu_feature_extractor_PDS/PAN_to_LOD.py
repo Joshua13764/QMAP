@@ -6,7 +6,6 @@ from sys import path
 from typing import Any, Iterator, List, Tuple
 
 import cv2
-import imageio.v3 as iio
 import numpy as np
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
