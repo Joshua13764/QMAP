@@ -1,6 +1,7 @@
 from typing import List
 
 import polars as pl
+from polars import Expr
 
 FACES: List[str] = ["posx", "negx", "posy", "negy", "posz", "negz"]
 POINT_ATTRS: List[str] = ["x", "y", "z"]
@@ -13,7 +14,7 @@ class Polars3DExpressions:
     @staticmethod
     def filter_faces_for_rasterization(
             tris: pl.DataFrame, face: str, eps_uv=1e-12) -> pl.DataFrame:
-        ensure_not_back_facing: pl.Expr = (
+        ensure_not_behind_plane: pl.Expr = (
             (pl.col(f"{face}_N0") > 0) &
             (pl.col(f"{face}_N1") > 0) &
             (pl.col(f"{face}_N2") > 0)
@@ -21,7 +22,7 @@ class Polars3DExpressions:
 
         ensure_non_degenerate: pl.Expr = pl.col(f"{face}_area_uv") > eps_uv
 
-        return tris.filter(ensure_not_back_facing & ensure_non_degenerate)
+        return tris.filter(ensure_not_behind_plane & ensure_non_degenerate)
 
     @staticmethod
     def process_mesh(points: pl.DataFrame,
@@ -44,6 +45,37 @@ class Polars3DExpressions:
 
         tris = tris.with_columns(
             Polars3DExpressions.get_calculate_tri_area_ratios_expressions())
+
+        return (points, tris)
+
+    @staticmethod
+    def process_extra_mesh_data(points: pl.DataFrame,
+                                tris: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+
+        x_mean: Expr = (pl.col("x0") + pl.col("x1") + pl.col("x2")) * (1 / 3)
+        y_mean: Expr = (pl.col("y0") + pl.col("y1") + pl.col("y2")) * (1 / 3)
+        z_mean: Expr = (pl.col("z0") + pl.col("z1") + pl.col("z2")) * (1 / 3)
+
+        r_mean: Expr = (x_mean ** 2 + y_mean ** 2 + z_mean ** 2) ** 0.5
+        r_mean_projected: Expr = r_mean / \
+            pl.max_horizontal(x_mean.abs(), y_mean.abs(), z_mean.abs())
+
+        tris = tris.with_columns(r_mean.alias("xyz_radius"))
+        tris = tris.with_columns(
+            r_mean_projected.alias("projected_radius"))
+        tris = tris.with_columns(
+            (r_mean / r_mean_projected).alias("radius_ratio"))  # r_before / r_after
+
+        angle_exprs: List[Expr] = []
+        for face in FACES:
+
+            angle: Expr = ((pl.col("radius_ratio") ** 2)
+                           * (1 / pl.col(f"{face}_ratio")))
+            angle_exprs.append(
+                angle.alias(f"{face}_cos(angle)")
+            )
+
+        tris = tris.with_columns(angle_exprs)
 
         return (points, tris)
 

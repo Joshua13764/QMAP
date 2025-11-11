@@ -142,7 +142,8 @@ def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
         root_path=pipeline_working_path,
         lod_res=1024,
         depth=4,
-        skip_if_exists=True
+        skip_if_exists=False,
+        debug_mode=True
     ).submit_task(env).result()
 
     return None

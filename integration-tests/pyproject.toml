@@ -28,6 +28,7 @@ tifffile = "^2025.10.16"
 trimesh = "^4.9.0"
 urllib3 = "^2.5.0"
 pyarrow = "^22.0.0"
+scienceplots = "^2.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]
