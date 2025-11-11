@@ -10,6 +10,9 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
     FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
 from joblib import delayed
+from numpy import dtype, float64
+from numpy._typing._array_like import NDArray
+from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
 from bennu_feature_extractor_PDS.file_storage_adapters.polars_obj_adapter import \
@@ -39,8 +42,9 @@ class LodNode(CubeMapLodBase):
         x_range: Tuple[float, float] = (posX, posX + depth)
         y_range: Tuple[float, float] = (posY, posY + depth)
 
-        arr = ProjectionPlotting.rasterize_tris(
-            *self.img, face, x_range, y_range, (target_width, target_width))
+        points, tris = self.img
+        tris_filtered: pl.DataFrame = Polars3DExpressions.filter_faces_for_rasterization(
+            tris, face)
 
         relative_path: Path = Path(*self.src_file.path).parent / Path(
             f"{Path(*self.src_file.path).name} LAS_lod_extract", f"lod_{len(self.shape)}", f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.png")
@@ -52,12 +56,15 @@ class LodNode(CubeMapLodBase):
         )
 
         export_file.make_directory()
-        # if not (export_file.exists and self.skip_if_exists):
-        # FSEnvironment.save(arr, export_file, FSTiffAdapter())
+        if not (export_file.exists and self.skip_if_exists):
+            arr: NDArray[float64] = ProjectionPlotting.rasterize_tris(
+                points, tris, face, x_range, y_range, (target_width, target_width))
+
+            FSEnvironment.save(arr, export_file, FSTiffAdapter())
 
         if self.debug_mode:
             ProjectionPlotting.plot_debug_data(
-                *self.img, face, x_range, y_range, export_file.actual_path, self.skip_if_exists)
+                points, tris_filtered, face, x_range, y_range, export_file.actual_path, self.skip_if_exists)
 
         return export_file
 
