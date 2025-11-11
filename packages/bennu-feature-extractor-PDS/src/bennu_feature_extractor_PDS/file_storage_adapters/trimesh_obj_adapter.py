@@ -1,5 +1,3 @@
-from typing import Any
-
 import trimesh
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
@@ -7,8 +5,7 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
     FSPathLocalDisk
 
 
-class FSTrimeshAdapter(
-        FSAdapterBase[trimesh.Trimesh, FSPathLocalDisk]):
+class FSTrimeshAdapter(FSAdapterBase[trimesh.Trimesh, FSPathLocalDisk]):
 
     def read(self, path: FSPathLocalDisk) -> trimesh.Trimesh:
         return trimesh.load_mesh(
