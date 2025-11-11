@@ -108,7 +108,7 @@ class OBJToLAS(StepBase):
 
         export_groups = []
         for lod_depth in range(self.depth + 1):
-            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=-1)(
+            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=1)(
                 delayed(
                     LodNode.render_on_all_faces)(
                     LodNode(
