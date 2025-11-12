@@ -21,6 +21,7 @@ from bennu_feature_extractor_BoulderNet.utils.docker_helpers import \
 @dataclass()
 class PDS4BoulderNetInference(StepBase):
     run_path: Path
+    batch_size: int = 64
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -35,12 +36,14 @@ class PDS4BoulderNetInference(StepBase):
             for f in files_to_infer
         ]
 
-        ParallelPbar(f"Infering from images", unit="img")(n_jobs=1)(
+        DockerHelpers.ensure_image_exists()
+
+        ParallelPbar(f"Infering from images", unit="img batches")(n_jobs=1)(
             delayed(
                 DockerHelpers.analyse_image)(
                 file_to_infer,
                 inference_output_file,
-                verbose=False)
+                verbose=True)
             for file_to_infer, inference_output_file in zip(
                 files_to_infer, inference_output_files)
         )

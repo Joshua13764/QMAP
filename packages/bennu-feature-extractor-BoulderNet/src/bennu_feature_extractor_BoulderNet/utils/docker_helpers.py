@@ -4,6 +4,7 @@ from typing import Dict, Iterable, Optional, Tuple, Union
 import docker
 from bennu_feature_extractor.environment import *
 from docker.errors import APIError, ImageNotFound
+from docker.models.containers import Container
 
 DOCKER_IMAGE_TAG = "mltools:py3.10"
 
@@ -11,28 +12,30 @@ DOCKER_IMAGE_TAG = "mltools:py3.10"
 class DockerHelpers():
 
     @staticmethod
-    def analyse_image(image_path: FSPathLocalDisk,
-                      inference_output_path: FSPathLocalDisk, verbose: bool = False) -> None:
+    def ensure_image_exists() -> None:
+        """Makes sure the image exists otherwise will create it from the Dockerfile
+
+        Raises:
+            FileNotFoundError: Expected Dockerfile at ... but it was not found
+            RuntimeError: Could not communicate with Docker error
         """
-        Ensure the Docker image exists (build it from BoulderNetCPU if missing),
-        then run the overlay script. Output is written to the mounted host dir.
-        """
-        # Locate overlay script and Dockerfile directory
+
         overlay_script: Path = Path(
             __file__).parent / "BoulderNetCPU" / "bouldernet_infer_overlay.py"
         overlay_dir: Path = overlay_script.parent
-        dockerfile_rel = "Dockerfile"
-        dockerfile_abs = overlay_dir / dockerfile_rel
+        dockerfile_rel: str = "Dockerfile"
+        dockerfile_abs: Path = overlay_dir / dockerfile_rel
 
-        # --- ensure the image exists (build if needed from BoulderNetCPU) ---
         try:
             client: docker.DockerClient = docker.from_env()
             client.images.get(DOCKER_IMAGE_TAG)
+
         except ImageNotFound:
             if not dockerfile_abs.is_file():
                 raise FileNotFoundError(
                     f"Expected Dockerfile at {dockerfile_abs} but it was not found."
                 )
+
             print(
                 f"Image '{DOCKER_IMAGE_TAG}' not found. Building from {overlay_dir} ...")
             DockerHelpers.build_image(
@@ -43,14 +46,21 @@ class DockerHelpers():
                 no_cache=False,
                 build_args=None,
             )
+
         except APIError as e:
             raise RuntimeError(
                 "Could not communicate with Docker. Is the daemon running?"
             ) from e
 
-        # --- decide where outputs should go inside the container ---
-        host_in_dir = image_path.actual_path.parent
-        host_out_dir = inference_output_path.actual_path.parent
+    @staticmethod
+    def analyse_image(image_path: FSPathLocalDisk,
+                      inference_output_path: FSPathLocalDisk, verbose: bool = False) -> None:
+
+        overlay_script: Path = Path(
+            __file__).parent / "BoulderNetCPU" / "bouldernet_infer_overlay.py"
+
+        host_in_dir: Path = image_path.actual_path.parent
+        host_out_dir: Path = inference_output_path.actual_path.parent
 
         mounts = []
         env: Dict[str, str] = {}
@@ -123,7 +133,6 @@ class DockerHelpers():
         name: Optional[str] = None,
         extra_args: Optional[Iterable[str]] = None,
         extra_mounts: Optional[Iterable[tuple]] = None,
-        # [(host_dir, "/in", "ro"), ...]
 
     ) -> Tuple[int, str]:
         """Run a local Python script inside the container.
@@ -134,17 +143,18 @@ class DockerHelpers():
         host_script = Path(script_path).resolve(strict=True)
         host_dir = str(host_script.parent)
 
-        volumes = {host_dir: {"bind": mount_into, "mode": "rw"}}
+        volumes: Dict[str, Dict[str, str]] = {
+            host_dir: {"bind": mount_into, "mode": "rw"}}
         if extra_mounts:
             for host_d, bind_to, mode in extra_mounts:
                 h = str(Path(host_d).resolve())
                 volumes[h] = {"bind": bind_to, "mode": mode}
 
-        container_workdir = workdir or mount_into
-        container_script = f"{mount_into.rstrip('/')}/{host_script.name}"
+        container_workdir: str = workdir or mount_into
+        container_script: str = f"{mount_into.rstrip('/')}/{host_script.name}"
 
-        client = docker.from_env()
-        container = client.containers.run(
+        client: docker.DockerClient = docker.from_env()
+        container: Container = client.containers.run(
             image=image,
             command=["python", container_script] +
             (list(extra_args) if extra_args else []),
@@ -156,7 +166,7 @@ class DockerHelpers():
         )
         result = container.wait()
         exit_code = int(result.get("StatusCode", 1))
-        output = container.logs(
+        output: str = container.logs(
             stdout=True,
             stderr=True).decode(
             "utf-8",
