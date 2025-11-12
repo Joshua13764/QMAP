@@ -39,7 +39,7 @@ class PDS4BoulderNetInference(StepBase):
 
         DockerHelpers.ensure_image_exists()
 
-        ParallelPbar(f"Inferring from images", unit="img batches")(n_jobs=1)(
+        ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {self.batch_size * len(inference_output_files)} images", unit="img batches")(n_jobs=1)(
             delayed(
                 DockerHelpers.analyse_image)(
                 image_paths,
