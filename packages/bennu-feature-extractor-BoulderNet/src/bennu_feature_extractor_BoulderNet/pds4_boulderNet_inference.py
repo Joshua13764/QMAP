@@ -35,17 +35,12 @@ class PDS4BoulderNetInference(StepBase):
             for f in files_to_infer
         ]
 
-        [DockerHelpers.analyse_image(img_src, out) for img_src, out in zip(
-            files_to_infer, inference_output_files)]
-
-        # ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=1)(
-        #         delayed(
-        #             LodNode.render_on_all_faces)(
-        #             LodNode(
-        #                 shape,
-        #                 fileData,
-        #                 file,
-        #                 self.skip_if_exists,
-        #                 self.debug_mode),
-        #             target_width=self.lod_res)
-        #         for shape in PANToLOD.all_binaries(bits=2 * lod_depth)
+        ParallelPbar(f"Infering from images", unit="img")(n_jobs=1)(
+            delayed(
+                DockerHelpers.analyse_image)(
+                file_to_infer,
+                inference_output_file,
+                verbose=False)
+            for file_to_infer, inference_output_file in zip(
+                files_to_infer, inference_output_files)
+        )

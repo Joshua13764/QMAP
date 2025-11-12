@@ -31,6 +31,8 @@ run_dir_store: LocalFileSystem | Coroutine[Any, Any,
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
 pipeline_working_path: Path = Path(r"F:\AO33\AO33_pipeline_DATA")
+pipeline_working_path_fast: Path = Path(
+    r"C:\Users\Joshu\Documents\AO33_DATA\Pipeline_running_path_fast")
 spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 
@@ -150,7 +152,7 @@ def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
 
     PDS4BoulderNetInference(
         result_storage=run_dir_store,
-        run_path=pipeline_working_path
+        run_path=pipeline_working_path_fast
     ).submit_task(env).result()
 
     return None

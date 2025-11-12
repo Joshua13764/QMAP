@@ -3,6 +3,7 @@ from typing import Dict, Iterable, Optional, Tuple, Union
 
 import docker
 from bennu_feature_extractor.environment import *
+from docker.errors import APIError, ImageNotFound
 
 DOCKER_IMAGE_TAG = "mltools:py3.10"
 
@@ -11,9 +12,10 @@ class DockerHelpers():
 
     @staticmethod
     def analyse_image(image_path: FSPathLocalDisk,
-                      inference_output_path: FSPathLocalDisk) -> None:
+                      inference_output_path: FSPathLocalDisk, verbose: bool = False) -> None:
         """
-        Ensure the Docker image exists (build it from BoulderNetCPU if missing), then run the overlay script.
+        Ensure the Docker image exists (build it from BoulderNetCPU if missing),
+        then run the overlay script. Output is written to the mounted host dir.
         """
         # Locate overlay script and Dockerfile directory
         overlay_script: Path = Path(
@@ -26,7 +28,7 @@ class DockerHelpers():
         try:
             client: docker.DockerClient = docker.from_env()
             client.images.get(DOCKER_IMAGE_TAG)
-        except docker.errors.ImageNotFound:
+        except ImageNotFound:
             if not dockerfile_abs.is_file():
                 raise FileNotFoundError(
                     f"Expected Dockerfile at {dockerfile_abs} but it was not found."
@@ -41,30 +43,43 @@ class DockerHelpers():
                 no_cache=False,
                 build_args=None,
             )
-        except docker.errors.APIError as e:
+        except APIError as e:
             raise RuntimeError(
                 "Could not communicate with Docker. Is the daemon running?"
             ) from e
 
-        # --- set up and run the analysis ---
-        # results appear next to the script under examples/out
-        env: Dict[str, str] = {
-            "OUT_DIR": inference_output_path.actual_path.parent.as_posix()
-        }
+        # --- decide where outputs should go inside the container ---
+        host_in_dir = image_path.actual_path.parent
+        host_out_dir = inference_output_path.actual_path.parent
 
+        mounts = []
+        env: Dict[str, str] = {}
+
+        if Path(host_out_dir).resolve() == Path(host_in_dir).resolve():
+            # Save next to the input image
+            env["OUT_DIR"] = "/in"
+            # Mount once, read+write
+            mounts.append((host_in_dir, "/in", "rw"))
+        else:
+            # Separate output directory
+            env["OUT_DIR"] = "/out"
+            mounts.append((host_in_dir, "/in", "ro"))
+            mounts.append((host_out_dir, "/out", "rw"))
+
+        # --- run the analysis script inside the container ---
         code, logs = DockerHelpers.run_script(
             DOCKER_IMAGE_TAG,
             overlay_script.as_posix(),
             env=env,
+            # container path to input
             extra_args=[f"/in/{image_path.actual_path.name}"],
-            # container path
-            # bind host folder -> /in
-            extra_mounts=[(image_path.actual_path.parent, "/in", "ro")],
+            extra_mounts=mounts,
         )
 
-        print("Exit:", code)
-        print(logs)
-        print("Host outputs:", (overlay_dir / "out"))
+        if verbose:
+            print("Exit:", code)
+            print(logs)
+            print("Expected host output dir:", host_out_dir)
 
     @staticmethod
     def build_image(
