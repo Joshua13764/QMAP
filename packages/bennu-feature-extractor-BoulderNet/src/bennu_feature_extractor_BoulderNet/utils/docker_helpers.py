@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import docker
 from bennu_feature_extractor.environment import *
@@ -8,8 +8,33 @@ from docker.models.containers import Container
 
 DOCKER_IMAGE_TAG = "mltools:py3.10"
 
+Mount = Tuple[Path, str, str]
+
 
 class DockerHelpers():
+
+    @staticmethod
+    def analyse_image(image_paths: List[FSPathLocalDisk],
+                      inference_output_paths: List[FSPathLocalDisk], verbose: bool = False) -> None:
+
+        overlay_script: Path = Path(
+            __file__).parent / "BoulderNetCPU" / "bouldernet_infer_overlay.py"
+
+        mounts, env = DockerHelpers.get_mounts_env(
+            image_paths, inference_output_paths)
+
+        code, logs = DockerHelpers.run_script(
+            DOCKER_IMAGE_TAG,
+            overlay_script.as_posix(),
+            env=env,
+            extra_args=[
+                f"/in/{image_path.actual_path.name}" for image_path in image_paths],
+            extra_mounts=mounts,
+        )
+
+        if verbose:
+            print("Exit:", code)
+            print(logs)
 
     @staticmethod
     def ensure_image_exists() -> None:
@@ -53,43 +78,27 @@ class DockerHelpers():
             ) from e
 
     @staticmethod
-    def analyse_image(image_path: FSPathLocalDisk,
-                      inference_output_path: FSPathLocalDisk, verbose: bool = False) -> None:
+    def get_mounts_env(image_paths: List[FSPathLocalDisk],
+                       inference_output_paths: List[FSPathLocalDisk]) -> Tuple[List[Mount], Dict[str, str]]:
 
-        overlay_script: Path = Path(
-            __file__).parent / "BoulderNetCPU" / "bouldernet_infer_overlay.py"
-
-        host_in_dir: Path = image_path.actual_path.parent
-        host_out_dir: Path = inference_output_path.actual_path.parent
-
-        mounts = []
+        mounts: List[Mount] = []
         env: Dict[str, str] = {}
 
-        if Path(host_out_dir).resolve() == Path(host_in_dir).resolve():
-            # Save next to the input image
-            env["OUT_DIR"] = "/in"
-            # Mount once, read+write
-            mounts.append((host_in_dir, "/in", "rw"))
-        else:
-            # Separate output directory
-            env["OUT_DIR"] = "/out"
-            mounts.append((host_in_dir, "/in", "ro"))
-            mounts.append((host_out_dir, "/out", "rw"))
+        for image_path, inference_output_path in zip(
+                image_paths, inference_output_paths):
 
-        # --- run the analysis script inside the container ---
-        code, logs = DockerHelpers.run_script(
-            DOCKER_IMAGE_TAG,
-            overlay_script.as_posix(),
-            env=env,
-            # container path to input
-            extra_args=[f"/in/{image_path.actual_path.name}"],
-            extra_mounts=mounts,
-        )
+            host_in_dir: Path = image_path.actual_path.parent
+            host_out_dir: Path = inference_output_path.actual_path.parent
 
-        if verbose:
-            print("Exit:", code)
-            print(logs)
-            print("Expected host output dir:", host_out_dir)
+            if Path(host_out_dir).resolve() == Path(host_in_dir).resolve():
+                env["OUT_DIR"] = "/in"
+                mounts.append((host_in_dir, "/in", "rw"))
+            else:
+                env["OUT_DIR"] = "/out"
+                mounts.append((host_in_dir, "/in", "ro"))
+                mounts.append((host_out_dir, "/out", "rw"))
+
+        return mounts, env
 
     @staticmethod
     def build_image(

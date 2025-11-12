@@ -58,6 +58,20 @@ def build_predictor(cfg_path: str, weights_path: str,
     return DefaultPredictor(cfg)
 
 
+def infer_image(in_path: Path, out_dir: Path, predictor):
+
+    bgr = cv2.imread(str(in_path), cv2.IMREAD_COLOR)
+    if bgr is None:
+        raise ValueError(f"OpenCV failed to read image: {in_path}")
+
+    outputs = predictor(bgr)
+    instances = outputs["instances"].to("cpu")
+    print(f"[Result] detections: {len(instances)}")
+
+    render_overlay(bgr, instances, out_dir / in_path.name)
+    export_inference_data(instances, out_dir / in_path.name)
+
+
 def main() -> None:
     # paths from env (set in Dockerfile) with sensible defaults
     cfg_path: str = os.environ.get(
@@ -73,21 +87,12 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python bouldernet_infer_overlay.py /path/to/image.png")
         sys.exit(2)
-    in_path = Path(sys.argv[1])
-    if not in_path.exists():
-        raise FileNotFoundError(in_path)
-
-    bgr = cv2.imread(str(in_path), cv2.IMREAD_COLOR)
-    if bgr is None:
-        raise ValueError(f"OpenCV failed to read image: {in_path}")
 
     predictor = build_predictor(cfg_path, weights_path)
-    outputs = predictor(bgr)
-    instances = outputs["instances"].to("cpu")
-    print(f"[Result] detections: {len(instances)}")
+    in_paths: list[Path] = [Path(p) for p in sys.argv[1:]]
 
-    render_overlay(bgr, instances, out_dir / in_path.name)
-    export_inference_data(instances, out_dir / in_path.name)
+    for in_path in in_paths:
+        infer_image(in_path, out_dir, predictor)
 
 
 if __name__ == "__main__":
