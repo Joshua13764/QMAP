@@ -79,7 +79,8 @@ class PDS_to_PNG(StepBase):
                 self.cluster_key}' to PNG format..."
         )
 
-        ParallelPbar(desc="Converting PDS4 to PNG", unit="img")(n_jobs=-1, verbose=0, prefer="processes")(
+        # For hard disk n_jobs = 1 is better for read writing
+        ParallelPbar(desc="Converting PDS4 to PNG", unit="img")(n_jobs=1)(
             delayed(_quiet_call)(convert_png, xml, pds) for xml, pds in pairs
         )
 
