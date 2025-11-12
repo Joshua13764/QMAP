@@ -10,6 +10,8 @@ from bennu_feature_extractor.environment_tools.file_storage_adapters.png_adapter
     FSPNGAdapter
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
+from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
+    FSMarkerString
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
@@ -38,7 +40,8 @@ class PDS_to_PNG(StepBase):
         pds_files: List[FSPathLocalDisk] = [
             f.copy_as_new(
                 new_root_path=self.run_path,
-                new_extension=".png"
+                new_extension=".png",
+                markers=[FSMarkerString("InferableImage")]
             )
             for f in xml_files
         ]

@@ -8,6 +8,8 @@ from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string impor
 from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
+from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference import \
+    PDS4BoulderNetInference
 from bennu_feature_extractor_PDS.OBJ_to_LAS import OBJToLAS
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
@@ -34,9 +36,9 @@ spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 urls_to_download: list[str] = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
+    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
     # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
     # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
 ]
@@ -54,35 +56,35 @@ def data_loader_flow() -> FSEnvironment:
     #     ).submit_task()
     # )
 
-    # tasks += [
-    #     PDSDownloader(
+    tasks += [
+        PDSDownloader(
+            run_dir_store,
+            pds_download_path.as_posix(),
+            Url=url
+        ).submit_task()
+        for url in urls_to_download
+    ]
+
+    # tasks.append(
+    #     SimpleRequest(
     #         run_dir_store,
-    #         pds_download_path.as_posix(),
-    #         Url=url
+    #         url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
+    #         fs_path=pds_download_path,
+    #         sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
+    #         markers=frozenset([FSMarkerString(value="PAN_texture")])
     #     ).submit_task()
-    #     for url in urls_to_download
-    # ]
+    # )
 
-    tasks.append(
-        SimpleRequest(
-            run_dir_store,
-            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
-            fs_path=pds_download_path,
-            sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
-            markers=frozenset([FSMarkerString(value="PAN_texture")])
-        ).submit_task()
-    )
-
-    tasks.append(
-        SimpleRequest(
-            run_dir_store,
-            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
-            fs_path=pds_download_path,
-            sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
-            markers=frozenset(
-                [FSMarkerString(value="OCAMS Model"), FSMarkerString("ProjectModel")])
-        ).submit_task()
-    )
+    # tasks.append(
+    #     SimpleRequest(
+    #         run_dir_store,
+    #         url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
+    #         fs_path=pds_download_path,
+    #         sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
+    #         markers=frozenset(
+    #             [FSMarkerString(value="OCAMS Model"), FSMarkerString("ProjectModel")])
+    #     ).submit_task()
+    # )
 
     wait(tasks)
     envs: list[FSEnvironment] = [f.result() for f in tasks]
@@ -146,11 +148,17 @@ def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
     #     debug_mode=True
     # ).submit_task(env).result()
 
+    PDS4BoulderNetInference(
+        result_storage=run_dir_store,
+        run_path=pipeline_working_path
+    ).submit_task(env).result()
+
     return None
 
 
 if __name__ == "__main__":
     env: FSEnvironment = data_loader_flow()
-    pp_tasks_flow(env)
-    # data_convert_flow(env)
     # spice_kernals_loader_flow()
+    env2: FSEnvironment = data_convert_flow(env)
+
+    pp_tasks_flow(env2)

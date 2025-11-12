@@ -12,13 +12,45 @@ class DockerHelpers():
     @staticmethod
     def analyse_image(image_path: FSPathLocalDisk,
                       inference_output_path: FSPathLocalDisk) -> None:
+        """
+        Ensure the Docker image exists (build it from BoulderNetCPU if missing), then run the overlay script.
+        """
+        # Locate overlay script and Dockerfile directory
+        overlay_script: Path = Path(
+            __file__).parent / "BoulderNetCPU" / "bouldernet_infer_overlay.py"
+        overlay_dir: Path = overlay_script.parent
+        dockerfile_rel = "Dockerfile"
+        dockerfile_abs = overlay_dir / dockerfile_rel
 
-        overlay_script: Path = Path(__file__).parent / "BoulderNetCPU" / \
-            "bouldernet_infer_overlay.py"
+        # --- ensure the image exists (build if needed from BoulderNetCPU) ---
+        try:
+            client: docker.DockerClient = docker.from_env()
+            client.images.get(DOCKER_IMAGE_TAG)
+        except docker.errors.ImageNotFound:
+            if not dockerfile_abs.is_file():
+                raise FileNotFoundError(
+                    f"Expected Dockerfile at {dockerfile_abs} but it was not found."
+                )
+            print(
+                f"Image '{DOCKER_IMAGE_TAG}' not found. Building from {overlay_dir} ...")
+            DockerHelpers.build_image(
+                tag=DOCKER_IMAGE_TAG,
+                context_dir=overlay_dir,   # build context is BoulderNetCPU/
+                dockerfile=dockerfile_rel,  # Dockerfile within that context
+                pull=False,
+                no_cache=False,
+                build_args=None,
+            )
+        except docker.errors.APIError as e:
+            raise RuntimeError(
+                "Could not communicate with Docker. Is the daemon running?"
+            ) from e
 
+        # --- set up and run the analysis ---
         # results appear next to the script under examples/out
         env: Dict[str, str] = {
-            "OUT_DIR": inference_output_path.actual_path.parent.as_posix()}
+            "OUT_DIR": inference_output_path.actual_path.parent.as_posix()
+        }
 
         code, logs = DockerHelpers.run_script(
             DOCKER_IMAGE_TAG,
@@ -32,7 +64,7 @@ class DockerHelpers():
 
         print("Exit:", code)
         print(logs)
-        print("Host outputs:", (overlay_script.parent / "out"))
+        print("Host outputs:", (overlay_dir / "out"))
 
     @staticmethod
     def build_image(
