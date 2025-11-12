@@ -13,6 +13,10 @@ from numpy import dtype, ndarray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
+from bennu_feature_extractor_BoulderNet.utils import docker_helpers
+from bennu_feature_extractor_BoulderNet.utils.docker_helpers import \
+    DockerHelpers
+
 
 @dataclass()
 class PDS4BoulderNetInference(StepBase):
@@ -31,6 +35,9 @@ class PDS4BoulderNetInference(StepBase):
             for f in files_to_infer
         ]
 
+        [DockerHelpers.analyse_image(img_src, out) for img_src, out in zip(
+            files_to_infer, inference_output_files)]
+
         # ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=1)(
         #         delayed(
         #             LodNode.render_on_all_faces)(
@@ -42,9 +49,3 @@ class PDS4BoulderNetInference(StepBase):
         #                 self.debug_mode),
         #             target_width=self.lod_res)
         #         for shape in PANToLOD.all_binaries(bits=2 * lod_depth)
-
-    @staticmethod
-    def analyse_image(image_path: FSPathLocalDisk,
-                      inference_output_path: FSPathLocalDisk) -> None:
-
-        metadata, img = FSEnvironment.load(image_path, FSPDS4Adapter())
