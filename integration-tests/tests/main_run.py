@@ -137,14 +137,14 @@ def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
     #     skip_if_exists=True
     # ).submit_task(env).result()
 
-    OBJToLAS(
-        result_storage=run_dir_store,
-        root_path=pipeline_working_path,
-        lod_res=1024,
-        depth=4,
-        skip_if_exists=False,
-        debug_mode=True
-    ).submit_task(env).result()
+    # OBJToLAS(
+    #     result_storage=run_dir_store,
+    #     root_path=pipeline_working_path,
+    #     lod_res=1024,
+    #     depth=4,
+    #     skip_if_exists=False,
+    #     debug_mode=True
+    # ).submit_task(env).result()
 
     return None
 
