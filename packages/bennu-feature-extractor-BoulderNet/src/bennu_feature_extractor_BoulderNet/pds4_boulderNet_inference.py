@@ -1,14 +1,16 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Any, List, Sequence, Tuple
 
 from bennu_feature_extractor.environment import *
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 from bennu_feature_extractor.step_base import StepBase
-from bennu_feature_extractor_PDS import
-
+from bennu_feature_extractor_PDS.file_storage_adapters.pds4_adapter import (
+    ArrayStructure, FSPDS4Adapter)
 from joblib import delayed
+from numpy import dtype, ndarray
+from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
 
@@ -45,5 +47,4 @@ class PDS4BoulderNetInference(StepBase):
     def analyse_image(image_path: FSPathLocalDisk,
                       inference_output_path: FSPathLocalDisk) -> None:
 
-        img = FSEnvironment.load(image_path, pds4A)
-        ...
+        metadata, img = FSEnvironment.load(image_path, FSPDS4Adapter())
