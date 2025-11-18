@@ -35,6 +35,15 @@ pipeline_working_path_fast: Path = Path(
     r"C:\Users\Joshu\Documents\AO33_DATA\Pipeline_running_path_fast")
 spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
+# Published 2019 metakernel (covers Detailed Survey, Orbit B, Recon in 2019)
+MK_URLS = [
+    "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/mk/orx_2019_v08.tm",
+]
+
+# Optional: add a Bennu DSK as a plain file (no extraction)
+EXTRA_URLS = [
+    # "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds"
+]
 
 urls_to_download: list[str] = [
     "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
@@ -58,35 +67,35 @@ def data_loader_flow() -> FSEnvironment:
     #     ).submit_task()
     # )
 
-    tasks += [
-        PDSDownloader(
+    # tasks += [
+    #     PDSDownloader(
+    #         run_dir_store,
+    #         pds_download_path.as_posix(),
+    #         Url=url
+    #     ).submit_task()
+    #     for url in urls_to_download
+    # ]
+
+    tasks.append(
+        SimpleRequest(
             run_dir_store,
-            pds_download_path.as_posix(),
-            Url=url
+            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
+            fs_path=pds_download_path,
+            sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
+            markers=frozenset([FSMarkerString(value="PAN_texture")])
         ).submit_task()
-        for url in urls_to_download
-    ]
+    )
 
-    # tasks.append(
-    #     SimpleRequest(
-    #         run_dir_store,
-    #         url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
-    #         fs_path=pds_download_path,
-    #         sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
-    #         markers=frozenset([FSMarkerString(value="PAN_texture")])
-    #     ).submit_task()
-    # )
-
-    # tasks.append(
-    #     SimpleRequest(
-    #         run_dir_store,
-    #         url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
-    #         fs_path=pds_download_path,
-    #         sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
-    #         markers=frozenset(
-    #             [FSMarkerString(value="OCAMS Model"), FSMarkerString("ProjectModel")])
-    #     ).submit_task()
-    # )
+    tasks.append(
+        SimpleRequest(
+            run_dir_store,
+            url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
+            fs_path=pds_download_path,
+            sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
+            markers=frozenset(
+                [FSMarkerString(value="OCAMS Model"), FSMarkerString("ProjectModel")])
+        ).submit_task()
+    )
 
     wait(tasks)
     envs: list[FSEnvironment] = [f.result() for f in tasks]
@@ -108,17 +117,6 @@ def data_convert_flow(env: FSEnvironment) -> FSEnvironment:
     return converted_env
 
 
-# Published 2019 metakernel (covers Detailed Survey, Orbit B, Recon in 2019)
-MK_URLS = [
-    "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/mk/orx_2019_v08.tm",
-]
-
-# Optional: add a Bennu DSK as a plain file (no extraction)
-EXTRA_URLS = [
-    # "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds"
-]
-
-
 @flow(task_runner=ThreadPoolTaskRunner(max_workers=20))
 def spice_kernals_loader_flow() -> FSEnvironment:
     # One task that mirrors everything referenced by the MK(s)
@@ -134,12 +132,12 @@ def spice_kernals_loader_flow() -> FSEnvironment:
 
 @flow()
 def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
-    # PANToLOD(
-    #     result_storage=run_dir_store,
-    #     root_path=pipeline_working_path,
-    #     lod_res=1024,
-    #     skip_if_exists=True
-    # ).submit_task(env).result()
+    pan_env = PANToLOD(
+        result_storage=run_dir_store,
+        root_path=pipeline_working_path,
+        lod_res=1024,
+        skip_if_exists=True
+    ).submit_task(env).result()
 
     # OBJToLAS(
     #     result_storage=run_dir_store,
@@ -153,14 +151,13 @@ def pp_tasks_flow(env: FSEnvironment) -> FSEnvironment:
     PDS4BoulderNetInference(
         result_storage=run_dir_store,
         run_path=pipeline_working_path_fast
-    ).submit_task(env).result()
+    ).submit_task(pan_env).result()
 
-    return None
+    return pan_env
 
 
 if __name__ == "__main__":
     env: FSEnvironment = data_loader_flow()
     # spice_kernals_loader_flow()
     env2: FSEnvironment = data_convert_flow(env)
-
     pp_tasks_flow(env2)

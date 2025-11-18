@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Sequence, Tuple
+from typing import Dict, Iterator, List, Set, Tuple
 
 from bennu_feature_extractor.environment import *
 from bennu_feature_extractor.environment_tools.fs_environment import \
@@ -17,6 +17,18 @@ from tqdm_joblib import ParallelPbar
 from bennu_feature_extractor_BoulderNet.utils import docker_helpers
 from bennu_feature_extractor_BoulderNet.utils.docker_helpers import \
     DockerHelpers
+
+
+@dataclass()
+class FSPathLocalDiskChunk():
+    files_to_infer: List[FSPathLocalDisk] = field(default_factory=list)
+    inference_output_files: List[FSPathLocalDisk] = field(default_factory=list)
+
+    def get_sub_chunks(
+            self, batch_size: int = 64) -> Iterator[Tuple[list[FSPathLocalDisk], list[FSPathLocalDisk]]]:
+
+        return zip(chunked(self.files_to_infer, batch_size),
+                   chunked(self.inference_output_files, batch_size))
 
 
 @dataclass()
@@ -39,12 +51,37 @@ class PDS4BoulderNetInference(StepBase):
 
         DockerHelpers.ensure_image_exists()
 
-        ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {self.batch_size * len(inference_output_files)} images", unit="img batches")(n_jobs=1)(
-            delayed(
-                DockerHelpers.analyse_image)(
-                image_paths,
-                inference_output_paths,
-                verbose=True)
-            for image_paths, inference_output_paths in zip(
-                chunked(files_to_infer, self.batch_size), chunked(inference_output_files, self.batch_size))
-        )
+        in_folder_data: Dict[str, FSPathLocalDiskChunk] = self.sort_data_by_folders(
+            files_to_infer, inference_output_files)
+
+        for chunk_folder_path, chunk in in_folder_data.items():
+
+            ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {self.batch_size * len(chunk.inference_output_files)} images in folder {chunk_folder_path}",
+                         unit=f"{self.batch_size} img batches")(n_jobs=1)(
+                delayed(
+                    DockerHelpers.analyse_image)(
+                    image_paths,
+                    inference_output_paths,
+                    verbose=True)
+                for image_paths, inference_output_paths in chunk.get_sub_chunks()
+            )
+
+    @staticmethod
+    def sort_data_by_folders(files_to_infer: List[FSPathLocalDisk],
+                             inference_output_files: List[FSPathLocalDisk]) -> Dict[str, FSPathLocalDiskChunk]:
+
+        in_folders: Set[Path] = {
+            file.actual_path.parent for file in files_to_infer}
+
+        in_folders_data: Dict[str, FSPathLocalDiskChunk] = {
+            folder.as_posix(): FSPathLocalDiskChunk() for folder in in_folders}
+
+        for file_to_infer, inference_output_file in zip(
+                files_to_infer, inference_output_files):
+
+            in_folders_data[file_to_infer.actual_path.parent.as_posix(
+            )].files_to_infer.append(file_to_infer)
+            in_folders_data[file_to_infer.actual_path.parent.as_posix(
+            )].inference_output_files.append(inference_output_file)
+
+        return in_folders_data
