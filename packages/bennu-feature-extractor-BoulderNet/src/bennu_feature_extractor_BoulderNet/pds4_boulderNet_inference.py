@@ -66,6 +66,22 @@ class PDS4BoulderNetInference(StepBase):
                 for image_paths, inference_output_paths in chunk.get_sub_chunks(batch_size=self.batch_size)
             )
 
+        outputs: List[FSPathLocalDisk] = [
+            f.copy_as_new_name(
+                new_root_path=self.run_path,
+                new_extension="_overlay.png"  # BoulderNetInference (bni)
+            )
+            for f in files_to_infer
+        ] + [
+            f.copy_as_new_name(
+                new_root_path=self.run_path,
+                new_extension="_detections.png"  # BoulderNetInference (bni)
+            )
+            for f in files_to_infer
+        ]
+
+        return FSEnvironment(frozenset(outputs))
+
     @staticmethod
     def sort_data_by_folders(files_to_infer: List[FSPathLocalDisk],
                              inference_output_files: List[FSPathLocalDisk]) -> Dict[str, FSPathLocalDiskChunk]:

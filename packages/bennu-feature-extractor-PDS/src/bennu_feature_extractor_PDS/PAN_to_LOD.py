@@ -173,7 +173,7 @@ class PANToLOD(StepBase):
             e_img,
             mapx,
             mapy,
-            interpolation=cv2.INTER_LINEAR,
+            interpolation=cv2.INTER_AREA,
             borderMode=cv2.BORDER_WRAP)
         return tile  # shape (h, w, C)
 

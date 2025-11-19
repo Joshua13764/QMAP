@@ -31,3 +31,17 @@ class FSPathLocalDisk(FSPathBase):
             markers=frozenset(markers),
             root_path=new_root_path.as_posix(),
         )
+
+    def copy_as_new_name(self, new_root_path: Path,
+                         new_extension: str, markers: List[FSMarkerBase] = []) -> 'FSPathLocalDisk':
+        return FSPathLocalDisk(
+            path=Path(
+                *
+                self.path).with_name(
+                Path(
+                    *
+                    self.path).stem +
+                new_extension).parts,
+            markers=frozenset(markers),
+            root_path=new_root_path.as_posix(),
+        )

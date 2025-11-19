@@ -35,16 +35,6 @@ pipeline_working_path_fast: Path = Path(
     r"C:\Users\Joshu\Documents\AO33_DATA\Pipeline_running_path_fast")
 spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
-# Published 2019 metakernel (covers Detailed Survey, Orbit B, Recon in 2019)
-MK_URLS: List[str] = [
-    "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/mk/orx_2019_v08.tm",
-]
-
-# Optional: add a Bennu DSK as a plain file (no extraction)
-EXTRA_URLS: List[str] = [
-    # "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds"
-]
-
 step1 = BestModelDownloader(
     task_name="Download the best boulderNet model",
     DownloadPath=model_download_path.as_posix(),
@@ -117,8 +107,8 @@ step8 = PDS4BoulderNetInference(
 # step9 = SPICEKernelGrabber(
 #     task_name=f"Collect SPICE kernels",
 #     DownloadPath=spice_download_path.as_posix(),
-#     MkUrls=MK_URLS,
-#     ExtraUrls=EXTRA_URLS,
+#     MkUrls=["https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/mk/orx_2019_v08.tm"],
+#     ExtraUrls=["https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds"],
 # )
 
 STEPS: Sequence[StepBase] = [
