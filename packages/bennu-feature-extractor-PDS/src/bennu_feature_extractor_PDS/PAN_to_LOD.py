@@ -23,6 +23,11 @@ from bennu_feature_extractor_PDS.file_storage_adapters.iio_adapter import \
 Pair = Tuple[int, int]
 PairGroups = Tuple[Pair, ...]
 
+OUT_MARKERS: List[FSMarkerString] = [
+    FSMarkerString(
+        value="PAN_lod"), FSMarkerString(
+            value="InferableImage")]
+
 
 @dataclass(frozen=True, slots=True)
 class LodNode:
@@ -30,6 +35,7 @@ class LodNode:
     shape: Tuple[Pair, ...]
     img: Any
     src_file: FSPathLocalDisk
+    root_path: Path
     skip_if_exists: bool
 
     def get_total_width(self, target_width: int) -> int:
@@ -58,8 +64,8 @@ class LodNode:
 
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
-            markers=frozenset([FSMarkerString(value="PAN_lod")]),
-            root_path=self.src_file.root_path
+            markers=frozenset(OUT_MARKERS),
+            root_path=self.root_path.as_posix()
         )
 
         export_file.make_directory()
@@ -78,9 +84,9 @@ class LodNode:
         return export_files
 
 
-@dataclass
+@dataclass(frozen=True)
 class PANToLOD(StepBase):
-    root_path: Path
+    root_path: str
     lod_res: int
     skip_if_exists: bool
 
@@ -112,7 +118,12 @@ class PANToLOD(StepBase):
             export_groups += ParallelPbar(f"rendering lod_depth {lod_depth}")(n_jobs=-1)(
                 delayed(
                     LodNode.render_on_all_faces)(
-                    LodNode(shape, img, src_file, self.skip_if_exists),
+                    LodNode(
+                        shape,
+                        img,
+                        src_file,
+                        Path(self.root_path),
+                        self.skip_if_exists),
                     target_width=self.lod_res)
                 for shape in self.all_binaries(bits=2 * lod_depth)
             )
@@ -162,7 +173,7 @@ class PANToLOD(StepBase):
             e_img,
             mapx,
             mapy,
-            interpolation=cv2.INTER_LINEAR,
+            interpolation=cv2.INTER_AREA,
             borderMode=cv2.BORDER_WRAP)
         return tile  # shape (h, w, C)
 

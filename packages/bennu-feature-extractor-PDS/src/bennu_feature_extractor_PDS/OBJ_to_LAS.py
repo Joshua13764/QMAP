@@ -79,11 +79,10 @@ class LodNode(CubeMapLodBase):
         return (posX, posY, depth, depth)
 
 
-@dataclass()
+@dataclass(frozen=True)
 class OBJToLAS(StepBase):
     lod_res: int
     depth: int
-    root_path: Path
     skip_if_exists: bool
     debug_mode: bool
 
@@ -108,7 +107,7 @@ class OBJToLAS(StepBase):
 
         export_groups = []
         for lod_depth in range(self.depth + 1):
-            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=-1)(
+            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=1)(
                 delayed(
                     LodNode.render_on_all_faces)(
                     LodNode(

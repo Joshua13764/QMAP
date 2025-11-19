@@ -1992,6 +1992,18 @@ files = [
 ]
 
 [[package]]
+name = "more-itertools"
+version = "10.8.0"
+description = "More routines for operating on iterables, beyond itertools"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "more_itertools-10.8.0-py3-none-any.whl", hash = "sha256:52d4362373dcf7c52546bc4af9a86ee7c4579df9a8dc268be0a2f949d376cc9b"},
+    {file = "more_itertools-10.8.0.tar.gz", hash = "sha256:f638ddf8a1a0d134181275fb5d58b086ead7c6a72429ad725c67503f13ba30bd"},
+]
+
+[[package]]
 name = "multipledispatch"
 version = "1.0.0"
 description = "Multiple dispatch"
@@ -4587,4 +4599,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "6d9c4b063935d944422bc1edc4951dfac10c656aee46fd017de110d68b4a5416"
+content-hash = "a72fb68c4acf10ba587b9af24ca5e69597d10cc5f0cf5a0c720ec30d8a1e178c"

@@ -32,15 +32,23 @@ class ProjectionPlotting:
                                      title=rf"Tri $\mathrm{{A}}\,\cos{{\theta}}$ relative to cubemap face {face}",
                                      fig_save_name_suffix="plot_distance_normalized",
                                      scaling_function=lambda img: img,
-                                     colour_bar_title=rf"Tri $\mathrm{{A}}\,\cos{{\theta}}$ relative to cubemap face {face}",
+                                     colour_bar_title=rf"$\mathrm{{A}}\,\cos{{\theta}}$",
                                      skip_if_exists=skip_if_exists)
 
         ProjectionPlotting.plot_data(points, tris, face, x_range, y_range, main_save_path,
                                      colour_column_name=lambda face: f'xyz_radius',
-                                     title=f"Tri center distance relative to origin for face {face}",
+                                     title=f"Tri center distance to origin for face {face}",
                                      fig_save_name_suffix="plot_xyz_distance",
                                      scaling_function=lambda img: img,
-                                     colour_bar_title=rf"Distance of the unprojected tri center from the origin",
+                                     colour_bar_title=r"$r_{\text{xyz}}$",
+                                     skip_if_exists=skip_if_exists)
+
+        ProjectionPlotting.plot_data(points, tris, face, x_range, y_range, main_save_path,
+                                     colour_column_name=lambda face: f'projected_radius',
+                                     title=f"Projected Tri center distance to origin for face {face}",
+                                     fig_save_name_suffix="plot_projected_distance",
+                                     scaling_function=lambda img: img,
+                                     colour_bar_title=r"$r_{\text{projected}}$",
                                      skip_if_exists=skip_if_exists)
 
         ProjectionPlotting.plot_data(points, tris, face, x_range, y_range, main_save_path,
@@ -49,6 +57,14 @@ class ProjectionPlotting:
                                      fig_save_name_suffix="plot_distance_ratio",
                                      scaling_function=lambda img: img,
                                      colour_bar_title=r"$r_{\text{xyz}} / r_{\text{projected}}$",
+                                     skip_if_exists=skip_if_exists)
+
+        ProjectionPlotting.plot_data(points, tris, face, x_range, y_range, main_save_path,
+                                     colour_column_name=lambda face: f"{face}_ratio",
+                                     title=r"A_{\text{projected}} / A_{\text{xyz}} for face " + face,
+                                     fig_save_name_suffix="plot_area_ratio",
+                                     scaling_function=lambda img: 1 / img,
+                                     colour_bar_title=r"$A_{\text{projected}} / A_{\text{xyz}}$",
                                      skip_if_exists=skip_if_exists)
 
     @staticmethod

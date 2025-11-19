@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from logging import Logger
+from typing import FrozenSet, List
 
-from attr import define
 from prefect import get_run_logger, task
+from prefect.cache_policies import INPUTS
 from prefect.futures import PrefectFuture
 from prefect.results import ResultStorage
 from prefect.serializers import PickleSerializer
@@ -12,38 +13,38 @@ from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 
 
-@dataclass
+@dataclass(frozen=True, kw_only=True)
 class StepBase(ABC):
-    result_storage: ResultStorage
+    task_name: str
+    run_after_task_names: FrozenSet[str] = field(
+        default=frozenset(), repr=True)
+    task_description: str = field(
+        default="No task description provided", repr=True)
+    persist_result: bool = field(default=True, repr=True)
+
+    # When the task version changes the the older cache will be invalid
+    # (should override)
+    @property
+    def task_version(self) -> str: return "0.0.0"
 
     @property
     def logger(self) -> Logger:
         return get_run_logger()
 
-    # @property
-    # def get_task(self):
+    def get_task(self, result_storage: ResultStorage):
 
-    #     @task(result_storage=self.result_storage, persist_result=True)
-    #     def _step_task(env: FSEnvironment) -> FSEnvironment:
-    #         return self.run(env)
+        @task(name=self.task_name, description=self.task_description,
+              result_storage=result_storage, persist_result=self.persist_result,
+              cache_policy=INPUTS)
+        def compiled_task(env: FSEnvironment,
+                          step: 'StepBase') -> FSEnvironment:
+            return step.run(env)
 
-    #     return _step_task
+        return compiled_task
 
-    @property
-    def get_task_no_cache(self):
-        @task()
-        def _step_task_no_cache(env: FSEnvironment) -> FSEnvironment:
-            return self.run(env)
-
-        return _step_task_no_cache
-
-    def submit_task(self, env: FSEnvironment = FSEnvironment.empty()
+    def submit_task(self, result_storage: ResultStorage, env: FSEnvironment = FSEnvironment.empty(),
                     ) -> PrefectFuture[FSEnvironment]:
-        return self.get_task_no_cache.submit(env)
-
-    # @abstractmethod
-    # def get_hash(self) -> int:
-    #     ...
+        return self.get_task(result_storage).submit(env)
 
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:
