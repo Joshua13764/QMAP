@@ -1,5 +1,6 @@
+from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
-from typing import Any, Coroutine, List, Sequence
+from typing import Any, Coroutine, FrozenSet, Iterable, List, Mapping, Sequence
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
@@ -17,7 +18,7 @@ from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
     SPICEKernelGrabber
-from prefect import flow
+from prefect import flow, task
 from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture, wait
 from prefect.task_runners import ThreadPoolTaskRunner
@@ -26,8 +27,8 @@ from prefect.task_runners import ThreadPoolTaskRunner
 # run_dir_store = LocalFileSystem(basepath=".\\.run_dir_storage")
 # run_dir_store.save("run-dir-storage", overwrite=True)
 
-run_dir_store: LocalFileSystem | Coroutine[Any, Any,
-                                           LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
+RES_STORE: LocalFileSystem | Coroutine[Any, Any,
+                                       LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
@@ -46,16 +47,7 @@ EXTRA_URLS: List[str] = [
     # "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds"
 ]
 
-urls_to_download: list[str] = [
-    "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
-    # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
-]
-
-tasks: Sequence[StepBase] = [
+STEPS: Sequence[StepBase] = [
     BestModelDownloader(
         task_name="Download the best boulderNet model",
         run_after_task_names=frozenset(),
@@ -90,10 +82,72 @@ tasks: Sequence[StepBase] = [
         DownloadPath=pds_download_path.as_posix(),
         Url=url
     )
-        for url in urls_to_download)
+        for url in [
+            "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip",
+            "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_reduced_detailed_survey.zip",
+            "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_orbit_b.zip",
+            "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
+            "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
+            "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"]
+    )
 ]
 
-print(tasks)
+
+@task(name="merge_envs")
+def merge_envs(
+    base_env: "FSEnvironment",
+    upstream_envs: list["FSEnvironment"],
+) -> "FSEnvironment":
+    return FSEnvironment.merge(
+        upstream_envs +
+        [base_env])
+
+
+@flow(name="run_step_dag")
+def run_step_dag(
+        steps: list[StepBase], result_storage) -> dict[str, PrefectFuture[FSEnvironment]]:
+    base_env: FSEnvironment = FSEnvironment.empty()
+    name_to_step: dict[str, StepBase] = {s.task_name: s for s in steps}
+    graph: dict[str, set[str]] = {s.task_name: set(
+        s.run_after_task_names) for s in steps}
+    ts: TopologicalSorter[str] = TopologicalSorter(graph)
+    order: List[str] = list(ts.static_order())
+
+    futures: dict[str, PrefectFuture[FSEnvironment]] = {}
+
+    for task_name in order:
+        step: StepBase = name_to_step[task_name]
+        upstream_names: FrozenSet[str] = step.run_after_task_names
+        upstream_futures: List[PrefectFuture[FSEnvironment]] = [
+            futures[n] for n in upstream_names]
+
+        if upstream_futures:
+            # ⬇️ Prefect 2 style: no wait_for here
+            merged_env_future: PrefectFuture[FSEnvironment] = merge_envs.submit(
+                base_env,
+                upstream_futures,   # list of PrefectFuture[FSEnvironment]
+            )
+            env_arg: PrefectFuture[FSEnvironment] = merged_env_future
+        else:
+            env_arg = base_env
+
+        compiled_task = step.get_task(result_storage)
+
+        # ⬇️ Again: no wait_for in Prefect 2
+        future: PrefectFuture[FSEnvironment] = compiled_task.submit(
+            env_arg,
+            step,  # your ArchiveDownloadBase or other subclass
+        )
+
+        futures[task_name] = future
+
+    return futures
+
+
+futures: dict[str, PrefectFuture[FSEnvironment]
+              ] = run_step_dag(STEPS, RES_STORE)
+final_env: FSEnvironment = futures["Download the best boulderNet model"].result(
+)
 
 
 # @flow()

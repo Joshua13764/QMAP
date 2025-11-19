@@ -35,7 +35,8 @@ class StepBase(ABC):
         @task(name=self.task_name, description=self.task_description,
               result_storage=result_storage, persist_result=self.persist_result,
               cache_policy=INPUTS)
-        def compiled_task(env: FSEnvironment, step: StepBase) -> FSEnvironment:
+        def compiled_task(env: FSEnvironment,
+                          step: 'StepBase') -> FSEnvironment:
             return step.run(env)
 
         return compiled_task
