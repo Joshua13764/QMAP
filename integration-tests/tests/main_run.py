@@ -117,5 +117,5 @@ STEPS: Sequence[StepBase] = [
 
 futures: dict[str, PrefectFuture[FSEnvironment]
               ] = BFEDriver.run_steps(STEPS, RES_STORE)
-final_env: FSEnvironment = futures["Download the best boulderNet model"].result(
+final_env: FSEnvironment = futures["Infer boulders"].result(
 )
