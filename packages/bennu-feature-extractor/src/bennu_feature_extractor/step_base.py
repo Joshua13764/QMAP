@@ -16,7 +16,8 @@ from bennu_feature_extractor.environment_tools.fs_environment import \
 @dataclass(frozen=True, kw_only=True)
 class StepBase(ABC):
     task_name: str
-    run_after_task_names: FrozenSet[str]
+    run_after_task_names: FrozenSet[str] = field(
+        default=frozenset(), repr=True)
     task_description: str = field(
         default="No task description provided", repr=True)
     persist_result: bool = field(default=True, repr=True)

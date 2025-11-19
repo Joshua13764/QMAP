@@ -10,7 +10,7 @@ from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
 
-def render_overlay(bgr, instances, src_path: Path):
+def render_overlay(bgr, instances, save_path: Path):
     rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
     meta_name = "bouldernet_demo"
@@ -22,23 +22,21 @@ def render_overlay(bgr, instances, src_path: Path):
     rgb_overlay = vis.draw_instance_predictions(instances).get_image()
     bgr_overlay = cv2.cvtColor(rgb_overlay, cv2.COLOR_RGB2BGR)
 
-    save_path: Path = src_path.with_name(f"{src_path.stem}_overlay.png")
     cv2.imwrite(save_path.as_posix(), bgr_overlay)
 
     print(f"Exported overlay to {save_path}")
 
 
-def export_inference_data(instances, src_path: Path):
+def export_inference_data(instances, save_path: Path):
     boxes = instances.pred_boxes.tensor.numpy().astype(np.float32)        # (N,4)
     scores = instances.scores.numpy().astype(np.float32)                 # (N,)
     classes = instances.pred_classes.numpy().astype(np.int64)            # (N,)
     masks = instances.pred_masks.numpy().astype(
         np.uint8)                # (N,H,W) 0/1
 
-    npz_path: Path = src_path.with_name(f"{src_path.stem}_detections.npz")
     print(f"Exported infer data to {npz_path}")
     np.savez_compressed(
-        npz_path,
+        save_path,
         boxes_xyxy=boxes,
         scores=scores,
         class_ids=classes,
@@ -58,7 +56,8 @@ def build_predictor(cfg_path: str, weights_path: str,
     return DefaultPredictor(cfg)
 
 
-def infer_image(in_path: Path, out_dir: Path, predictor):
+def infer_image(in_path: Path, overlay_export_path: Path,
+                inference_export_path: Path, predictor):
 
     bgr = cv2.imread(str(in_path), cv2.IMREAD_COLOR)
     if bgr is None:
@@ -68,8 +67,8 @@ def infer_image(in_path: Path, out_dir: Path, predictor):
     instances = outputs["instances"].to("cpu")
     print(f"[Result] detections: {len(instances)}")
 
-    render_overlay(bgr, instances, out_dir / in_path.name)
-    export_inference_data(instances, out_dir / in_path.name)
+    render_overlay(bgr, instances, overlay_export_path)
+    export_inference_data(instances, inference_export_path)
 
 
 def main() -> None:
@@ -92,7 +91,19 @@ def main() -> None:
     in_paths: list[Path] = [Path(p) for p in sys.argv[1:]]
 
     for in_path in in_paths:
-        infer_image(in_path, out_dir, predictor)
+        src_path: Path = out_dir / in_path.name
+        overlay_export_path: Path = src_path.with_name(
+            f"{src_path.stem}_overlay.png")
+        inference_export_path: Path = src_path.with_name(
+            f"{src_path.stem}_detections.npz")
+
+        if os.path.exists(overlay_export_path) == False or os.path.exists(
+                inference_export_path) == False:
+            infer_image(
+                in_path,
+                overlay_export_path,
+                inference_export_path,
+                predictor)
 
 
 if __name__ == "__main__":

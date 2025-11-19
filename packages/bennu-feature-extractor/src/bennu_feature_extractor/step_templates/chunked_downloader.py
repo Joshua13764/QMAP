@@ -88,11 +88,8 @@ class ArchiveDownloadBase(StepBase):
                 except Exception:
                     self.logger.warning(f"Could not remove archive {zip_path}")
 
-        return FSEnvironment.merge([
-            env,
-            FSEnvironmentFactory.from_folder(
-                Path(extract_dir), extensions=".xml")
-        ])
+        return FSEnvironmentFactory.from_folder(
+            Path(extract_dir), extensions=".xml")
 
     def _download_archive(self) -> str:
         parsed: ParseResult = urlparse(self.Url)
