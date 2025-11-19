@@ -1,5 +1,3 @@
-# B: BoulderNetBestModelLoadStep (no chunking, but now gains retries +
-# progress bars)
 from dataclasses import dataclass
 
 from bennu_feature_extractor.step_templates.chunked_downloader import \

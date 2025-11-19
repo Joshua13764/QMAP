@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import requests
-from attr import define
 from tqdm import tqdm
 
 from bennu_feature_extractor.environment_tools.base_classes.fs_marker_base import \

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Coroutine, List
+from typing import Any, Coroutine, List, Sequence
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
@@ -55,7 +55,7 @@ urls_to_download: list[str] = [
     # "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"
 ]
 
-tasks: List[StepBase] = [
+tasks: Sequence[StepBase] = [
     BestModelDownloader(
         task_name="Download the best boulderNet model",
         run_after_task_names=frozenset(),
@@ -67,8 +67,8 @@ tasks: List[StepBase] = [
         task_name=f"Downloader for the bennu PAN file",
         run_after_task_names=frozenset(),
         url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
-        fs_path=pds_download_path,
-        sub_path=Path("OCAMS", "Global PAN Mosaic.tif"),
+        fs_path=pds_download_path.as_posix(),
+        sub_path=Path("OCAMS", "Global PAN Mosaic.tif").as_posix(),
         markers=frozenset([FSMarkerString(value="PAN_texture")])
     ),
 
@@ -76,8 +76,10 @@ tasks: List[StepBase] = [
         task_name=f"Downloader for the bennu OBJ (LQ) mesh",
         run_after_task_names=frozenset(),
         url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
-        fs_path=pds_download_path,
-        sub_path=Path("OCAMS", "Global Bennu 3D model - OLA v20 PTM.obj"),
+        fs_path=pds_download_path.as_posix(),
+        sub_path=Path(
+            "OCAMS",
+            "Global Bennu 3D model - OLA v20 PTM.obj").as_posix(),
         markers=frozenset(
             [FSMarkerString(value="OCAMS Model"), FSMarkerString("ProjectModel")])
     ),
