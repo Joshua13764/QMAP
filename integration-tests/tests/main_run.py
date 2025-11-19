@@ -89,6 +89,14 @@ STEPS: Sequence[StepBase] = [
             "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_recon.zip",
             "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_metadata.zip",
             "https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_calibration.zip"]
+    ),
+
+    PDS_to_PNG(
+        task_name=f"Convert cluster ocams_data_calibrated_detailed_survey",
+        run_after_task_names=frozenset(
+            ["Downloader for PDS file https://sbnarchive.psi.edu/pds4/orex/downloads_ocams/ocams_data_calibrated_detailed_survey.zip"]),
+        cluster_key="ocams_data_calibrated_detailed_survey",
+        run_path=pipeline_working_path.as_posix()
     )
 ]
 
@@ -199,10 +207,3 @@ final_env: FSEnvironment = futures["Download the best boulderNet model"].result(
 #     ).submit_task(pan_env).result()
 
 #     return pan_env
-
-
-# if __name__ == "__main__":
-#     env: FSEnvironment = data_loader_flow()
-#     # spice_kernals_loader_flow()
-#     env2: FSEnvironment = data_convert_flow(env)
-#     pp_tasks_flow(env2)

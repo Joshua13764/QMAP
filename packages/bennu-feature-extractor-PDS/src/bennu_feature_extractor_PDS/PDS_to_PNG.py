@@ -80,7 +80,4 @@ class PDS_to_PNG(StepBase):
             delayed(_quiet_call)(convert_png, xml, pds) for xml, pds in pairs
         )
 
-        return FSEnvironment.merge([
-            env,
-            FSEnvironment(paths=frozenset(pds_files))
-        ])
+        return FSEnvironment(paths=frozenset(pds_files))
