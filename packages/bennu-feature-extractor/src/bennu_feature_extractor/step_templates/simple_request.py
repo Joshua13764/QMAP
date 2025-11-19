@@ -15,20 +15,20 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
 from bennu_feature_extractor.step_base import StepBase
 
 
-@dataclass
+@dataclass(frozen=True)
 class SimpleRequest(StepBase):
     url: str
-    fs_path: Path
-    sub_path: Path
+    fs_path: str
+    sub_path: str
     markers: frozenset[FSMarkerBase]
     skip_if_exists = True
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         file = FSPathLocalDisk(
-            path=self.sub_path.parts,
+            path=Path(self.sub_path).parts,
             markers=self.markers,
-            root_path=self.fs_path.as_posix()
+            root_path=Path(self.fs_path).as_posix()
         )
 
         if file.exists and self.skip_if_exists:

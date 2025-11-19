@@ -31,10 +31,10 @@ class FSPathLocalDiskChunk():
                    chunked(self.inference_output_files, batch_size))
 
 
-@dataclass()
+@dataclass(frozen=True)
 class PDS4BoulderNetInference(StepBase):
     run_path: Path
-    batch_size: int = 5
+    batch_size: int = 64
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -63,7 +63,7 @@ class PDS4BoulderNetInference(StepBase):
                     image_paths,
                     inference_output_paths,
                     verbose=True)
-                for image_paths, inference_output_paths in chunk.get_sub_chunks()
+                for image_paths, inference_output_paths in chunk.get_sub_chunks(batch_size=self.batch_size)
             )
 
     @staticmethod

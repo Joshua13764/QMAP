@@ -22,15 +22,11 @@ from bennu_feature_extractor_PDS.file_storage_adapters.pds4_adapter import \
     FSPDS4Adapter
 
 
-@dataclass
+@dataclass(frozen=True)
 class PDS_to_PNG(StepBase):
     cluster_key: str
-    run_path: Path
+    run_path: str
     skip_converted: bool = True
-
-    def get_hash(self) -> int:
-        return (self.cluster_key, self.skip_converted,
-                self.run_path).__hash__()
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -39,7 +35,7 @@ class PDS_to_PNG(StepBase):
 
         pds_files: List[FSPathLocalDisk] = [
             f.copy_as_new(
-                new_root_path=self.run_path,
+                new_root_path=Path(self.run_path),
                 new_extension=".png",
                 markers=[FSMarkerString("InferableImage")]
             )

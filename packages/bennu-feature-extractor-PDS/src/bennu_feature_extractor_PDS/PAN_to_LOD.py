@@ -84,9 +84,9 @@ class LodNode:
         return export_files
 
 
-@dataclass
+@dataclass(frozen=True)
 class PANToLOD(StepBase):
-    root_path: Path
+    root_path: str
     lod_res: int
     skip_if_exists: bool
 
@@ -122,7 +122,7 @@ class PANToLOD(StepBase):
                         shape,
                         img,
                         src_file,
-                        self.root_path,
+                        Path(self.root_path),
                         self.skip_if_exists),
                     target_width=self.lod_res)
                 for shape in self.all_binaries(bits=2 * lod_depth)

@@ -6,7 +6,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import requests
 from bennu_feature_extractor.environment_tools.fs_environment import \
@@ -233,7 +233,7 @@ class FileDownloader:
 
 
 # ---------- 6) Orchestrator Step (Facade; composes the above) ----------
-@dataclass
+@dataclass(frozen=True)
 class SPICEKernelGrabber(StepBase):
     """
     SPICE mirror step following SOLID:
@@ -245,8 +245,8 @@ class SPICEKernelGrabber(StepBase):
       - Orchestrator (this class): compose with joblib + tqdm_joblib progress
     """
     DownloadPath: str
-    MkUrls: List[str]
-    ExtraUrls: Optional[List[str]] = None
+    MkUrls: Tuple[str]
+    ExtraUrls: Optional[Tuple[str]] = None
     TimeoutSeconds: int = 60
     Overwrite: bool = False
     Workers: int = field(

@@ -24,7 +24,7 @@ from bennu_feature_extractor.environment_tools.utils.FS_environment_factory impo
 from bennu_feature_extractor.step_base import StepBase
 
 
-@dataclass
+@dataclass(frozen=True)
 class ArchiveDownloadBase(StepBase):
     """
     A reusable base for 'download-then-extract' steps.

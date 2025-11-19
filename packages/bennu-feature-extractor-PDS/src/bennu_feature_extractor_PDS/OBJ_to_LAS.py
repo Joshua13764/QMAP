@@ -79,11 +79,10 @@ class LodNode(CubeMapLodBase):
         return (posX, posY, depth, depth)
 
 
-@dataclass()
+@dataclass(frozen=True)
 class OBJToLAS(StepBase):
     lod_res: int
     depth: int
-    root_path: Path
     skip_if_exists: bool
     debug_mode: bool
 
