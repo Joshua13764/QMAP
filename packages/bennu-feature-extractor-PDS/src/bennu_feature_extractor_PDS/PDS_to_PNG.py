@@ -15,6 +15,7 @@ from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string impor
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
+from bennu_feature_extractor.task_step_base import TaskStepBase
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
 
@@ -23,7 +24,7 @@ from bennu_feature_extractor_PDS.file_storage_adapters.pds4_adapter import \
 
 
 @dataclass(frozen=True)
-class PDS_to_PNG(StepBase):
+class PDS_to_PNG(TaskStepBase):
     cluster_key: str
     run_path: str
     skip_converted: bool = True

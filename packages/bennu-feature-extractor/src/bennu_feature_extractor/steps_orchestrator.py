@@ -1,18 +1,19 @@
 from graphlib import TopologicalSorter
-from typing import Any, Coroutine, List
+from typing import List
 
-from prefect import flow, task
-from prefect.filesystems import LocalFileSystem
+from prefect import Task, flow, task
 from prefect.futures import PrefectFuture
+from prefect.results import ResultStorage
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 from bennu_feature_extractor.step_base import StepBase
+from bennu_feature_extractor.task_factory import TaskFactory
 
 
 class StepsOrchestrator:
     @staticmethod
-    def run_steps(tasks: List[StepBase], result_cache: LocalFileSystem | Coroutine[Any, Any, LocalFileSystem],
+    def run_steps(tasks: List[StepBase], result_cache: ResultStorage | None,
                   flow_name: str = "Run all steps in auto DAG") -> dict[str, PrefectFuture[FSEnvironment]]:
 
         step_order: List[StepBase] = StepsOrchestrator.get_step_order(tasks)
@@ -33,7 +34,7 @@ class StepsOrchestrator:
 
     @staticmethod
     def compile_steps(
-            step_order: List[StepBase], result_cache: LocalFileSystem | Coroutine[Any, Any, LocalFileSystem]):
+            step_order: List[StepBase], result_cache: ResultStorage | None) -> dict[str, PrefectFuture[FSEnvironment]]:
 
         future_results: dict[str, PrefectFuture[FSEnvironment]] = {}
 
@@ -42,13 +43,15 @@ class StepsOrchestrator:
             step_required_upstream_futures: List[PrefectFuture[FSEnvironment]] = [
                 future_results[n] for n in step.run_after_task_names]
 
-            compiled_task: PrefectFuture[FSEnvironment] = step.get_task(
-                result_cache).submit(
-                    StepsOrchestrator.handle_env_merging(
-                        step_required_upstream_futures),
-                    step)
+            step_task: Task[..., FSEnvironment] = TaskFactory.construct_task(
+                step, result_cache)
 
-            future_results[step.task_name] = compiled_task
+            submitted_task: PrefectFuture[FSEnvironment] = step_task.submit(
+                StepsOrchestrator.handle_env_merging(
+                    step_required_upstream_futures),
+                step)
+
+            future_results[step.task_name] = submitted_task
 
         return future_results
 

@@ -1,5 +1,6 @@
 # src/bennu_feature_extractor_PDS/SPICE_kernels_downloader.py
 from __future__ import annotations
+from bennu_feature_extractor.task_step_base import TaskStepBase
 
 import multiprocessing
 import os
@@ -234,7 +235,7 @@ class FileDownloader:
 
 # ---------- 6) Orchestrator Step (Facade; composes the above) ----------
 @dataclass(frozen=True)
-class SPICEKernelGrabber(StepBase):
+class SPICEKernelGrabber(TaskStepBase):
     """
     SPICE mirror step following SOLID:
       - MKParser: parse MKs → rel paths

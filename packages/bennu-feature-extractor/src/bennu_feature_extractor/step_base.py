@@ -28,27 +28,10 @@ class StepBase(ABC):
     # (should override)
     @property
     def task_version(self) -> str: return "0.0.0"
-# Feb
 
     @property
     def logger(self) -> Logger:
         return get_run_logger()
-
-    def get_task(self, result_storage: LocalFileSystem |
-                 Coroutine[Any, Any, LocalFileSystem]):
-
-        @task(name=self.task_name, description=self.task_description,
-              result_storage=result_storage, persist_result=self.persist_result,
-              cache_policy=INPUTS)
-        def compiled_task(env: FSEnvironment,
-                          step: 'StepBase') -> FSEnvironment:
-            return step.run(env)
-
-        return compiled_task
-
-    def submit_task(self, result_storage: ResultStorage, env: FSEnvironment = FSEnvironment.empty(),
-                    ) -> PrefectFuture[FSEnvironment]:
-        return self.get_task(result_storage).submit(env)
 
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:

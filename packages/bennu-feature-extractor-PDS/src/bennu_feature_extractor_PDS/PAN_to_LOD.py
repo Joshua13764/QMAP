@@ -14,6 +14,7 @@ from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string impor
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
+from bennu_feature_extractor.task_step_base import TaskStepBase
 from joblib import Parallel, delayed
 from tqdm_joblib import ParallelPbar
 
@@ -85,7 +86,7 @@ class LodNode:
 
 
 @dataclass(frozen=True)
-class PANToLOD(StepBase):
+class PANToLOD(TaskStepBase):
     root_path: str
     lod_res: int
     skip_if_exists: bool
