@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Coroutine, List, Sequence
 
-from bennu_feature_extractor.BFE_driver import BFEDriver
+from bennu_feature_extractor.BFE_driver import StepsOrchestrator
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
@@ -116,6 +116,6 @@ STEPS: Sequence[StepBase] = [
 ]
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = BFEDriver.run_steps(STEPS, RES_STORE)
+              ] = StepsOrchestrator.run_steps(STEPS, RES_STORE)
 final_env: FSEnvironment = futures["Infer boulders"].result(
 )

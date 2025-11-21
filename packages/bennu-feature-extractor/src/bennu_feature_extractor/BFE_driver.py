@@ -1,27 +1,22 @@
-from graphlib import CycleError, TopologicalSorter
-from pathlib import Path
-from typing import Any, Coroutine, FrozenSet, Iterable, List, Mapping, Sequence
+from graphlib import TopologicalSorter
+from typing import Any, Coroutine, List
 
 from prefect import flow, task
 from prefect.filesystems import LocalFileSystem
-from prefect.futures import PrefectFuture, wait
-from prefect.task_runners import ThreadPoolTaskRunner
+from prefect.futures import PrefectFuture
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
-from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
-    FSMarkerString
 from bennu_feature_extractor.step_base import StepBase
-from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 
 
-class BFEDriver:
+class StepsOrchestrator:
     @staticmethod
     def run_steps(tasks: List[StepBase], result_cache: LocalFileSystem | Coroutine[Any, Any, LocalFileSystem],
                   flow_name: str = "Run all steps in auto DAG") -> dict[str, PrefectFuture[FSEnvironment]]:
 
-        step_order: List[StepBase] = BFEDriver.get_step_order(tasks)
-        return flow(name=flow_name)(BFEDriver.compile_steps)(
+        step_order: List[StepBase] = StepsOrchestrator.get_step_order(tasks)
+        return flow(name=flow_name)(StepsOrchestrator.compile_steps)(
             step_order, result_cache)
 
     @staticmethod
@@ -47,12 +42,20 @@ class BFEDriver:
             step_required_upstream_futures: List[PrefectFuture[FSEnvironment]] = [
                 future_results[n] for n in step.run_after_task_names]
 
-            env_arg: PrefectFuture[FSEnvironment] = task(name="merge_envs")(
-                FSEnvironment.merge).submit(step_required_upstream_futures) if step_required_upstream_futures != [] else task(name="create_env")(
-                    FSEnvironment.empty).submit()
-
             compiled_task: PrefectFuture[FSEnvironment] = step.get_task(
-                result_cache).submit(env_arg, step)
+                result_cache).submit(
+                    StepsOrchestrator.handle_env_merging(
+                        step_required_upstream_futures),
+                    step)
+
             future_results[step.task_name] = compiled_task
 
         return future_results
+
+    @staticmethod
+    def handle_env_merging(
+            step_required_upstream_futures: List[PrefectFuture[FSEnvironment]]) -> PrefectFuture[FSEnvironment]:
+        match len(step_required_upstream_futures):
+            case 0: return task(name="create_env")(FSEnvironment.empty).submit()
+            case 1: return step_required_upstream_futures[0]
+            case _: return task(name="merge_envs")(FSEnvironment.merge).submit(step_required_upstream_futures)
