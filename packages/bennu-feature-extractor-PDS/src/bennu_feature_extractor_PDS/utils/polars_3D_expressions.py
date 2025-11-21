@@ -13,7 +13,7 @@ class Polars3DExpressions:
 
     @staticmethod
     def filter_faces_for_rasterization(
-            tris: pl.DataFrame, face: str, eps_uv=1e-12) -> pl.DataFrame:
+            tris: pl.LazyFrame, face: str, eps_uv=1e-12) -> pl.LazyFrame:
         ensure_not_behind_plane: pl.Expr = (
             (pl.col(f"{face}_N0") > 0) &
             (pl.col(f"{face}_N1") > 0) &
@@ -25,32 +25,95 @@ class Polars3DExpressions:
         return tris.filter(ensure_not_behind_plane & ensure_non_degenerate)
 
     @staticmethod
-    def process_mesh(points: pl.DataFrame,
-                     tris: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+    def process_mesh(points: pl.LazyFrame,
+                     tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
+        # points already have a vertex id column "vid" that tris["0"/"1"/"2"]
+        # reference.
 
-        points = points.with_columns(
-            Polars3DExpressions.get_project_points_expression())
+        points = Polars3DExpressions._project_points(points)
+        tris = Polars3DExpressions._attach_points_to_tris(points, tris)
+        tris = Polars3DExpressions._add_area_and_ratio_columns(tris)
 
-        tris = tris.with_columns(
-            Polars3DExpressions.get_gather_points_to_tris_expression(points))
-
-        tris = tris.with_columns(
-            Polars3DExpressions.get_gather_unprojected_tri_positions_expressions(points))
-
-        tris = tris.with_columns(
-            Polars3DExpressions.get_calculate_unprojected_tri_area_expression())
-
-        tris = tris.with_columns(
-            Polars3DExpressions.get_calculate_projected_tri_area_expressions())
-
-        tris = tris.with_columns(
-            Polars3DExpressions.get_calculate_tri_area_ratios_expressions())
-
-        return (points, tris)
+        return points, tris
 
     @staticmethod
-    def process_extra_mesh_data(points: pl.DataFrame,
-                                tris: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+    def _project_points(points: pl.LazyFrame) -> pl.LazyFrame:
+        """Add cubemap projection columns to points."""
+        # NOTE: read() already did .with_row_index("vid"), so we assume "vid"
+        # exists.
+        return points.with_columns(
+            Polars3DExpressions.get_project_points_expression()
+        )
+
+    @staticmethod
+    def _attach_points_to_tris(
+        points: pl.LazyFrame,
+        tris: pl.LazyFrame,
+    ) -> pl.LazyFrame:
+        """Attach xyz and projected attributes for each triangle vertex."""
+        for vert_id in VERT_ID_COLS:
+            tris = Polars3DExpressions._join_points_for_vertex(
+                points, tris, vert_id
+            )
+        return tris
+
+    @staticmethod
+    def _join_points_for_vertex(
+        points: pl.LazyFrame,
+        tris: pl.LazyFrame,
+        vert_id: str,
+    ) -> pl.LazyFrame:
+        """Join in point data for a single vertex index column (e.g. '0')."""
+        suffix: str = vert_id
+
+        # IMPORTANT CHANGE: keep 'vid' as-is, don't alias to 'vid0'/etc
+        selection: List[Expr] = [pl.col("vid")]
+
+        # original xyz -> x0,y0,z0 or x1,y1,z1, ...
+        selection.extend(
+            pl.col(attr).alias(f"{attr}{suffix}")
+            for attr in POINT_ATTRS
+        )
+
+        # projected attributes per face -> posx_u0, posx_v0, posx_N0, ...
+        for face in FACES:
+            selection.extend(
+                pl.col(f"{face}_{p_attr}").alias(f"{face}_{p_attr}{suffix}")
+                for p_attr in PROJECTED_POINT_ATTRS
+            )
+
+        points_for_vert: pl.LazyFrame = points.select(selection)
+
+        # IMPORTANT CHANGE: join on 'vid', not 'vid0'/etc
+        return tris.join(
+            points_for_vert,
+            left_on=vert_id,
+            right_on="vid",
+            how="left",
+        )
+        # we can keep the 'vid' column; it won't hurt, and we don't rely on it
+        # later
+
+    @staticmethod
+    def _add_area_and_ratio_columns(tris: pl.LazyFrame) -> pl.LazyFrame:
+        """Add area_xyz, face uv areas, and area ratios."""
+
+        # 1) First compute area_xyz and all <face>_area_uv columns
+        tris = tris.with_columns(
+            Polars3DExpressions.get_calculate_unprojected_tri_area_expression(),
+            *Polars3DExpressions.get_calculate_projected_tri_area_expressions(),
+        )
+
+        # 2) Then compute <face>_ratio using those columns
+        tris = tris.with_columns(
+            *Polars3DExpressions.get_calculate_tri_area_ratios_expressions(),
+        )
+
+        return tris
+
+    @staticmethod
+    def process_extra_mesh_data(points: pl.LazyFrame,
+                                tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
 
         x_mean: Expr = (pl.col("x0") + pl.col("x1") + pl.col("x2")) * (1 / 3)
         y_mean: Expr = (pl.col("y0") + pl.col("y1") + pl.col("y2")) * (1 / 3)
@@ -87,90 +150,33 @@ class Polars3DExpressions:
         sx, sy, sz = x.abs(), y.abs(), z.abs()
 
         return [
-            # +X face (normal = (1,0,0)), U = -z/|x|, V =  y/|x|
             (0.5 * ((-z / sx) + 1.0)).alias("posx_u"),
             (0.5 * ((-y / sx) + 1.0)).alias("posx_v"),
             x.alias("posx_N"),
 
-            # -X face (normal = (-1,0,0)), U =  z/|x|, V =  y/|x|
             (0.5 * ((z / sx) + 1.0)).alias("negx_u"),
             (0.5 * ((-y / sx) + 1.0)).alias("negx_v"),
             (-x).alias("negx_N"),
 
-            # +Y face (normal = (0,1,0)),  U =  x/|y|, V = -z/|y|
             (0.5 * ((x / sy) + 1.0)).alias("posy_u"),
             (0.5 * ((z / sy) + 1.0)).alias("posy_v"),
             y.alias("posy_N"),
 
-            # -Y face (normal = (0,-1,0)), U =  x/|y|, V =  z/|y|
             (0.5 * ((x / sy) + 1.0)).alias("negy_u"),
             (0.5 * ((-z / sy) + 1.0)).alias("negy_v"),
             (-y).alias("negy_N"),
 
-            # +Z face (normal = (0,0,1)),  U =  x/|z|, V =  y/|z|
             (0.5 * ((x / sz) + 1.0)).alias("posz_u"),
             (0.5 * ((-y / sz) + 1.0)).alias("posz_v"),
             z.alias("posz_N"),
 
-            # -Z face (normal = (0,0,-1)), U = -x/|z|, V =  y/|z|
             (0.5 * ((-x / sz) + 1.0)).alias("negz_u"),
             (0.5 * ((-y / sz) + 1.0)).alias("negz_v"),
             (-z).alias("negz_N"),
         ]
 
     @staticmethod
-    def get_gather_points_to_tris_expression(
-            points: pl.DataFrame) -> List[pl.Expr]:
-        """Finds all of the points for each of the tris and adds their u, v positions to columns of tris
-
-        Args:
-            points (pl.DataFrame): The data frame containing the points with headers of "x", "y", "z"
-
-        Returns:
-            List[pl.Expr]: A list of expressions to perform the action
-        """
-
-        return [
-            pl.lit(
-                points.get_column(
-                    f"{face}_{projected_point_attr}")).gather(
-                pl.col(vert_id).cast(
-                    pl.UInt32)).alias(
-                f"{face}_{projected_point_attr}{vert_id}")
-            for projected_point_attr in PROJECTED_POINT_ATTRS
-            for vert_id in VERT_ID_COLS
-            for face in FACES
-        ]
-
-    @staticmethod
-    def get_gather_unprojected_tri_positions_expressions(
-            points: pl.DataFrame) -> List[pl.Expr]:
-        """Finds all of the points for each of the tris and adds their pre-projection x, y, z positions to columns of tris
-
-        Args:
-            points (pl.DataFrame): The data frame containing the points with headers of "x", "y", "z"
-
-        Returns:
-            List[pl.Expr]: A list of expressions to perform the action
-        """
-        return [
-            pl.lit(
-                points.get_column(point_attr)).gather(
-                pl.col(vert_id).cast(
-                    pl.UInt32)).alias(
-                f"{point_attr}{vert_id}")
-            for point_attr in POINT_ATTRS
-            for vert_id in VERT_ID_COLS
-        ]
-
-    @staticmethod
     def get_calculate_unprojected_tri_area_expression() -> pl.Expr:
-        """Find all of the area's of the tris before they were projected
-
-        Returns:
-            pl.Expr: Expression to carry out the above task
-        """
-        # 3D edges from vertex 0
         dx10: pl.Expr = pl.col("x1") - pl.col("x0")
         dy10: pl.Expr = pl.col("y1") - pl.col("y0")
         dz10: pl.Expr = pl.col("z1") - pl.col("z0")
@@ -179,7 +185,6 @@ class Polars3DExpressions:
         dy20: pl.Expr = pl.col("y2") - pl.col("y0")
         dz20: pl.Expr = pl.col("z2") - pl.col("z0")
 
-        # Cross product and 3D area
         cx: pl.Expr = dy10 * dz20 - dz10 * dy20
         cy: pl.Expr = dz10 * dx20 - dx10 * dz20
         cz: pl.Expr = dx10 * dy20 - dy10 * dx20
@@ -188,12 +193,6 @@ class Polars3DExpressions:
 
     @staticmethod
     def get_calculate_projected_tri_area_expressions() -> List[pl.Expr]:
-        """Find all of the area's of the tris after they were projected
-
-        Returns:
-            List[pl.Expr]: Expression to carry out the above task
-        """
-
         expressions: List[pl.Expr] = []
 
         for face in FACES:
@@ -208,11 +207,6 @@ class Polars3DExpressions:
 
     @staticmethod
     def get_calculate_tri_area_ratios_expressions() -> List[pl.Expr]:
-        """Find all of the area ratios (xyz_area / uv_area)
-
-        Returns:
-            List[pl.Expr]: Expression to carry out the above task
-        """
         return [
             pl.when(pl.col(f"{face}_area_uv") > 1e-12)
             .then(pl.col("area_xyz") / pl.col(f"{face}_area_uv"))

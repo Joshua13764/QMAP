@@ -34,6 +34,7 @@ PairGroups = Tuple[Pair, ...]
 @dataclass(frozen=True, slots=True)
 class LodNode(CubeMapLodBase):
     debug_mode: bool
+    export_folder: Path
 
     def render_region(self, face: str,
                       target_width: int) -> FSPathLocalDisk:
@@ -44,7 +45,7 @@ class LodNode(CubeMapLodBase):
         y_range: Tuple[float, float] = (posY, posY + depth)
 
         points, tris = self.img
-        tris_filtered: pl.DataFrame = Polars3DExpressions.filter_faces_for_rasterization(
+        tris_filtered: pl.LazyFrame = Polars3DExpressions.filter_faces_for_rasterization(
             tris, face)
 
         relative_path: Path = Path(*self.src_file.path).parent / Path(
@@ -53,7 +54,7 @@ class LodNode(CubeMapLodBase):
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
             markers=frozenset([FSMarkerString(value="ProjectModel_lod")]),
-            root_path=self.src_file.root_path
+            root_path=self.export_folder.as_posix()
         )
 
         export_file.make_directory()
@@ -86,6 +87,7 @@ class OBJToLAS(TaskStepBase):
     depth: int
     skip_if_exists: bool
     debug_mode: bool
+    export_folder: str
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -99,24 +101,27 @@ class OBJToLAS(TaskStepBase):
 
     def project_model(self, file: FSPathLocalDisk) -> List[FSPathLocalDisk]:
 
-        fileData: tuple[pl.DataFrame, pl.DataFrame] = FSEnvironment.load(
+        lazy_file_data: tuple[pl.LazyFrame, pl.LazyFrame] = FSEnvironment.load(
             file, FSPolarsObjAdapterFast())
 
-        fileData = Polars3DExpressions.process_mesh(*fileData)
+        lazy_file_data = Polars3DExpressions.process_mesh(*lazy_file_data)
         if self.debug_mode:
-            fileData = Polars3DExpressions.process_extra_mesh_data(*fileData)
+            lazy_file_data = Polars3DExpressions.process_extra_mesh_data(
+                *lazy_file_data)
 
-        export_groups = []
+        export_groups: List[FSPathLocalDisk] = []
+
         for lod_depth in range(self.depth + 1):
             export_groups += ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=1)(
                 delayed(
                     LodNode.render_on_all_faces)(
                     LodNode(
                         shape,
-                        fileData,
+                        lazy_file_data,
                         file,
                         self.skip_if_exists,
-                        self.debug_mode),
+                        self.debug_mode,
+                        Path(self.export_folder)),
                     target_width=self.lod_res)
                 for shape in PANToLOD.all_binaries(bits=2 * lod_depth)
             )

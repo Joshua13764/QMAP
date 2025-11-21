@@ -10,9 +10,9 @@ from bennu_feature_extractor_PDS.utils.polars_3D_expressions import (
 
 
 class FSPolarsObjAdapterFast(
-        FSAdapterBase[tuple[pl.DataFrame, pl.DataFrame], FSPathLocalDisk]):
+        FSAdapterBase[tuple[pl.LazyFrame, pl.LazyFrame], FSPathLocalDisk]):
 
-    def read(self, path: FSPathLocalDisk) -> tuple[pl.DataFrame, pl.DataFrame]:
+    def read(self, path: FSPathLocalDisk) -> tuple[pl.LazyFrame, pl.LazyFrame]:
         """_summary_
 
         Args:
@@ -27,12 +27,12 @@ class FSPolarsObjAdapterFast(
 
         verts, faces = igl.read_triangle_mesh(path.actual_path.as_posix())
 
-        points: pl.DataFrame = pl.DataFrame(
+        points: pl.LazyFrame = pl.LazyFrame(
             verts, schema=POINT_ATTRS).with_row_index("vid")
-        tris = pl.DataFrame(faces, schema=VERT_ID_COLS)
+        tris = pl.LazyFrame(faces, schema=VERT_ID_COLS)
 
         return (points, tris)
 
-    def write(self, obj: tuple[pl.DataFrame, pl.DataFrame],
+    def write(self, obj: tuple[pl.LazyFrame, pl.LazyFrame],
               path: FSPathLocalDisk) -> None:
         raise NotImplementedError()

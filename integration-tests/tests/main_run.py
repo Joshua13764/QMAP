@@ -93,6 +93,7 @@ step7 = OBJToLAS(
     task_name=f"Convert bennu Mesh to stretch maps",
     run_after_task_names=frozenset([step3.task_name]),
     lod_res=1024,
+    export_folder=pipeline_working_path_fast.as_posix(),
     depth=5,
     skip_if_exists=True,
     debug_mode=True
@@ -119,5 +120,5 @@ STEPS: Sequence[StepBase] = [
 
 futures: dict[str, PrefectFuture[FSEnvironment]
               ] = StepsOrchestrator.run_steps(STEPS, RES_STORE)
-final_env: FSEnvironment = futures["Infer boulders"].result(
+final_env: FSEnvironment = futures["Convert bennu Mesh to stretch maps"].result(
 )

@@ -24,8 +24,8 @@ plt.ioff()
 class ProjectionPlotting:
 
     @staticmethod
-    def plot_debug_data(points: pl.DataFrame,
-                        tris: pl.DataFrame, face: str, x_range: Tuple[float, float], y_range: Tuple[float, float], main_save_path: Path, skip_if_exists: bool):
+    def plot_debug_data(points: pl.LazyFrame,
+                        tris: pl.LazyFrame, face: str, x_range: Tuple[float, float], y_range: Tuple[float, float], main_save_path: Path, skip_if_exists: bool):
 
         ProjectionPlotting.plot_data(points, tris, face, x_range, y_range, main_save_path,
                                      colour_column_name=lambda face: f'{face}_cos(angle)',
@@ -68,8 +68,8 @@ class ProjectionPlotting:
                                      skip_if_exists=skip_if_exists)
 
     @staticmethod
-    def plot_data(points: pl.DataFrame,
-                  tris: pl.DataFrame, face: str, x_range: Tuple[float, float], y_range: Tuple[float, float], main_save_path: Path,
+    def plot_data(points: pl.LazyFrame,
+                  tris: pl.LazyFrame, face: str, x_range: Tuple[float, float], y_range: Tuple[float, float], main_save_path: Path,
                   colour_column_name: Callable[[str], str], title: str, fig_save_name_suffix: str, scaling_function: Callable[[NDArray[np.float64]], NDArray[np.float64]],
                   colour_bar_title: str, skip_if_exists: bool) -> None:
 
@@ -102,12 +102,12 @@ class ProjectionPlotting:
         plt.close(fig)
 
     @staticmethod
-    def rasterize_tris(points: pl.DataFrame,
-                       tris: pl.DataFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
+    def rasterize_tris(points: pl.LazyFrame,
+                       tris: pl.LazyFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
 
         pd_verts: pd.DataFrame = (points.select([f'{face}_u', f'{face}_v'])
                                   .rename({f'{face}_u': 'x', f'{face}_v': 'y'})
-                                  .to_pandas())
+                                  .collect().to_pandas())
 
         pd_tris: pd.DataFrame = (tris.select(['0', '1', '2', colour_column_name(face)])
                                  .with_columns([
@@ -118,7 +118,7 @@ class ProjectionPlotting:
                                          colour_column_name(face)).cast(
                                          pl.Float64),
                                  ])
-                                 .to_pandas())
+                                 .collect().to_pandas())
 
         mesh = du.mesh(pd_verts, pd_tris)
 
