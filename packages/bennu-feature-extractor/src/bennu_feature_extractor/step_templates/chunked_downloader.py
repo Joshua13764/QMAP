@@ -32,10 +32,11 @@ from bennu_feature_extractor.step_templates.utils.single_stream_downloader impor
     SingleStreamDownloader
 from bennu_feature_extractor.step_templates.utils.zip_extractor import \
     ZipExtractor
+from bennu_feature_extractor.task_step_base import TaskStepBase
 
 
 @dataclass(frozen=True)
-class ArchiveDownloadBase(StepBase):
+class ArchiveDownloadBase(TaskStepBase):
     """
     A reusable base for 'download-then-extract' steps.
 

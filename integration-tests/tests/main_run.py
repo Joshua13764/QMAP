@@ -1,13 +1,13 @@
 from pathlib import Path
 from typing import Any, Coroutine, List, Sequence
 
-from bennu_feature_extractor.BFE_driver import BFEDriver
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from bennu_feature_extractor.step_base import StepBase
 from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
+from bennu_feature_extractor.steps_orchestrator import StepsOrchestrator
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
 from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference import \
@@ -93,7 +93,7 @@ step7 = OBJToLAS(
     task_name=f"Convert bennu Mesh to stretch maps",
     run_after_task_names=frozenset([step3.task_name]),
     lod_res=1024,
-    depth=4,
+    depth=5,
     skip_if_exists=True,
     debug_mode=True
 )
@@ -107,15 +107,17 @@ step8 = PDS4BoulderNetInference(
 # step9 = SPICEKernelGrabber(
 #     task_name=f"Collect SPICE kernels",
 #     DownloadPath=spice_download_path.as_posix(),
-#     MkUrls=["https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/mk/orx_2019_v08.tm"],
-#     ExtraUrls=["https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds"],
+#     MkUrls=(
+#         "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/mk/orx_2019_v08.tm",
+#     ),
+#     ExtraUrls=("https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds",),
 # )
 
 STEPS: Sequence[StepBase] = [
-    step1, step2, step3, *steps4, step5, step6, step7, step8
+    step1, step2, step3, *steps4, step5, step6, step7  # , step8
 ]
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = BFEDriver.run_steps(STEPS, RES_STORE)
+              ] = StepsOrchestrator.run_steps(STEPS, RES_STORE)
 final_env: FSEnvironment = futures["Infer boulders"].result(
 )

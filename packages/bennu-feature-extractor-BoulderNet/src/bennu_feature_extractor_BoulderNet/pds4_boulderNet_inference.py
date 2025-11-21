@@ -1,3 +1,4 @@
+from bennu_feature_extractor.task_step_base import TaskStepBase
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterator, List, Set, Tuple
@@ -32,7 +33,7 @@ class FSPathLocalDiskChunk():
 
 
 @dataclass(frozen=True)
-class PDS4BoulderNetInference(StepBase):
+class PDS4BoulderNetInference(TaskStepBase):
     run_path: Path
     batch_size: int = 64
 

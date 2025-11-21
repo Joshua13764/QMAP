@@ -81,43 +81,41 @@ class Polars3DExpressions:
 
     @staticmethod
     def get_project_points_expression() -> List[pl.Expr]:
-        """Projects a polars dataframe with headers of "x", "y", "z" onto a cube of side length 2 centered at the origin
-
-        Returns:
-            List[pl.Expr]:  A list of expressions to perform the action
-        """
+        """Projects directions (x, y, z) onto a cubemap (faces posx/negx/...) with
+        UV in [0, 1] matching sample_face_roi."""
         x, y, z = pl.col("x"), pl.col("y"), pl.col("z")
         sx, sy, sz = x.abs(), y.abs(), z.abs()
 
         return [
+            # +X face (normal = (1,0,0)), U = -z/|x|, V =  y/|x|
             (0.5 * ((-z / sx) + 1.0)).alias("posx_u"),
-            (0.5 * ((y / sx) + 1.0)).alias("posx_v"),
+            (0.5 * ((-y / sx) + 1.0)).alias("posx_v"),
             x.alias("posx_N"),
 
-            # -X face (normal = (-1,0,0))
+            # -X face (normal = (-1,0,0)), U =  z/|x|, V =  y/|x|
             (0.5 * ((z / sx) + 1.0)).alias("negx_u"),
-            (0.5 * ((y / sx) + 1.0)).alias("negx_v"),
+            (0.5 * ((-y / sx) + 1.0)).alias("negx_v"),
             (-x).alias("negx_N"),
 
-            # +Y face (normal = (0,1,0))
+            # +Y face (normal = (0,1,0)),  U =  x/|y|, V = -z/|y|
             (0.5 * ((x / sy) + 1.0)).alias("posy_u"),
-            (0.5 * ((-z / sy) + 1.0)).alias("posy_v"),
+            (0.5 * ((z / sy) + 1.0)).alias("posy_v"),
             y.alias("posy_N"),
 
-            # -Y face (normal = (0,-1,0))
+            # -Y face (normal = (0,-1,0)), U =  x/|y|, V =  z/|y|
             (0.5 * ((x / sy) + 1.0)).alias("negy_u"),
-            (0.5 * ((z / sy) + 1.0)).alias("negy_v"),
+            (0.5 * ((-z / sy) + 1.0)).alias("negy_v"),
             (-y).alias("negy_N"),
 
-            # +Z face (normal = (0,0,1))
+            # +Z face (normal = (0,0,1)),  U =  x/|z|, V =  y/|z|
             (0.5 * ((x / sz) + 1.0)).alias("posz_u"),
-            (0.5 * ((y / sz) + 1.0)).alias("posz_v"),
+            (0.5 * ((-y / sz) + 1.0)).alias("posz_v"),
             z.alias("posz_N"),
 
-            # -Z face (normal = (0,0,-1))
+            # -Z face (normal = (0,0,-1)), U = -x/|z|, V =  y/|z|
             (0.5 * ((-x / sz) + 1.0)).alias("negz_u"),
-            (0.5 * ((y / sz) + 1.0)).alias("negz_v"),
-            (-z).alias("negz_N")
+            (0.5 * ((-y / sz) + 1.0)).alias("negz_v"),
+            (-z).alias("negz_N"),
         ]
 
     @staticmethod

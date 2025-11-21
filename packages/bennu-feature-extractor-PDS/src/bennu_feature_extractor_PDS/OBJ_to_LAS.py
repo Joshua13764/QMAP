@@ -9,14 +9,15 @@ from bennu_feature_extractor.environment_tools.fs_environment import \
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
+from bennu_feature_extractor.task_step_base import TaskStepBase
 from joblib import delayed
 from numpy import dtype, float64
 from numpy._typing._array_like import NDArray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
-from bennu_feature_extractor_PDS.file_storage_adapters.polars_obj_adapter import \
-    FSPolarsObjAdapter
+from bennu_feature_extractor_PDS.file_storage_adapters.polars_obj_adapter_fast import \
+    FSPolarsObjAdapterFast
 from bennu_feature_extractor_PDS.file_storage_adapters.tiff_adapter import \
     FSTiffAdapter
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
@@ -80,7 +81,7 @@ class LodNode(CubeMapLodBase):
 
 
 @dataclass(frozen=True)
-class OBJToLAS(StepBase):
+class OBJToLAS(TaskStepBase):
     lod_res: int
     depth: int
     skip_if_exists: bool
@@ -99,7 +100,7 @@ class OBJToLAS(StepBase):
     def project_model(self, file: FSPathLocalDisk) -> List[FSPathLocalDisk]:
 
         fileData: tuple[pl.DataFrame, pl.DataFrame] = FSEnvironment.load(
-            file, FSPolarsObjAdapter())
+            file, FSPolarsObjAdapterFast())
 
         fileData = Polars3DExpressions.process_mesh(*fileData)
         if self.debug_mode:

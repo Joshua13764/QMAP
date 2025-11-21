@@ -5,10 +5,11 @@ from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base impo
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
-from bennu_feature_extractor_PDS.utils.polars_3D_expressions import POINT_ATTRS, VERT_ID_COLS
+from bennu_feature_extractor_PDS.utils.polars_3D_expressions import (
+    POINT_ATTRS, VERT_ID_COLS)
 
 
-class FSPolarsObjAdapter(
+class FSPolarsObjAdapterFast(
         FSAdapterBase[tuple[pl.DataFrame, pl.DataFrame], FSPathLocalDisk]):
 
     def read(self, path: FSPathLocalDisk) -> tuple[pl.DataFrame, pl.DataFrame]:
