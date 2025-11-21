@@ -20,53 +20,39 @@ class BFEDriver:
     def run_steps(tasks: List[StepBase], result_cache: LocalFileSystem | Coroutine[Any, Any, LocalFileSystem],
                   flow_name: str = "Run all steps in auto DAG") -> dict[str, PrefectFuture[FSEnvironment]]:
 
-        dag_flow = flow(name=flow_name)(run_step_dag)
-        return dag_flow(tasks, result_cache)
+        step_order: List[StepBase] = BFEDriver.get_step_order(tasks)
+        return flow(name=flow_name)(BFEDriver.compile_steps)(
+            step_order, result_cache)
 
+    @staticmethod
+    def get_step_order(steps: List[StepBase]) -> List[StepBase]:
+        name_to_step: dict[str, StepBase] = {s.task_name: s for s in steps}
 
-@task(name="merge_envs")
-def merge_envs(
-    base_env: "FSEnvironment",
-    upstream_envs: list["FSEnvironment"],
-) -> "FSEnvironment":
-    return FSEnvironment.merge(
-        upstream_envs +
-        [base_env])
+        graph: dict[str, set[str]] = {s.task_name: set(
+            s.run_after_task_names) for s in steps}
 
+        ts: TopologicalSorter[str] = TopologicalSorter(graph)
+        order: List[str] = list(ts.static_order())
 
-def run_step_dag(
-        steps: List[StepBase], result_storage) -> dict[str, PrefectFuture[FSEnvironment]]:
-    base_env: FSEnvironment = FSEnvironment.empty()
-    name_to_step: dict[str, StepBase] = {s.task_name: s for s in steps}
-    graph: dict[str, set[str]] = {s.task_name: set(
-        s.run_after_task_names) for s in steps}
-    ts: TopologicalSorter[str] = TopologicalSorter(graph)
-    order: List[str] = list(ts.static_order())
+        return [name_to_step[step_name] for step_name in order]
 
-    futures: dict[str, PrefectFuture[FSEnvironment]] = {}
+    @staticmethod
+    def compile_steps(
+            step_order: List[StepBase], result_cache: LocalFileSystem | Coroutine[Any, Any, LocalFileSystem]):
 
-    for task_name in order:
-        step: StepBase = name_to_step[task_name]
-        upstream_names: FrozenSet[str] = step.run_after_task_names
-        upstream_futures: List[PrefectFuture[FSEnvironment]] = [
-            futures[n] for n in upstream_names]
+        future_results: dict[str, PrefectFuture[FSEnvironment]] = {}
 
-        if upstream_futures:
-            merged_env_future: PrefectFuture[FSEnvironment] = merge_envs.submit(
-                base_env,
-                upstream_futures,
-            )
-            env_arg: PrefectFuture[FSEnvironment] = merged_env_future
-        else:
-            env_arg = base_env
+        for step in step_order:
 
-        compiled_task = step.get_task(result_storage)
+            step_required_upstream_futures: List[PrefectFuture[FSEnvironment]] = [
+                future_results[n] for n in step.run_after_task_names]
 
-        future: PrefectFuture[FSEnvironment] = compiled_task.submit(
-            env_arg,
-            step,
-        )
+            env_arg: PrefectFuture[FSEnvironment] = task(name="merge_envs")(
+                FSEnvironment.merge).submit(step_required_upstream_futures) if step_required_upstream_futures != [] else task(name="create_env")(
+                    FSEnvironment.empty).submit()
 
-        futures[task_name] = future
+            compiled_task: PrefectFuture[FSEnvironment] = step.get_task(
+                result_cache).submit(env_arg, step)
+            future_results[step.task_name] = compiled_task
 
-    return futures
+        return future_results
