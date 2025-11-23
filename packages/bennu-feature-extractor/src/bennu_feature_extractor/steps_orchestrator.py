@@ -1,7 +1,8 @@
 from graphlib import TopologicalSorter
-from typing import List
+from typing import Callable, List, Set
 
-from prefect import Task, flow, task
+from fastapi import dependencies
+from prefect import Task, flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 from prefect.results import ResultStorage
 
@@ -19,6 +20,24 @@ class StepsOrchestrator:
         step_order: List[StepBase] = StepsOrchestrator.get_step_order(tasks)
         return flow(name=flow_name)(StepsOrchestrator.compile_steps)(
             step_order, result_cache)
+
+    @staticmethod
+    def run_tasks_with_dependencies(tasks: List[StepBase], dependency_pool: List[StepBase], result_cache: ResultStorage | None,
+                                    flow_name: Callable[[List[StepBase]], str] = lambda tasks: f"Run tasks {[t.task_name for t in tasks]} with dependencies in auto DAG") -> dict[str, PrefectFuture[FSEnvironment]]:
+
+        dependency_pool_dict: dict[str, StepBase] = {
+            d.task_name: d for d in dependency_pool}
+
+        dependencies: Set[StepBase] = {dependency for task in tasks for dependency in task.get_dependencies(
+            dependency_pool_dict)}
+
+        print(
+            f"Run tasks and dependencies resolved: {[d.task_name for d in dependencies]}")
+
+        return StepsOrchestrator.run_steps(
+            list(dependencies),
+            result_cache,
+            flow_name(tasks))
 
     @staticmethod
     def get_step_order(steps: List[StepBase]) -> List[StepBase]:

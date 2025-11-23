@@ -25,6 +25,8 @@ from prefect.futures import PrefectFuture
 # run_dir_store = LocalFileSystem(basepath=".\\.run_dir_storage")
 # run_dir_store.save("run-dir-storage", overwrite=True)
 
+# Run "prefect server start" to start server before running this script
+
 RES_STORE: LocalFileSystem | Coroutine[Any, Any,
                                        LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
 
@@ -94,7 +96,7 @@ step7 = OBJToLAS(
     run_after_task_names=frozenset([step3.task_name]),
     lod_res=1024,
     export_folder=pipeline_working_path_fast.as_posix(),
-    depth=5,
+    depth=4,
     skip_if_exists=True,
     debug_mode=True
 )
@@ -119,6 +121,7 @@ STEPS: Sequence[StepBase] = [
 ]
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_steps(STEPS, RES_STORE)
-final_env: FSEnvironment = futures["Convert bennu Mesh to stretch maps"].result(
+              ] = StepsOrchestrator.run_tasks_with_dependencies([step7], STEPS, RES_STORE)
+
+final_env: FSEnvironment = futures[step7.task_name].result(
 )

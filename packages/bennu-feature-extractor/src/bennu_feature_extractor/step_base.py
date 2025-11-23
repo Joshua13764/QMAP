@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from logging import Logger
-from typing import Any, Coroutine, FrozenSet, List
+from typing import Any, Coroutine, Dict, FrozenSet, List
 
 from prefect import flow, get_run_logger, task
 from prefect.cache_policies import INPUTS
@@ -10,6 +10,7 @@ from prefect.futures import PrefectFuture, wait
 from prefect.results import ResultStorage
 from prefect.serializers import PickleSerializer
 from prefect.task_runners import ThreadPoolTaskRunner
+from py_linq import Enumerable
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
@@ -32,6 +33,12 @@ class StepBase(ABC):
     @property
     def logger(self) -> Logger:
         return get_run_logger()
+
+    def get_dependencies(
+            self, dependency_pool: Dict[str, "StepBase"]) -> List["StepBase"]:
+
+        return [self] + [dependency for name in self.run_after_task_names for dependency in [
+            dependency_pool[name], *dependency_pool[name].get_dependencies(dependency_pool)]]
 
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:
