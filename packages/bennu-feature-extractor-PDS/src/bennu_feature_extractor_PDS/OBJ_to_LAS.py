@@ -16,10 +16,10 @@ from numpy._typing._array_like import NDArray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
+from bennu_feature_extractor_PDS.file_storage_adapters.numpy_adapter import \
+    FSNumpyAdapter
 from bennu_feature_extractor_PDS.file_storage_adapters.polars_obj_adapter_fast import \
     FSPolarsObjAdapterFast
-from bennu_feature_extractor_PDS.file_storage_adapters.tiff_adapter import \
-    FSTiffAdapter
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.utils.cubemap_lod_base import CubeMapLodBase
 from bennu_feature_extractor_PDS.utils.polars_3D_expressions import \
@@ -49,7 +49,7 @@ class LodNode(CubeMapLodBase):
             tris, face)
 
         relative_path: Path = Path(*self.src_file.path).parent / Path(
-            f"{Path(*self.src_file.path).name} LAS_lod_extract", f"lod_{len(self.shape)}", f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.png")
+            f"{Path(*self.src_file.path).name} LAS_lod_extract", f"lod_{len(self.shape)}", f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.npy")
 
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
@@ -62,7 +62,7 @@ class LodNode(CubeMapLodBase):
             arr: NDArray[float64] = ProjectionPlotting.rasterize_tris(
                 points, tris, face, x_range, y_range, (target_width, target_width))
 
-            FSEnvironment.save(arr, export_file, FSTiffAdapter())
+            FSEnvironment.save(arr, export_file, FSNumpyAdapter())
 
         if self.debug_mode:
             ProjectionPlotting.plot_debug_data(

@@ -98,7 +98,7 @@ step7 = OBJToLAS(
     export_folder=pipeline_working_path_fast.as_posix(),
     depth=4,
     skip_if_exists=True,
-    debug_mode=True
+    debug_mode=False
 )
 
 step8 = PDS4BoulderNetInference(
