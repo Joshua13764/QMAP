@@ -10,8 +10,11 @@ from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor.steps_orchestrator import StepsOrchestrator
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
+from bennu_feature_extractor_BoulderNet.detection_merge import DetectionMerge
 from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference import \
     PDS4BoulderNetInference
+from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference_CUDA import \
+    PDS4BoulderNetInferenceCUDA
 from bennu_feature_extractor_PDS.OBJ_to_LAS import OBJToLAS
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
@@ -101,10 +104,21 @@ step7 = OBJToLAS(
     debug_mode=False
 )
 
-step8 = PDS4BoulderNetInference(
+step8 = PDS4BoulderNetInferenceCUDA(
     task_name=f"Infer boulders",
     run_after_task_names=frozenset([step6.task_name, step1.task_name]),
-    run_path=pipeline_working_path_fast
+    run_path=pipeline_working_path_fast,
+    detection_output_markers=frozenset(
+        [FSMarkerString("BoulderNet_Detections")])
+)
+
+step10 = DetectionMerge(
+    task_name=f"Merge detections",
+    run_after_task_names=frozenset([step8.task_name]),
+    marker_to_merge=FSMarkerString("BoulderNet_Detections"),
+    output_marker=FSMarkerString("Merged_BoulderNet_Detections"),
+    run_path=pipeline_working_path_fast.as_posix(),
+    result_output_path=Path("exports/merge_detections.pkl").as_posix()
 )
 
 # step9 = SPICEKernelGrabber(
@@ -117,11 +131,11 @@ step8 = PDS4BoulderNetInference(
 # )
 
 STEPS: Sequence[StepBase] = [
-    step1, step2, step3, *steps4, step5, step6, step7  # , step8
+    step1, step2, step3, *steps4, step5, step6, step7, step10, step8
 ]
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([step7], STEPS, RES_STORE)
+              ] = StepsOrchestrator.run_tasks_with_dependencies([step10], STEPS, RES_STORE)
 
-final_env: FSEnvironment = futures[step7.task_name].result(
-)
+# final_env: FSEnvironment = futures[step10.task_name].result(
+# )

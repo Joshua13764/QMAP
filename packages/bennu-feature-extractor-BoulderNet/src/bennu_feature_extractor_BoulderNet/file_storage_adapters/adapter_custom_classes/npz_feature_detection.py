@@ -7,6 +7,9 @@ from numpy.typing import NDArray
 
 @dataclass
 class NpzFeatureDetection():
+    face: str
+    relative_offset: NDArray[Any]
+    relative_scale: float
     box_xyxy: NDArray[Any]
     score: float
     class_id: int

@@ -15,8 +15,7 @@ from numpy import dtype, ndarray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
-from bennu_feature_extractor_BoulderNet.utils import docker_helpers
-from bennu_feature_extractor_BoulderNet.utils.docker_helpers import \
+from bennu_feature_extractor_BoulderNet.utils.docker_helpersCUDA import \
     DockerHelpers
 
 
@@ -33,7 +32,7 @@ class FSPathLocalDiskChunk():
 
 
 @dataclass(frozen=True)
-class PDS4BoulderNetInference(TaskStepBase):
+class PDS4BoulderNetInferenceCUDA(TaskStepBase):
     run_path: Path
     batch_size: int = 64
     detection_output_markers: frozenset[FSMarkerString] = field(
@@ -59,7 +58,7 @@ class PDS4BoulderNetInference(TaskStepBase):
 
         for chunk_folder_path, chunk in in_folder_data.items():
 
-            ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {len(chunk.inference_output_files)} images in folder {chunk_folder_path}",
+            ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {self.batch_size * len(chunk.inference_output_files)} images in folder {chunk_folder_path}",
                          unit=f"{self.batch_size} img batches")(n_jobs=1)(
                 delayed(
                     DockerHelpers.analyse_image)(
