@@ -13,8 +13,6 @@ from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
 from bennu_feature_extractor_BoulderNet.detection_merge import DetectionMerge
 from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference import \
     PDS4BoulderNetInference
-from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference_CUDA import \
-    PDS4BoulderNetInferenceCUDA
 from bennu_feature_extractor_PDS.OBJ_to_LAS import OBJToLAS
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
@@ -24,14 +22,15 @@ from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
 from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture
 
-# # To be run once
-# run_dir_store = LocalFileSystem(basepath=".\\.run_dir_storage")
-# run_dir_store.save("run-dir-storage", overwrite=True)
-
 # Run "prefect server start" to start server before running this script
 
-RES_STORE: LocalFileSystem | Coroutine[Any, Any,
-                                       LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
+try:
+    RES_STORE: LocalFileSystem | Coroutine[Any, Any,
+                                           LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
+except ValueError:
+    RES_STORE = LocalFileSystem(basepath=".\\.run_dir_storage")
+    RES_STORE.save("run-dir-storage", overwrite=True)
+
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
@@ -104,8 +103,9 @@ step7 = OBJToLAS(
     debug_mode=False
 )
 
-step8 = PDS4BoulderNetInferenceCUDA(
+step8 = PDS4BoulderNetInference(
     task_name=f"Infer boulders",
+    cuda=True,
     run_after_task_names=frozenset([step6.task_name, step1.task_name]),
     run_path=pipeline_working_path_fast,
     detection_output_markers=frozenset(

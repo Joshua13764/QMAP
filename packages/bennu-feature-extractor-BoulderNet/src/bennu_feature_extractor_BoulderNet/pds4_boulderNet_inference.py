@@ -15,10 +15,6 @@ from numpy import dtype, ndarray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
-from bennu_feature_extractor_BoulderNet.utils import docker_helpers
-from bennu_feature_extractor_BoulderNet.utils.docker_helpers import \
-    DockerHelpers
-
 
 @dataclass()
 class FSPathLocalDiskChunk():
@@ -36,6 +32,7 @@ class FSPathLocalDiskChunk():
 class PDS4BoulderNetInference(TaskStepBase):
     run_path: Path
     batch_size: int = 64
+    cuda: bool = field(default_factory=lambda: False)
     detection_output_markers: frozenset[FSMarkerString] = field(
         default_factory=lambda: frozenset([FSMarkerString("BoulderNet_Detections")]))
 
@@ -51,6 +48,13 @@ class PDS4BoulderNetInference(TaskStepBase):
             )
             for f in files_to_infer
         ]
+
+        if not self.cuda:
+            from bennu_feature_extractor_BoulderNet.utils.docker_helpersCUDA import \
+                DockerHelpers
+        else:
+            from bennu_feature_extractor_BoulderNet.utils.docker_helpers import \
+                DockerHelpers
 
         DockerHelpers.ensure_image_exists()
 
