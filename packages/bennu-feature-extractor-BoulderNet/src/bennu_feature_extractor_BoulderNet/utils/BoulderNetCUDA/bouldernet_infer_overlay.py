@@ -35,9 +35,8 @@ def ensure_gpu_headroom(threshold: float = 0.95):
         msg = (
             f"GPU memory utilisation too high: {util * 100:.1f}% "
             f"(used {used_gib:.2f} GiB / {total_gib:.2f} GiB). "
-            f"Threshold is {
-                threshold *
-                100:.1f}%. Aborting to avoid instability."
+            f"""Threshold is {threshold *
+                              100:.1f}%. Aborting to avoid instability."""
         )
         # You can either raise or exit; raising is nicer for Docker logs.
         raise RuntimeError(msg)
