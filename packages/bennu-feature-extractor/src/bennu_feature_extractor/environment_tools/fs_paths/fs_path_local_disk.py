@@ -45,3 +45,11 @@ class FSPathLocalDisk(FSPathBase):
             markers=frozenset(markers),
             root_path=new_root_path.as_posix(),
         )
+
+    def copy_from_folder(self, new_sub_path: Path,
+                         markers: List[FSMarkerBase] = []) -> 'FSPathLocalDisk':
+        return FSPathLocalDisk(
+            path=(Path(*self.path) / new_sub_path).parts,
+            markers=frozenset(markers),
+            root_path=self.root_path,
+        )

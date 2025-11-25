@@ -1,6 +1,4 @@
-from abc import ABC
-from os import path
-from pathlib import Path
+from abc import ABC, abstractmethod
 from typing import Tuple
 
 import attr
@@ -13,3 +11,7 @@ from bennu_feature_extractor.environment_tools.base_classes.fs_marker_base impor
 class FSPathBase(ABC):
     path: Tuple[str, ...]
     markers: frozenset[FSMarkerBase]
+
+    @abstractmethod
+    def make_directory(self) -> None:
+        ...
