@@ -87,18 +87,18 @@ step5 = PDS_to_PNG(
 
 step6 = PANToLOD(
     task_name=f"Convert bennu PAN to LODs",
-    root_path=pipeline_working_path.as_posix(),
+    root_path=pipeline_working_path_fast.as_posix(),
     run_after_task_names=frozenset([step2.task_name]),
-    lod_res=1024,
+    lod_res=512,
     skip_if_exists=True
 )
 
 step7 = OBJToLAS(
     task_name=f"Convert bennu Mesh to stretch maps",
     run_after_task_names=frozenset([step3.task_name]),
-    lod_res=1024,
+    lod_res=512,
     export_folder=pipeline_working_path_fast.as_posix(),
-    depth=4,
+    depth=5,
     skip_if_exists=True,
     debug_mode=False
 )
@@ -107,7 +107,7 @@ step8 = PDS4BoulderNetInference(
     task_name=f"Infer boulders",
     cuda=True,
     run_after_task_names=frozenset([step6.task_name, step1.task_name]),
-    run_path=pipeline_working_path_fast,
+    run_path=pipeline_working_path_fast.as_posix(),
     detection_output_markers=frozenset(
         [FSMarkerString("BoulderNet_Detections")])
 )

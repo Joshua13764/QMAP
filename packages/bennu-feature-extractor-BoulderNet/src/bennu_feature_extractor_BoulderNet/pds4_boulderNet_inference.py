@@ -13,6 +13,7 @@ from joblib import delayed
 from more_itertools import chunked
 from numpy import dtype, ndarray
 from numpy.typing import NDArray
+from tqdm import tqdm
 from tqdm_joblib import ParallelPbar
 
 
@@ -30,7 +31,7 @@ class FSPathLocalDiskChunk():
 
 @dataclass(frozen=True)
 class PDS4BoulderNetInference(TaskStepBase):
-    run_path: Path
+    run_path: str
     batch_size: int = 64
     cuda: bool = field(default_factory=lambda: False)
     detection_output_markers: frozenset[FSMarkerString] = field(
@@ -43,13 +44,13 @@ class PDS4BoulderNetInference(TaskStepBase):
 
         inference_output_files: List[FSPathLocalDisk] = [
             f.copy_as_new(
-                new_root_path=self.run_path,
+                new_root_path=Path(self.run_path),
                 new_extension=".bni"  # BoulderNetInference (bni)
             )
             for f in files_to_infer
         ]
 
-        if not self.cuda:
+        if self.cuda:
             from bennu_feature_extractor_BoulderNet.utils.docker_helpersCUDA import \
                 DockerHelpers
         else:
@@ -63,15 +64,33 @@ class PDS4BoulderNetInference(TaskStepBase):
 
         for chunk_folder_path, chunk in in_folder_data.items():
 
-            ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {len(chunk.inference_output_files)} images in folder {chunk_folder_path}",
-                         unit=f"{self.batch_size} img batches")(n_jobs=1)(
-                delayed(
-                    DockerHelpers.analyse_image)(
+            # ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {len(chunk.inference_output_files)} images in folder {chunk_folder_path}",
+            #              unit=f"{self.batch_size} img batches")(n_jobs=1)(
+            #     delayed(
+            #         DockerHelpers.analyse_image)(
+            #         image_paths,
+            #         inference_output_paths,
+            #         verbose=True)
+            #     for image_paths, inference_output_paths in chunk.get_sub_chunks(batch_size=self.batch_size)
+            # )
+
+            sub_chunks = list(chunk.get_sub_chunks(batch_size=self.batch_size))
+
+            for image_paths, inference_output_paths in tqdm(
+                sub_chunks,
+                desc=(
+                    f"Inferring from images with batch size {
+                        self.batch_size} and "
+                    f"{len(chunk.inference_output_files)} images in folder {chunk_folder_path}"
+                ),
+                unit=f"{self.batch_size} img batches",
+                total=len(sub_chunks),
+            ):
+                DockerHelpers.analyse_image(
                     image_paths,
                     inference_output_paths,
-                    verbose=True)
-                for image_paths, inference_output_paths in chunk.get_sub_chunks(batch_size=self.batch_size)
-            )
+                    verbose=True,
+                )
 
         outputs: List[FSPathLocalDisk] = [
             f.copy_as_new_name(

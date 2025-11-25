@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from pathlib import Path
 
 import cv2
@@ -111,6 +112,8 @@ def main() -> None:
                 overlay_export_path,
                 inference_export_path,
                 predictor)
+
+    time.sleep(2)
 
 
 if __name__ == "__main__":
