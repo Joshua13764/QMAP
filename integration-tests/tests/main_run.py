@@ -10,6 +10,7 @@ from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
 from bennu_feature_extractor.steps_orchestrator import StepsOrchestrator
 from bennu_feature_extractor_BoulderNet.Best_model_downloader import \
     BestModelDownloader
+from bennu_feature_extractor_BoulderNet.detection_merge import DetectionMerge
 from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference import \
     PDS4BoulderNetInference
 from bennu_feature_extractor_PDS.OBJ_to_LAS import OBJToLAS
@@ -21,14 +22,15 @@ from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
 from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture
 
-# # To be run once
-# run_dir_store = LocalFileSystem(basepath=".\\.run_dir_storage")
-# run_dir_store.save("run-dir-storage", overwrite=True)
-
 # Run "prefect server start" to start server before running this script
 
-RES_STORE: LocalFileSystem | Coroutine[Any, Any,
-                                       LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
+try:
+    RES_STORE: LocalFileSystem | Coroutine[Any, Any,
+                                           LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
+except ValueError:
+    RES_STORE = LocalFileSystem(basepath=".\\.run_dir_storage")
+    RES_STORE.save("run-dir-storage", overwrite=True)
+
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
@@ -85,26 +87,39 @@ step5 = PDS_to_PNG(
 
 step6 = PANToLOD(
     task_name=f"Convert bennu PAN to LODs",
-    root_path=pipeline_working_path.as_posix(),
+    root_path=pipeline_working_path_fast.as_posix(),
     run_after_task_names=frozenset([step2.task_name]),
-    lod_res=1024,
+    lod_res=512,
     skip_if_exists=True
 )
 
 step7 = OBJToLAS(
     task_name=f"Convert bennu Mesh to stretch maps",
     run_after_task_names=frozenset([step3.task_name]),
-    lod_res=1024,
+    lod_res=512,
     export_folder=pipeline_working_path_fast.as_posix(),
-    depth=4,
+    depth=5,
     skip_if_exists=True,
     debug_mode=False
 )
 
 step8 = PDS4BoulderNetInference(
     task_name=f"Infer boulders",
+    cuda=True,
+    skip_converted=True,
     run_after_task_names=frozenset([step6.task_name, step1.task_name]),
-    run_path=pipeline_working_path_fast
+    run_path=pipeline_working_path_fast.as_posix(),
+    detection_output_markers=frozenset(
+        [FSMarkerString("BoulderNet_Detections")])
+)
+
+step10 = DetectionMerge(
+    task_name=f"Merge detections",
+    run_after_task_names=frozenset([step8.task_name]),
+    marker_to_merge=FSMarkerString("BoulderNet_Detections"),
+    output_marker=FSMarkerString("Merged_BoulderNet_Detections"),
+    run_path=pipeline_working_path_fast.as_posix(),
+    result_output_path=Path("exports/merge_detections.pkl").as_posix()
 )
 
 # step9 = SPICEKernelGrabber(
@@ -117,11 +132,11 @@ step8 = PDS4BoulderNetInference(
 # )
 
 STEPS: Sequence[StepBase] = [
-    step1, step2, step3, *steps4, step5, step6, step7  # , step8
+    step1, step2, step3, *steps4, step5, step6, step7, step10, step8
 ]
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([step7], STEPS, RES_STORE)
+              ] = StepsOrchestrator.run_tasks_with_dependencies([step10], STEPS, RES_STORE)
 
-final_env: FSEnvironment = futures[step7.task_name].result(
-)
+# final_env: FSEnvironment = futures[step10.task_name].result(
+# )

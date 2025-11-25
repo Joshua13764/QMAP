@@ -34,7 +34,7 @@ def export_inference_data(instances, save_path: Path):
     masks = instances.pred_masks.numpy().astype(
         np.uint8)                # (N,H,W) 0/1
 
-    print(f"Exported infer data to {npz_path}")
+    print(f"Exported infer data to {save_path}")
     np.savez_compressed(
         save_path,
         boxes_xyxy=boxes,

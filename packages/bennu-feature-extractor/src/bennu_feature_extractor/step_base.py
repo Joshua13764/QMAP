@@ -38,7 +38,7 @@ class StepBase(ABC):
             self, dependency_pool: Dict[str, "StepBase"]) -> List["StepBase"]:
 
         return [self] + [dependency for name in self.run_after_task_names for dependency in [
-            dependency_pool[name], *dependency_pool[name].get_dependencies(dependency_pool)]]
+            *dependency_pool[name].get_dependencies(dependency_pool)]]
 
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:

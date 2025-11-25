@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
@@ -5,9 +6,9 @@ import docker
 from bennu_feature_extractor.environment import *
 from docker.errors import APIError, ImageNotFound
 from docker.models.containers import Container
-from docker.types import DeviceRequest  # <-- for GPU access
+from docker.types import DeviceRequest
 
-DOCKER_IMAGE_TAG = "mltools:py3.10-cuda"  # <-- CUDA image tag
+DOCKER_IMAGE_TAG = "mltools:py3.10-cuda"
 
 Mount = Tuple[Path, str, str]
 
@@ -20,8 +21,6 @@ class DockerHelpers:
         inference_output_paths: List[FSPathLocalDisk],
         verbose: bool = False,
     ) -> None:
-
-        # Point at the CUDA version of the BoulderNet overlay script
         overlay_script: Path = (
             Path(__file__).parent / "BoulderNetCUDA" /
             "bouldernet_infer_overlay.py"
@@ -47,13 +46,6 @@ class DockerHelpers:
 
     @staticmethod
     def ensure_image_exists() -> None:
-        """Makes sure the image exists otherwise will create it from the Dockerfile
-
-        Raises:
-            FileNotFoundError: Expected Dockerfile at ... but it was not found
-            RuntimeError: Could not communicate with Docker error
-        """
-
         overlay_script: Path = (
             Path(__file__).parent / "BoulderNetCUDA" /
             "bouldernet_infer_overlay.py"
@@ -77,8 +69,8 @@ class DockerHelpers:
             )
             DockerHelpers.build_image(
                 tag=DOCKER_IMAGE_TAG,
-                context_dir=overlay_dir,   # build context is BoulderNetCUDA/
-                dockerfile=dockerfile_rel,  # Dockerfile within that context
+                context_dir=overlay_dir,
+                dockerfile=dockerfile_rel,
                 pull=False,
                 no_cache=False,
                 build_args=None,
@@ -94,14 +86,12 @@ class DockerHelpers:
         image_paths: List[FSPathLocalDisk],
         inference_output_paths: List[FSPathLocalDisk],
     ) -> Tuple[List[Mount], Dict[str, str]]:
-
         mounts: List[Mount] = []
         env: Dict[str, str] = {}
 
         for image_path, inference_output_path in zip(
             image_paths, inference_output_paths
         ):
-
             host_in_dir: Path = image_path.actual_path.parent
             host_out_dir: Path = inference_output_path.actual_path.parent
 
@@ -125,7 +115,6 @@ class DockerHelpers:
         pull: bool = False,
         build_args: Optional[Dict[str, str]] = None,
     ) -> str:
-        """Build Docker image and return its ID."""
         client: docker.DockerClient = docker.from_env()
         image, logs = client.images.build(
             path=str(Path(context_dir)),
@@ -147,6 +136,42 @@ class DockerHelpers:
         return image.id
 
     @staticmethod
+    @contextmanager
+    def _container_for_script(
+        image: str,
+        command: List[str],
+        *,
+        container_workdir: str,
+        volumes: Dict[str, Dict[str, str]],
+        env: Optional[Dict[str, str]] = None,
+        name: Optional[str] = None,
+    ):
+        client: docker.DockerClient = docker.from_env()
+        device_requests = [
+            DeviceRequest(count=-1, capabilities=[["gpu"]])
+        ]
+
+        container: Optional[Container] = None
+        try:
+            container = client.containers.run(
+                image=image,
+                command=command,
+                name=name,
+                working_dir=container_workdir,
+                volumes=volumes,
+                environment=env or {},
+                detach=True,
+                device_requests=device_requests,
+            )
+            yield container
+        finally:
+            if container is not None:
+                try:
+                    container.remove(force=True)
+                except APIError:
+                    pass
+
+    @staticmethod
     def run_script(
         image: str,
         script_path: Union[str, Path],
@@ -158,17 +183,13 @@ class DockerHelpers:
         extra_args: Optional[Iterable[str]] = None,
         extra_mounts: Optional[Iterable[tuple]] = None,
     ) -> Tuple[int, str]:
-        """Run a local Python script inside the container.
-
-        extra_mounts: iterable of (host_dir, container_dir, mode) tuples.
-        Example: [(Path('C:/data/tiles'), '/in', 'ro')]
-        """
         host_script = Path(script_path).resolve(strict=True)
         host_dir = str(host_script.parent)
 
         volumes: Dict[str, Dict[str, str]] = {
             host_dir: {"bind": mount_into, "mode": "rw"}
         }
+
         if extra_mounts:
             for host_d, bind_to, mode in extra_mounts:
                 h = str(Path(host_d).resolve())
@@ -177,28 +198,30 @@ class DockerHelpers:
         container_workdir: str = workdir or mount_into
         container_script: str = f"{mount_into.rstrip('/')}/{host_script.name}"
 
-        client: docker.DockerClient = docker.from_env()
+        command: List[str] = ["python", container_script] + (
+            list(extra_args) if extra_args else []
+        )
 
-        # --- CUDA: request all GPUs for the container ---
-        device_requests = [
-            DeviceRequest(count=-1, capabilities=[["gpu"]])
-        ]
-
-        container: Container = client.containers.run(
+        with DockerHelpers._container_for_script(
             image=image,
-            command=["python", container_script]
-            + (list(extra_args) if extra_args else []),
-            name=name,
-            working_dir=container_workdir,
+            command=command,
+            container_workdir=container_workdir,
             volumes=volumes,
-            environment=env or {},
-            detach=True,
-            device_requests=device_requests,  # <-- key CUDA bit
-        )
-        result = container.wait()
-        exit_code = int(result.get("StatusCode", 1))
-        output: str = container.logs(stdout=True, stderr=True).decode(
-            "utf-8", errors="replace"
-        )
-        container.remove(force=True)
+            env=env,
+            name=name,
+        ) as container:
+            try:
+                result = container.wait()
+            except KeyboardInterrupt:
+                try:
+                    container.kill()
+                except APIError:
+                    pass
+                raise
+
+            exit_code = int(result.get("StatusCode", 1))
+            output: str = container.logs(stdout=True, stderr=True).decode(
+                "utf-8", errors="replace"
+            )
+
         return exit_code, output

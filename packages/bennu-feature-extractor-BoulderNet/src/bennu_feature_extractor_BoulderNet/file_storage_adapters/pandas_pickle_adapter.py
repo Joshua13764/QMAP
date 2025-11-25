@@ -1,0 +1,17 @@
+import pandas as pd
+from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
+    FSAdapterBase
+from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
+    FSPathLocalDisk
+
+
+class FSPandasPickleAdapter(
+        FSAdapterBase[pd.DataFrame, FSPathLocalDisk]):
+    """Uses the pk module and pickle to save and load dataframes"""
+
+    def read(self, path: FSPathLocalDisk) -> pd.DataFrame:
+        return pd.read_pickle(path.actual_path.as_posix())
+
+    def write(self, obj: pd.DataFrame,
+              path: FSPathLocalDisk) -> None:
+        obj.to_pickle(path.actual_path.as_posix())
