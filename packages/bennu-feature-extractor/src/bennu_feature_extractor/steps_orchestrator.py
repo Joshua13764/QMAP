@@ -1,7 +1,6 @@
 from graphlib import TopologicalSorter
 from typing import Callable, List, Set
 
-from fastapi import dependencies
 from prefect import Task, flow, get_run_logger, task
 from prefect.futures import PrefectFuture
 from prefect.results import ResultStorage

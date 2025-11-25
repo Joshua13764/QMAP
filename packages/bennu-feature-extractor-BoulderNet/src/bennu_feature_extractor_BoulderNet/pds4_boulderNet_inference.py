@@ -5,6 +5,8 @@ from typing import Dict, Iterator, List, Set, Tuple
 from bennu_feature_extractor.environment import *
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
+from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
+    FSPathLocalDisk
 from bennu_feature_extractor.step_base import StepBase
 from bennu_feature_extractor.task_step_base import TaskStepBase
 from bennu_feature_extractor_PDS.file_storage_adapters.pds4_adapter import (
@@ -33,6 +35,7 @@ class FSPathLocalDiskChunk():
 class PDS4BoulderNetInference(TaskStepBase):
     run_path: str
     batch_size: int = 64
+    skip_converted: bool = field(default_factory=lambda: True)
     cuda: bool = field(default_factory=lambda: False)
     detection_output_markers: frozenset[FSMarkerString] = field(
         default_factory=lambda: frozenset([FSMarkerString("BoulderNet_Detections")]))
@@ -50,6 +53,34 @@ class PDS4BoulderNetInference(TaskStepBase):
             for f in files_to_infer
         ]
 
+        overlay_output_files: List[FSPathLocalDisk] = [
+            f.copy_as_new_name(
+                new_root_path=Path(self.run_path),
+                new_extension="_overlay.png"
+            )
+            for f in files_to_infer
+        ]
+
+        detections_output_files: List[FSPathLocalDisk] = [
+            f.copy_as_new_name(
+                new_root_path=Path(self.run_path),
+                new_extension="_detections.npz",
+                markers=list(self.detection_output_markers)
+            )
+            for f in files_to_infer
+        ]
+
+        exits_overlay: Dict[FSPathLocalDisk, bool] = FSEnvironment.quick_exists(
+            overlay_output_files)
+        exists_detections: Dict[FSPathLocalDisk, bool] = FSEnvironment.quick_exists(
+            detections_output_files)
+
+        def actual_files(files): return [
+            file
+            for file, overlay, detections in zip(files, overlay_output_files, detections_output_files)
+            if not (exits_overlay[overlay] and exists_detections[detections] and self.skip_converted)
+        ]
+
         if self.cuda:
             from bennu_feature_extractor_BoulderNet.utils.docker_helpersCUDA import \
                 DockerHelpers
@@ -60,19 +91,9 @@ class PDS4BoulderNetInference(TaskStepBase):
         DockerHelpers.ensure_image_exists()
 
         in_folder_data: Dict[str, FSPathLocalDiskChunk] = self.sort_data_by_folders(
-            files_to_infer, inference_output_files)
+            actual_files(files_to_infer), actual_files(inference_output_files))
 
         for chunk_folder_path, chunk in in_folder_data.items():
-
-            # ParallelPbar(f"Inferring from images with batch size {self.batch_size} and {len(chunk.inference_output_files)} images in folder {chunk_folder_path}",
-            #              unit=f"{self.batch_size} img batches")(n_jobs=1)(
-            #     delayed(
-            #         DockerHelpers.analyse_image)(
-            #         image_paths,
-            #         inference_output_paths,
-            #         verbose=True)
-            #     for image_paths, inference_output_paths in chunk.get_sub_chunks(batch_size=self.batch_size)
-            # )
 
             sub_chunks = list(chunk.get_sub_chunks(batch_size=self.batch_size))
 
@@ -92,22 +113,8 @@ class PDS4BoulderNetInference(TaskStepBase):
                     verbose=True,
                 )
 
-        outputs: List[FSPathLocalDisk] = [
-            f.copy_as_new_name(
-                new_root_path=self.run_path,
-                new_extension="_overlay.png"  # BoulderNetInference (bni)
-            )
-            for f in files_to_infer
-        ] + [
-            f.copy_as_new_name(
-                new_root_path=self.run_path,
-                new_extension="_detections.png",  # BoulderNetInference (bni)
-                markers=list(self.detection_output_markers)
-            )
-            for f in files_to_infer
-        ]
-
-        return FSEnvironment(frozenset(outputs))
+        return FSEnvironment(
+            frozenset(overlay_output_files + detections_output_files))
 
     @staticmethod
     def sort_data_by_folders(files_to_infer: List[FSPathLocalDisk],

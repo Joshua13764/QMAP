@@ -106,6 +106,7 @@ step7 = OBJToLAS(
 step8 = PDS4BoulderNetInference(
     task_name=f"Infer boulders",
     cuda=True,
+    skip_converted=True,
     run_after_task_names=frozenset([step6.task_name, step1.task_name]),
     run_path=pipeline_working_path_fast.as_posix(),
     detection_output_markers=frozenset(

@@ -63,6 +63,7 @@ class FSEnvironment():
     @staticmethod
     def save[ObjType, PathType: FSPathBase](
             obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> None:
+        path.actual_path.parent.mkdir(parents=True, exist_ok=True)
         adapter.write(obj, path)
 
     @staticmethod

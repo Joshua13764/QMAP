@@ -40,7 +40,7 @@ class FSNpzDetectionAdapter(
 
     @staticmethod
     def find_relative_offset(detection_path: Path) -> NDArray[Any]:
-        face, pixel_offset_x_str, pixel_offset_y_str, pixel_image_size, pixel_lod_size = detection_path.stem.split(
+        face, pixel_offset_x_str, pixel_offset_y_str, pixel_image_size, _, pixel_lod_size, *_ = detection_path.stem.split(
             "_")
 
         return np.array([
