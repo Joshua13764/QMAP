@@ -5,10 +5,42 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import torch
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import ColorMode, Visualizer
+
+
+def ensure_gpu_headroom(threshold: float = 0.95):
+    """
+    Abort if GPU memory utilisation is above `threshold` (e.g. 0.95 = 95%).
+
+    Uses CUDA driver info, so it accounts for all processes, not just PyTorch.
+    """
+    if not torch.cuda.is_available():
+        return  # nothing to check on CPU-only runs
+
+    # Optionally clear PyTorch's cached blocks first, so the reading is
+    # realistic
+    torch.cuda.empty_cache()
+
+    free_bytes, total_bytes = torch.cuda.mem_get_info()
+    used_bytes = total_bytes - free_bytes
+    util = used_bytes / total_bytes
+
+    if util >= threshold:
+        used_gib = used_bytes / (1024 ** 3)
+        total_gib = total_bytes / (1024 ** 3)
+        msg = (
+            f"GPU memory utilisation too high: {util * 100:.1f}% "
+            f"(used {used_gib:.2f} GiB / {total_gib:.2f} GiB). "
+            f"Threshold is {
+                threshold *
+                100:.1f}%. Aborting to avoid instability."
+        )
+        # You can either raise or exit; raising is nicer for Docker logs.
+        raise RuntimeError(msg)
 
 
 def render_overlay(bgr, instances, save_path: Path):
@@ -68,6 +100,8 @@ def infer_image(in_path: Path, overlay_export_path: Path,
     bgr = cv2.imread(str(in_path), cv2.IMREAD_COLOR)
     if bgr is None:
         raise ValueError(f"OpenCV failed to read image: {in_path}")
+
+    ensure_gpu_headroom()
 
     outputs = predictor(bgr)
 
