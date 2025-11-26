@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Mapping, Protocol, Sequence, Tuple
 
 import numpy as np
@@ -19,6 +20,7 @@ class ArrayStructure(Protocol):
 StructureList = Sequence[ArrayStructure]
 
 
+@dataclass(frozen=True)
 class FSPDS4Adapter(
         FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLocalDisk]):
 

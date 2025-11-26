@@ -5,7 +5,7 @@ from bennu_feature_extractor.environment_tools.base_classes.fs_path_base import 
     FSPathBase
 
 
-@dataclass()
+@dataclass(frozen=True)
 class FSAdapterBase[ObjType, PathType: FSPathBase](ABC):
 
     @abstractmethod

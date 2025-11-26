@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import trimesh
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
@@ -5,6 +7,7 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
     FSPathLocalDisk
 
 
+@dataclass(frozen=True)
 class FSTrimeshAdapter(FSAdapterBase[trimesh.Trimesh, FSPathLocalDisk]):
 
     def read(self, path: FSPathLocalDisk) -> trimesh.Trimesh:

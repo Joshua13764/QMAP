@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List
 
 import polars as pl
@@ -13,6 +14,7 @@ from bennu_feature_extractor_PDS.utils.polars_3D_expressions import (
 IDX_COL_HEADERS: List[str] = ["0", "1", "2"]
 
 
+@dataclass(frozen=True)
 class FSPolarsObjAdapter(
         FSAdapterBase[tuple[pl.DataFrame, pl.DataFrame], FSPathLocalDisk]):
 

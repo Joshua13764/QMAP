@@ -87,6 +87,9 @@ class LodNode:
 @dataclass(frozen=True)
 class PANToLOD(TaskStepBase):
     root_path: Path
+
+    lod_depth: int = field(default_factory=lambda: 5)
+
     extract_folder_prefix: str = field(
         default_factory=lambda: "PAN_lod_extract")
 
@@ -123,13 +126,9 @@ class PANToLOD(TaskStepBase):
     def render_lods_from_img(self, src_file: FSPathLocalDisk,
                              img: Any) -> List[FSPathLocalDisk]:
 
-        H, W = img.shape[:2]
-        face_w = int(2**np.ceil(np.log2(np.sqrt((W * H) / 6.0))))
-        depth = self.depth_from_sizes(face_w, self.lod_res)
-
         export_groups: Any = []
 
-        for lod_depth in range(depth + 1):
+        for lod_depth in range(self.lod_depth):
             export_groups += ParallelPbar(f"rendering lod_depth {lod_depth}")(n_jobs=-1)(
                 delayed(
                     LodNode.render_on_all_faces)(

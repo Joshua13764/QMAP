@@ -15,6 +15,8 @@ from bennu_feature_extractor_BoulderNet.pds4_boulderNet_inference import \
     PDS4BoulderNetInference
 from bennu_feature_extractor_BoulderNet.plot_standard_detection_results import \
     PlotStandardDetectionResults
+from bennu_feature_extractor_PDS.file_storage_adapters.numpy_adapter import \
+    FSNumpyAdapter
 from bennu_feature_extractor_PDS.OBJ_to_LAS import OBJToLAS
 from bennu_feature_extractor_PDS.PAN_to_LOD import PANToLOD
 from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
@@ -89,10 +91,21 @@ step5 = PDS_to_PNG(
 
 step6 = PANToLOD(
     task_name=f"Convert bennu PAN to LODs",
-    root_path=pipeline_working_path_fast.as_posix(),
+    root_path=pipeline_working_path_fast,
     run_after_task_names=frozenset([step2.task_name]),
     lod_res=512,
     skip_if_exists=True
+)
+
+pan_to_lod_np = PANToLOD(
+    task_name=f"Convert bennu PAN to LODs - Numpy version",
+    root_path=pipeline_working_path_fast,
+    run_after_task_names=frozenset([step2.task_name]),
+    lod_res=512,
+    skip_if_exists=True,
+    export_markers=frozenset([FSMarkerString(value="PAN_lod_np")]),
+    extract_folder_prefix="PAN_lod_np",
+    export_adapter=FSNumpyAdapter()
 )
 
 step7 = OBJToLAS(
@@ -144,11 +157,11 @@ step11 = PlotStandardDetectionResults(
 # )
 
 STEPS: Sequence[StepBase] = [
-    step1, step2, step3, *steps4, step5, step6, step7, step10, step8, step11
+    step1, step2, step3, *steps4, step5, step6, step7, step10, step8, step11, pan_to_lod_np
 ]
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([step11], STEPS, RES_STORE)
+              ] = StepsOrchestrator.run_tasks_with_dependencies([pan_to_lod_np], STEPS, RES_STORE)
 
 # final_env: FSEnvironment = futures[step10.task_name].result(
 # )

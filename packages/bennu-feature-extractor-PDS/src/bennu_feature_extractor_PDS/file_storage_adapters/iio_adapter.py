@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 import imageio.v3 as iio
@@ -8,6 +9,7 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
 from numpy.typing import NDArray
 
 
+@dataclass(frozen=True)
 class FSIIOAdapter(
         FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
 

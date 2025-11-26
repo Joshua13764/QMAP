@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import igl
 import polars as pl
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
@@ -9,6 +11,7 @@ from bennu_feature_extractor_PDS.utils.polars_3D_expressions import (
     POINT_ATTRS, VERT_ID_COLS)
 
 
+@dataclass(frozen=True)
 class FSPolarsObjAdapterFast(
         FSAdapterBase[tuple[pl.LazyFrame, pl.LazyFrame], FSPathLocalDisk]):
 

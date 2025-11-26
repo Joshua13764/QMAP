@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 import tifffile
@@ -8,6 +9,7 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
 from numpy.typing import NDArray
 
 
+@dataclass(frozen=True)
 class FSTiffAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
     """Uses the tifffile module to read / write images with a wide range of precision (including float 64)"""
 
