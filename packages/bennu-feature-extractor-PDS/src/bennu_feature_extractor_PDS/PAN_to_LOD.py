@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import product
 from pathlib import Path
 from sys import path
@@ -7,6 +7,10 @@ from typing import Any, Iterator, List, Tuple
 
 import cv2
 import numpy as np
+from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
+    FSAdapterBase
+from bennu_feature_extractor.environment_tools.base_classes.fs_marker_base import \
+    FSMarkerBase
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
@@ -16,6 +20,7 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
 from bennu_feature_extractor.step_base import StepBase
 from bennu_feature_extractor.task_step_base import TaskStepBase
 from joblib import Parallel, delayed
+from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
 from bennu_feature_extractor_PDS.file_storage_adapters.iio_adapter import \
@@ -24,11 +29,6 @@ from bennu_feature_extractor_PDS.file_storage_adapters.iio_adapter import \
 Pair = Tuple[int, int]
 PairGroups = Tuple[Pair, ...]
 
-OUT_MARKERS: List[FSMarkerString] = [
-    FSMarkerString(
-        value="PAN_lod"), FSMarkerString(
-            value="InferableImage")]
-
 
 @dataclass(frozen=True, slots=True)
 class LodNode:
@@ -36,8 +36,7 @@ class LodNode:
     shape: Tuple[Pair, ...]
     img: Any
     src_file: FSPathLocalDisk
-    root_path: Path
-    skip_if_exists: bool
+    task: "PANToLOD"
 
     def get_total_width(self, target_width: int) -> int:
         depth = len(self.shape)
@@ -60,23 +59,23 @@ class LodNode:
         # total acts as the face resolution in mapping
         tile = PANToLOD.sample_face_roi(self.img, face, total, *roi)
 
-        relative_path: Path = Path(*self.src_file.path).parent / Path(f"{Path(*self.src_file.path).name} lod_extract", f"lod_{len(self.shape)}",
+        relative_path: Path = Path(*self.src_file.path).parent / Path(f"{self.task.extract_folder_prefix} {Path(*self.src_file.path).name}", f"lod_{len(self.shape)}",
                                                                       f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.png")
 
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
-            markers=frozenset(OUT_MARKERS),
-            root_path=self.root_path.as_posix()
+            markers=frozenset(self.task.export_markers),
+            root_path=self.task.root_path.as_posix()
         )
 
         export_file.make_directory()
-        if not (export_file.exists and self.skip_if_exists):
-            FSEnvironment.save(tile, export_file, FSIIOAdapter())
+        if not (export_file.exists and self.task.skip_if_exists):
+            FSEnvironment.save(tile, export_file, self.task.export_adapter)
 
         return export_file
 
     def render_on_all_faces(self, target_width: int) -> List[FSPathLocalDisk]:
-        faces = ["posx", "negx", "posy", "negy", "posz", "negz"]
+        faces: List[str] = ["posx", "negx", "posy", "negy", "posz", "negz"]
         export_files: List[FSPathLocalDisk] = []
 
         for face in faces:
@@ -87,14 +86,29 @@ class LodNode:
 
 @dataclass(frozen=True)
 class PANToLOD(TaskStepBase):
-    root_path: str
-    lod_res: int
-    skip_if_exists: bool
+    root_path: Path
+    extract_folder_prefix: str = field(
+        default_factory=lambda: "PAN_lod_extract")
+
+    skip_if_exists: bool = field(default_factory=lambda: True)
+
+    lod_res: int = field(default_factory=lambda: 512)
+
+    import_markers: frozenset[FSMarkerBase] | None = field(
+        default_factory=lambda: None)
+
+    export_adapter: FSAdapterBase[NDArray[Any], FSPathLocalDisk] = field(
+        default_factory=lambda: FSIIOAdapter())
+
+    export_markers: frozenset[FSMarkerBase] = field(default_factory=lambda: frozenset(
+        [FSMarkerString(value="PAN_lod"), FSMarkerString(value="InferableImage")]))
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         pan_src_files: List[FSPathLocalDisk] = env.get_paths(
-            FSPathLocalDisk, lambda x: ".tif" in x.actual_path.name)
+            FSPathLocalDisk, lambda x: ".tif" in x.actual_path.name and (
+                self.import_markers is None or self.import_markers.isdisjoint(x.markers) == False)
+        )
 
         exports: List[FSPathLocalDisk] = []
 
@@ -113,18 +127,13 @@ class PANToLOD(TaskStepBase):
         face_w = int(2**np.ceil(np.log2(np.sqrt((W * H) / 6.0))))
         depth = self.depth_from_sizes(face_w, self.lod_res)
 
-        export_groups: List[List[FSPathLocalDisk]] = []
+        export_groups: Any = []
 
         for lod_depth in range(depth + 1):
             export_groups += ParallelPbar(f"rendering lod_depth {lod_depth}")(n_jobs=-1)(
                 delayed(
                     LodNode.render_on_all_faces)(
-                    LodNode(
-                        shape,
-                        img,
-                        src_file,
-                        Path(self.root_path),
-                        self.skip_if_exists),
+                    LodNode(shape, img, src_file, self),
                     target_width=self.lod_res)
                 for shape in self.all_binaries(bits=2 * lod_depth)
             )
