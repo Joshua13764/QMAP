@@ -59,8 +59,8 @@ class LodNode:
         # total acts as the face resolution in mapping
         tile = PANToLOD.sample_face_roi(self.img, face, total, *roi)
 
-        relative_path: Path = Path(*self.src_file.path).parent / Path(f"{self.task.extract_folder_prefix} {Path(*self.src_file.path).name}", f"lod_{len(self.shape)}",
-                                                                      f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.png")
+        relative_path: Path = Path(*self.src_file.path).parent / Path(f"{self.task.extract_folder_prefix} {Path(*self.src_file.path).stem}", f"lod_{len(self.shape)}",
+                                                                      f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}")
 
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
@@ -101,7 +101,7 @@ class PANToLOD(TaskStepBase):
         default_factory=lambda: None)
 
     export_adapter: FSAdapterBase[NDArray[Any], FSPathLocalDisk] = field(
-        default_factory=lambda: FSIIOAdapter())
+        default_factory=lambda: FSIIOAdapter(add_file_extension=".tif"))
 
     export_markers: frozenset[FSMarkerBase] = field(default_factory=lambda: frozenset(
         [FSMarkerString(value="PAN_lod"), FSMarkerString(value="InferableImage")]))
@@ -126,16 +126,13 @@ class PANToLOD(TaskStepBase):
     def render_lods_from_img(self, src_file: FSPathLocalDisk,
                              img: Any) -> List[FSPathLocalDisk]:
 
-        export_groups: Any = []
-
-        for lod_depth in range(self.lod_depth):
-            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth}")(n_jobs=-1)(
-                delayed(
-                    LodNode.render_on_all_faces)(
-                    LodNode(shape, img, src_file, self),
-                    target_width=self.lod_res)
-                for shape in self.all_binaries(bits=2 * lod_depth)
-            )
+        export_groups: Any = ParallelPbar(f"rendering lods", unit="imgs")(n_jobs=-1)(
+            delayed(
+                LodNode.render_on_all_faces)(
+                LodNode(shape, img, src_file, self),
+                target_width=self.lod_res)
+            for lod_depth in range(self.lod_depth) for shape in self.all_binaries(bits=2 * lod_depth)
+        )
 
         return [x for sub in export_groups for x in sub]
 

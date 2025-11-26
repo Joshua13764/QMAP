@@ -93,7 +93,9 @@ step6 = PANToLOD(
     task_name=f"Convert bennu PAN to LODs",
     root_path=pipeline_working_path_fast,
     run_after_task_names=frozenset([step2.task_name]),
+    extract_folder_prefix="PAN_lod_default",
     lod_res=512,
+    lod_depth=6,
     skip_if_exists=True
 )
 
@@ -105,6 +107,7 @@ pan_to_lod_np = PANToLOD(
     skip_if_exists=True,
     export_markers=frozenset([FSMarkerString(value="PAN_lod_np")]),
     extract_folder_prefix="PAN_lod_np",
+    lod_depth=6,
     export_adapter=FSNumpyAdapter()
 )
 
@@ -113,7 +116,7 @@ step7 = OBJToLAS(
     run_after_task_names=frozenset([step3.task_name]),
     lod_res=512,
     export_folder=pipeline_working_path_fast.as_posix(),
-    depth=5,
+    depth=6,
     skip_if_exists=True,
     debug_mode=False
 )
@@ -161,7 +164,7 @@ STEPS: Sequence[StepBase] = [
 ]
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([pan_to_lod_np], STEPS, RES_STORE)
+              ] = StepsOrchestrator.run_tasks_with_dependencies([pan_to_lod_np, step6], STEPS, RES_STORE)
 
 # final_env: FSEnvironment = futures[step10.task_name].result(
 # )

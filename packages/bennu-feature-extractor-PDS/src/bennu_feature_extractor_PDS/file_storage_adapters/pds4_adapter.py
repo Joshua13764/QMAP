@@ -21,7 +21,6 @@ StructureList = Sequence[ArrayStructure]
 
 
 @dataclass(frozen=True)
-@dataclass(frozen=True)
 class FSPDS4Adapter(
         FSAdapterBase[Tuple[StructureList, NDArray[Any]], FSPathLocalDisk]):
 
