@@ -1,9 +1,12 @@
+from dataclasses import dataclass
+
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 
+@dataclass(frozen=True)
 class FSTXTAdapter(FSAdapterBase[str, FSPathLocalDisk]):
 
     def read(self, path: FSPathLocalDisk) -> str:

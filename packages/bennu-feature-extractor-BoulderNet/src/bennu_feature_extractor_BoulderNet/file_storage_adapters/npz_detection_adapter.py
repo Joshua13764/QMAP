@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, List
 
@@ -12,6 +13,7 @@ from bennu_feature_extractor_BoulderNet.file_storage_adapters.adapter_custom_cla
     NpzFeatureDetection
 
 
+@dataclass(frozen=True)
 class FSNpzDetectionAdapter(
         FSAdapterBase[List[NpzFeatureDetection], FSPathLocalDisk]):
     """Uses the np module to load detection data"""

@@ -9,7 +9,7 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
     FSPathLocalDisk
 
 
-@dataclass()
+@dataclass(frozen=True)
 class FSPltPlotAdapter(FSAdapterBase[Figure, FSPathLocalDisk]):
     dpi: int
 

@@ -1,4 +1,5 @@
 import pickle
+from dataclasses import dataclass
 from typing import Any
 
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
@@ -7,6 +8,7 @@ from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk impor
     FSPathLocalDisk
 
 
+@dataclass(frozen=True)
 class FSPickleAdapter(FSAdapterBase[Any, FSPathLocalDisk]):
 
     def read(self, path: FSPathLocalDisk) -> Any:
