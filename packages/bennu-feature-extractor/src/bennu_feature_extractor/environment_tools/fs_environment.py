@@ -1,3 +1,4 @@
+import os
 from functools import reduce
 from os import listdir, path, scandir
 from pathlib import Path
@@ -62,7 +63,11 @@ class FSEnvironment():
 
     @staticmethod
     def save[ObjType, PathType: FSPathBase](
-            obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> None:
+            obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType], skip_if_exists=False) -> None:
+
+        if path.exists and skip_if_exists:
+            return
+
         path.make_directory()
         adapter.write(obj, path)
 
