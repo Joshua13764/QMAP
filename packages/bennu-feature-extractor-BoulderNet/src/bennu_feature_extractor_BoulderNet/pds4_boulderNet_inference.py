@@ -37,6 +37,9 @@ class PDS4BoulderNetInference(TaskStepBase):
     batch_size: int = 64
     skip_converted: bool = field(default_factory=lambda: True)
     cuda: bool = field(default_factory=lambda: False)
+    detection_input_markers: frozenset[FSMarkerString] = field(
+        default_factory=lambda: frozenset([FSMarkerString("InferableImage")]))
+
     detection_output_markers: frozenset[FSMarkerString] = field(
         default_factory=lambda: frozenset([FSMarkerString("BoulderNet_Detections")]))
 

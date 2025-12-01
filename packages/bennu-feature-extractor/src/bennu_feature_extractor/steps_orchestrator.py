@@ -1,3 +1,4 @@
+import inspect
 from graphlib import TopologicalSorter
 from typing import Callable, List, Set
 
@@ -80,3 +81,19 @@ class StepsOrchestrator:
             case 0: return task(name="create_env")(FSEnvironment.empty).submit()
             case 1: return step_required_upstream_futures[0]
             case _: return task(name="merge_envs")(FSEnvironment.merge).submit(step_required_upstream_futures)
+
+    @staticmethod
+    def auto_find_steps(frame=None) -> List[StepBase]:
+        if frame is None:
+            frame = inspect.currentframe().f_back
+
+        namespace = {}
+        namespace.update(frame.f_globals)
+        namespace.update(frame.f_locals)
+
+        result: List[StepBase] = [
+            value
+            for name, value in namespace.items()
+            if isinstance(value, StepBase) and not isinstance(value, type)
+        ]
+        return result
