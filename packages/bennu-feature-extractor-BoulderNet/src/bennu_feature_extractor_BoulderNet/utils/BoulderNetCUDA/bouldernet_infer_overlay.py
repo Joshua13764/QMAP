@@ -122,6 +122,8 @@ def main() -> None:
         "/models/bouldernet/model_0055999.pth")
     out_dir: Path = Path(os.environ.get("OUT_DIR", "/workspace/out")).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    detection_export_custom_name_tag: str = os.environ.get(
+        "detection_export_custom_name_tag", "")
 
     # require an input image path
     if len(sys.argv) < 2:
@@ -134,9 +136,9 @@ def main() -> None:
     for in_path in in_paths:
         src_path: Path = out_dir / in_path.name
         overlay_export_path: Path = src_path.with_name(
-            f"{src_path.stem}_overlay.png")
+            f"{src_path.stem}{detection_export_custom_name_tag}_overlay.png")
         inference_export_path: Path = src_path.with_name(
-            f"{src_path.stem}_detections.npz")
+            f"{src_path.stem}{detection_export_custom_name_tag}_detections.npz")
 
         if (not os.path.exists(overlay_export_path) or
                 not os.path.exists(inference_export_path)):

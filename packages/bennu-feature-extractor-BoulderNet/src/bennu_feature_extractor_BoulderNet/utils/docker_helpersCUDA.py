@@ -20,6 +20,7 @@ class DockerHelpers:
         image_paths: List[FSPathLocalDisk],
         inference_output_paths: List[FSPathLocalDisk],
         verbose: bool = False,
+        detection_export_custom_name_tag: str = "",
     ) -> None:
         overlay_script: Path = (
             Path(__file__).parent / "BoulderNetCUDA" /
@@ -30,12 +31,14 @@ class DockerHelpers:
             image_paths, inference_output_paths
         )
 
+        env["detection_export_custom_name_tag"] = detection_export_custom_name_tag
+
         code, logs = DockerHelpers.run_script(
             DOCKER_IMAGE_TAG,
             overlay_script.as_posix(),
             env=env,
             extra_args=[
-                f"/in/{image_path.actual_path.name}" for image_path in image_paths
+                *[f"/in/{image_path.actual_path.name}" for image_path in image_paths],
             ],
             extra_mounts=mounts,
         )

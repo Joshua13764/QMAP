@@ -176,7 +176,7 @@ default_lod_extract = SimpleLocalFile(
 )
 
 infer_default_lod_extract = PDS4BoulderNetInference(
-    task_name=f"Infer default lod_extract  sdsd",
+    task_name=f"Infer default lod_extract",
     cuda=True,
     skip_converted=True,
     run_after_task_names=frozenset([default_lod_extract.task_name]),

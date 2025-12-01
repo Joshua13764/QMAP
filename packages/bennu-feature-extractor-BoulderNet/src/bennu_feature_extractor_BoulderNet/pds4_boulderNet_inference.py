@@ -43,15 +43,18 @@ class PDS4BoulderNetInference(TaskStepBase):
     detection_output_markers: frozenset[FSMarkerString] = field(
         default_factory=lambda: frozenset([FSMarkerString("BoulderNet_Detections")]))
 
+    detection_export_custom_name_tag: str = field(default_factory=lambda: "")
+
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         files_to_infer: List[FSPathLocalDisk] = env.get_paths_from_markers(
             FSPathLocalDisk, self.detection_input_markers)
 
         inference_output_files: List[FSPathLocalDisk] = [
-            f.copy_as_new(
+            f.copy_as_new_name(
                 new_root_path=Path(self.run_path),
-                new_extension=".bni"  # BoulderNetInference (bni)
+                # BoulderNetInference (bni)
+                new_extension=f"{self.detection_export_custom_name_tag}.bni"
             )
             for f in files_to_infer
         ]
@@ -59,7 +62,8 @@ class PDS4BoulderNetInference(TaskStepBase):
         overlay_output_files: List[FSPathLocalDisk] = [
             f.copy_as_new_name(
                 new_root_path=Path(self.run_path),
-                new_extension="_overlay.png"
+                new_extension=f"{
+                    self.detection_export_custom_name_tag}_overlay.png"
             )
             for f in files_to_infer
         ]
@@ -67,7 +71,8 @@ class PDS4BoulderNetInference(TaskStepBase):
         detections_output_files: List[FSPathLocalDisk] = [
             f.copy_as_new_name(
                 new_root_path=Path(self.run_path),
-                new_extension="_detections.npz",
+                new_extension=f"{
+                    self.detection_export_custom_name_tag}_detections.npz",
                 markers=list(self.detection_output_markers)
             )
             for f in files_to_infer
@@ -114,6 +119,7 @@ class PDS4BoulderNetInference(TaskStepBase):
                     image_paths,
                     inference_output_paths,
                     verbose=True,
+                    detection_export_custom_name_tag=self.detection_export_custom_name_tag
                 )
 
         return FSEnvironment(
