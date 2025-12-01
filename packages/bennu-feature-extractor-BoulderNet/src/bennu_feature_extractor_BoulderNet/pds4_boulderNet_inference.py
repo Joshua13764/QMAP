@@ -45,8 +45,8 @@ class PDS4BoulderNetInference(TaskStepBase):
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
-        files_to_infer: List[FSPathLocalDisk] = env.get_paths(
-            FSPathLocalDisk, lambda x: FSMarkerString("InferableImage") in x.markers)
+        files_to_infer: List[FSPathLocalDisk] = env.get_paths_from_markers(
+            FSPathLocalDisk, self.detection_input_markers)
 
         inference_output_files: List[FSPathLocalDisk] = [
             f.copy_as_new(

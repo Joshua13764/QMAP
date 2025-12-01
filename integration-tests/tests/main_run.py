@@ -176,7 +176,7 @@ default_lod_extract = SimpleLocalFile(
 )
 
 infer_default_lod_extract = PDS4BoulderNetInference(
-    task_name=f"Infer default lod_extract",
+    task_name=f"Infer default lod_extract  sdsd",
     cuda=True,
     skip_converted=True,
     run_after_task_names=frozenset([default_lod_extract.task_name]),
@@ -187,5 +187,13 @@ infer_default_lod_extract = PDS4BoulderNetInference(
         [FSMarkerString("BoulderNet_Detections")]),
 )
 
+STEPS: Sequence[StepBase] = [
+    step1, step2, step3, *
+    steps4, step5, step6, step7, step10, step8, step11, pan_to_lod_np, default_lod_extract, infer_default_lod_extract
+]
+
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([infer_default_lod_extract], StepsOrchestrator.auto_find_steps(), RES_STORE)
+              ] = StepsOrchestrator.run_tasks_with_dependencies([infer_default_lod_extract], STEPS, RES_STORE)
+
+# final_env: FSEnvironment = futures[step10.task_name].result(
+# )

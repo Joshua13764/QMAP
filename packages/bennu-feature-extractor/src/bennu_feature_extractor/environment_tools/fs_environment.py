@@ -11,6 +11,8 @@ from tqdm_joblib import ParallelPbar
 
 from bennu_feature_extractor.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
+from bennu_feature_extractor.environment_tools.base_classes.fs_marker_base import \
+    FSMarkerBase
 from bennu_feature_extractor.environment_tools.base_classes.fs_path_base import \
     FSPathBase
 from bennu_feature_extractor.environment_tools.fs_paths.fs_path_local_disk import \
@@ -24,6 +26,11 @@ class FSEnvironment():
     def get_paths[T: FSPathBase](self, cls: type[T], condition: Callable[[
                                  T], bool] = lambda x: True) -> List[T]:
         return [f for f in self.paths if isinstance(f, cls) and condition(f)]
+
+    def get_paths_from_markers[T: FSPathBase](
+            self, cls: type[T], markers: frozenset[FSMarkerBase]) -> List[T]:
+        return [f for f in self.paths if isinstance(
+            f, cls) and markers.isdisjoint(f.markers) == False]
 
     @staticmethod
     def quick_exists(paths: List[FSPathLocalDisk],
