@@ -1,8 +1,11 @@
+import asyncio
 import inspect
 from graphlib import TopologicalSorter
-from typing import Callable, List, Set
+from pathlib import Path
+from typing import Any, Callable, Coroutine, List, Set
 
 from prefect import Task, flow, get_run_logger, task
+from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture
 from prefect.results import ResultStorage
 
@@ -97,3 +100,18 @@ class StepsOrchestrator:
             if isinstance(value, StepBase) and not isinstance(value, type)
         ]
         return result
+
+    @staticmethod
+    def get_result_storage(name: str = "run-dir-storage",
+                           path: Path = Path(".\\.run_dir_storage")) -> LocalFileSystem:
+        try:
+            loaded: LocalFileSystem | Coroutine[Any, Any, LocalFileSystem] = LocalFileSystem.load(
+                name)
+
+            return asyncio.run(loaded) if asyncio.iscoroutine(
+                loaded) else loaded
+
+        except ValueError:
+            result_storage = LocalFileSystem(basepath=path)
+            result_storage.save(name, overwrite=True)
+            return result_storage

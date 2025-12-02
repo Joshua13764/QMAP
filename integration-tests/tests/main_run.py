@@ -1,14 +1,18 @@
 # Run "prefect server start" to start server before running this script
-import inspect
-import types
 from pathlib import Path
 from typing import Any, Coroutine, List, Sequence
 
+from bennu_feature_extractor.environment_tools.file_storage_adapters.pillow_image_adapter import \
+    FSPillowImageAdapter
+from bennu_feature_extractor.environment_tools.file_storage_adapters.png_adapter import \
+    FSPNGAdapter
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
 from bennu_feature_extractor.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from bennu_feature_extractor.step_base import StepBase
+from bennu_feature_extractor.step_templates.simple_function_import_export import \
+    SimpleFunctionImportExport
 from bennu_feature_extractor.step_templates.simple_local_file import \
     SimpleLocalFile
 from bennu_feature_extractor.step_templates.simple_request import SimpleRequest
@@ -28,16 +32,10 @@ from bennu_feature_extractor_PDS.PDS_downloader import PDSDownloader
 from bennu_feature_extractor_PDS.PDS_to_PNG import PDS_to_PNG
 from bennu_feature_extractor_PDS.SPICE_kernels_downloader import \
     SPICEKernelGrabber
-from prefect.filesystems import LocalFileSystem
+from numpy.typing import NDArray
+from PIL import Image, ImageEnhance
+from PIL.ImageFile import ImageFile
 from prefect.futures import PrefectFuture
-
-try:
-    RES_STORE: LocalFileSystem | Coroutine[Any, Any,
-                                           LocalFileSystem] = LocalFileSystem.load("run-dir-storage")
-except ValueError:
-    RES_STORE = LocalFileSystem(basepath=".\\.run_dir_storage")
-    RES_STORE.save("run-dir-storage", overwrite=True)
-
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
@@ -165,35 +163,21 @@ step11 = PlotStandardDetectionResults(
 #     ExtraUrls=("https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/dsk/bennu_g_00880mm_alt_obj_0000n00000_v021a.bds",),
 # )
 
-default_lod_extract = SimpleLocalFile(
-    task_name="BoulderNet detect tests",
-    run_after_task_names=frozenset(),
-    local_file_path=Path(
-        r"C:\Users\Joshu\Documents\AO33_DATA\resources\tests\posx_512_1024_512x512_of_2048.png"),
-    dst_root_path=boulderNet_preprocessor_test_folder,
-    dst_sub_path=Path("tests/default.png"),
-    markers=frozenset([FSMarkerString("default_lod_export_example")])
-)
 
-infer_default_lod_extract = PDS4BoulderNetInference(
-    task_name=f"Infer default lod_extract",
-    cuda=True,
-    skip_converted=True,
-    run_after_task_names=frozenset([default_lod_extract.task_name]),
-    run_path=boulderNet_preprocessor_test_folder.as_posix(),
-    detection_input_markers=frozenset(
-        [FSMarkerString("default_lod_export_example")]),
-    detection_output_markers=frozenset(
-        [FSMarkerString("BoulderNet_Detections")]),
-)
+# ImageEnhance.Brightness(img).enhance(1.4)
+# ImageEnhance.Contrast(img).enhance(1.6)
+# ImageEnhance.Color(img).enhance(1.5)      # saturation
+# ImageEnhance.Sharpness(img).enhance(2.0)
 
-STEPS: Sequence[StepBase] = [
-    step1, step2, step3, *
-    steps4, step5, step6, step7, step10, step8, step11, pan_to_lod_np, default_lod_extract, infer_default_lod_extract
-]
+# img.filter(ImageFilter.GaussianBlur(radius=5))
+# img.filter(ImageFilter.UnsharpMask(radius=2, percent=150, threshold=3))
+# img.filter(ImageFilter.EDGE_ENHANCE)
+# img.filter(ImageFilter.FIND_EDGES)
+# img.filter(ImageFilter.EMBOSS)
+# img.filter(ImageFilter.CONTOUR)
 
 futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([infer_default_lod_extract], STEPS, RES_STORE)
+              ] = StepsOrchestrator.run_tasks_with_dependencies([infer_default_lod_extract], StepsOrchestrator.auto_find_steps(), StepsOrchestrator.get_result_storage())
 
 # final_env: FSEnvironment = futures[step10.task_name].result(
 # )

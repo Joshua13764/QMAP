@@ -1,7 +1,5 @@
-import os
 from functools import reduce
 from os import listdir, path, scandir
-from pathlib import Path
 from typing import Callable, Counter, Dict, List, Set
 
 import attr
@@ -29,8 +27,10 @@ class FSEnvironment():
 
     def get_paths_from_markers[T: FSPathBase](
             self, cls: type[T], markers: frozenset[FSMarkerBase]) -> List[T]:
-        return [f for f in self.paths if isinstance(
-            f, cls) and markers.isdisjoint(f.markers) == False]
+        return [f
+                for f in self.paths
+                if isinstance(f, cls) and markers.isdisjoint(f.markers) == False
+                ]
 
     @staticmethod
     def quick_exists(paths: List[FSPathLocalDisk],
@@ -70,13 +70,15 @@ class FSEnvironment():
 
     @staticmethod
     def save[ObjType, PathType: FSPathBase](
-            obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType], skip_if_exists=False) -> None:
+            obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType], skip_if_exists=False) -> FSPathBase:
 
         if path.exists and skip_if_exists:
-            return
+            return path
 
         path.make_directory()
         adapter.write(obj, path)
+
+        return path
 
     @staticmethod
     def load[ObjType, PathType: FSPathBase](

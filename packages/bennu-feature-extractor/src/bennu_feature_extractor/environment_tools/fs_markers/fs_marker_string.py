@@ -1,10 +1,10 @@
-import attr
+from dataclasses import dataclass
 
 from bennu_feature_extractor.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
 
 
-@attr.define(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FSMarkerString(FSMarkerBase):
     value: str
 

@@ -1,16 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from logging import Logger
-from typing import Any, Coroutine, Dict, FrozenSet, List
+from typing import Dict, FrozenSet, List
 
-from prefect import flow, get_run_logger, task
-from prefect.cache_policies import INPUTS
-from prefect.filesystems import LocalFileSystem
-from prefect.futures import PrefectFuture, wait
-from prefect.results import ResultStorage
-from prefect.serializers import PickleSerializer
-from prefect.task_runners import ThreadPoolTaskRunner
-from py_linq import Enumerable
+from prefect import get_run_logger
 
 from bennu_feature_extractor.environment_tools.fs_environment import \
     FSEnvironment
@@ -43,3 +36,7 @@ class StepBase(ABC):
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:
         ...
+
+    @staticmethod
+    def get_task_names(*tasks) -> frozenset[str]:
+        return frozenset([task.task_name for task in tasks])

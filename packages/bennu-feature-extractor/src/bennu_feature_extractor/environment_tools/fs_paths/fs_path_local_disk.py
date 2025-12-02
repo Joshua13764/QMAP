@@ -46,6 +46,21 @@ class FSPathLocalDisk(FSPathBase):
             root_path=new_root_path.as_posix(),
         )
 
+    def copy_with_stem_prefix_and_suffix(
+            self, stem_prefix: str = "", stem_suffix: str = "", markers: frozenset[FSMarkerBase] = frozenset()) -> "FSPathLocalDisk":
+
+        return FSPathLocalDisk(
+            path=Path(
+                *self.path).with_name(
+                stem_prefix +
+                Path(
+                    *self.path).stem +
+                stem_suffix + Path(
+                    *self.path).suffix).parts,
+            markers=markers,
+            root_path=self.root_path
+        )
+
     def copy_from_folder(self, new_sub_path: Path,
                          markers: List[FSMarkerBase] = []) -> 'FSPathLocalDisk':
         return FSPathLocalDisk(
