@@ -8,15 +8,14 @@ from PIL import Image, ImageEnhance, ImageFilter
 from PIL.ImageFile import ImageFile
 from prefect.futures import PrefectFuture
 
-from Boulder_Statistics.environment_tools.file_storage_adapters.pillow_image_adapter import \
-    FSPillowImageAdapter
-from Boulder_Statistics.environment_tools.file_storage_adapters.png_adapter import \
-    FSPNGAdapter
 from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
 from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from Boulder_Statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
+from Boulder_Statistics.file_storage_adapters.pillow_image_adapter import \
+    FSPillowImageAdapter
+from Boulder_Statistics.file_storage_adapters.png_adapter import FSPNGAdapter
 from Boulder_Statistics.step_base import StepBase
 from Boulder_Statistics.steps.Best_model_downloader import BestModelDownloader
 from Boulder_Statistics.steps.detection_merge import DetectionMerge

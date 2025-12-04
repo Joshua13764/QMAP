@@ -3,11 +3,11 @@ from pathlib import Path
 
 from Boulder_Statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
-from Boulder_Statistics.environment_tools.file_storage_adapters.copy_adapter import \
-    FSShutilCopy2Adapter
 from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
 from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
+from Boulder_Statistics.file_storage_adapters.copy_adapter import \
+    FSShutilCopy2Adapter
 from Boulder_Statistics.task_step_base import TaskStepBase
 
 

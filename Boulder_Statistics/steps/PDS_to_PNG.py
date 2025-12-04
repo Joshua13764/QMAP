@@ -9,14 +9,13 @@ from typing import List
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
 
-from Boulder_Statistics.environment_tools.file_storage_adapters.png_adapter import \
-    FSPNGAdapter
 from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
 from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from Boulder_Statistics.file_storage_adapters.pds4_adapter import FSPDS4Adapter
+from Boulder_Statistics.file_storage_adapters.png_adapter import FSPNGAdapter
 from Boulder_Statistics.task_step_base import TaskStepBase
 
 
