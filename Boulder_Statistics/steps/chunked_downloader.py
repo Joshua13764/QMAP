@@ -7,19 +7,19 @@ from urllib.parse import ParseResult, urlparse
 
 import requests
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.utils.FS_environment_factory import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.utils.FS_environment_factory import \
     FSEnvironmentFactory
-from Boulder_Statistics.steps.utils.chunked_downloader_utils import \
+from boulder_statistics.steps.utils.chunked_downloader_utils import \
     ChunkedDownloader
-from Boulder_Statistics.steps.utils.download_resume_manager import \
+from boulder_statistics.steps.utils.download_resume_manager import \
     DownloadResumeManager
-from Boulder_Statistics.steps.utils.session_factory import \
+from boulder_statistics.steps.utils.session_factory import \
     DownloadSessionFactory
-from Boulder_Statistics.steps.utils.single_stream_downloader import \
+from boulder_statistics.steps.utils.single_stream_downloader import \
     SingleStreamDownloader
-from Boulder_Statistics.steps.utils.zip_extractor import ZipExtractor
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.steps.utils.zip_extractor import ZipExtractor
+from boulder_statistics.task_step_base import TaskStepBase
 
 
 @dataclass(frozen=True)

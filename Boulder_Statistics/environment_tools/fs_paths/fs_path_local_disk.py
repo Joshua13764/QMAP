@@ -3,9 +3,9 @@ from typing import List
 
 import attr
 
-from Boulder_Statistics.environment_tools.base_classes.fs_marker_base import \
+from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
-from Boulder_Statistics.environment_tools.base_classes.fs_path_base import \
+from boulder_statistics.environment_tools.base_classes.fs_path_base import \
     FSPathBase
 
 

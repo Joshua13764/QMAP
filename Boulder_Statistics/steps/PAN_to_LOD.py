@@ -9,17 +9,17 @@ from joblib import delayed
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
-from Boulder_Statistics.environment_tools.base_classes.fs_adapter_base import \
+from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
-from Boulder_Statistics.environment_tools.base_classes.fs_marker_base import \
+from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from Boulder_Statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
+from boulder_statistics.task_step_base import TaskStepBase
 
 Pair = Tuple[int, int]
 PairGroups = Tuple[Pair, ...]

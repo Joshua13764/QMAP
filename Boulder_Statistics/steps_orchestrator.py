@@ -9,19 +9,21 @@ from prefect.filesystems import LocalFileSystem
 from prefect.futures import PrefectFuture
 from prefect.results import ResultStorage
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.step_base import StepBase
-from Boulder_Statistics.task_factory import TaskFactory
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.step_base import StepBase
+from boulder_statistics.task_factory import TaskFactory
 
 
 class StepsOrchestrator:
     @staticmethod
+    @flow(name="Run all steps in auto DAG")
     def run_steps(tasks: List[StepBase], result_cache: ResultStorage | None,
                   flow_name: str = "Run all steps in auto DAG") -> dict[str, PrefectFuture[FSEnvironment]]:
 
         step_order: List[StepBase] = StepsOrchestrator.get_step_order(tasks)
-        return flow(name=flow_name)(StepsOrchestrator.compile_steps)(
-            step_order, result_cache)
+
+        compiled_flow = flow(name=flow_name)(StepsOrchestrator.compile_steps)
+        return compiled_flow(step_order, result_cache)
 
     @staticmethod
     def run_tasks_with_dependencies(tasks: List[StepBase], dependency_pool: List[StepBase], result_cache: ResultStorage | None,
@@ -111,6 +113,6 @@ class StepsOrchestrator:
                 loaded) else loaded
 
         except ValueError:
-            result_storage = LocalFileSystem(basepath=path)
+            result_storage = LocalFileSystem(basepath=path.as_posix())
             result_storage.save(name, overwrite=True)
             return result_storage

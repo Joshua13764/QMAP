@@ -3,9 +3,9 @@ from prefect.cache_policies import INPUTS
 from prefect.results import ResultStorage
 from prefect.tasks import Task
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.step_base import StepBase
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.step_base import StepBase
+from boulder_statistics.task_step_base import TaskStepBase
 
 
 class TaskFactory():

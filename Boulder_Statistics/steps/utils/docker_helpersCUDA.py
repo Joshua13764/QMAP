@@ -7,7 +7,7 @@ from docker.errors import APIError, ImageNotFound
 from docker.models.containers import Container
 from docker.types import DeviceRequest
 
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 DOCKER_IMAGE_TAG = "mltools:py3.10-cuda"

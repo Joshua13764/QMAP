@@ -5,12 +5,12 @@ from typing import Dict, Iterator, List, Set, Tuple
 from more_itertools import chunked
 from tqdm import tqdm
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.task_step_base import TaskStepBase
 
 
 @dataclass()
@@ -84,10 +84,10 @@ class PDS4BoulderNetInference(TaskStepBase):
         ]
 
         if self.cuda:
-            from Boulder_Statistics.steps.utils.docker_helpersCUDA import \
+            from boulder_statistics.steps.utils.docker_helpersCUDA import \
                 DockerHelpers
         else:
-            from Boulder_Statistics.steps.utils.docker_helpers import \
+            from boulder_statistics.steps.utils.docker_helpers import \
                 DockerHelpers
 
         DockerHelpers.ensure_image_exists()

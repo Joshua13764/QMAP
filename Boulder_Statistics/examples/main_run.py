@@ -7,32 +7,32 @@ from PIL import Image, ImageEnhance
 from PIL.ImageFile import ImageFile
 from prefect.futures import PrefectFuture
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
-from Boulder_Statistics.file_storage_adapters.numpy_adapter import \
+from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
-from Boulder_Statistics.file_storage_adapters.pillow_image_adapter import \
+from boulder_statistics.file_storage_adapters.pillow_image_adapter import \
     FSPillowImageAdapter
-from Boulder_Statistics.file_storage_adapters.png_adapter import FSPNGAdapter
-from Boulder_Statistics.step_base import StepBase
-from Boulder_Statistics.steps.Best_model_downloader import BestModelDownloader
-from Boulder_Statistics.steps.detection_merge import DetectionMerge
-from Boulder_Statistics.steps.OBJ_to_LAS import OBJToLAS
-from Boulder_Statistics.steps.PAN_to_LOD import PANToLOD
-from Boulder_Statistics.steps.pds4_boulderNet_inference import \
+from boulder_statistics.file_storage_adapters.png_adapter import FSPNGAdapter
+from boulder_statistics.step_base import StepBase
+from boulder_statistics.steps.Best_model_downloader import BestModelDownloader
+from boulder_statistics.steps.detection_merge import DetectionMerge
+from boulder_statistics.steps.OBJ_to_LAS import OBJToLAS
+from boulder_statistics.steps.PAN_to_LOD import PANToLOD
+from boulder_statistics.steps.pds4_boulderNet_inference import \
     PDS4BoulderNetInference
-from Boulder_Statistics.steps.PDS_downloader import PDSDownloader
-from Boulder_Statistics.steps.PDS_to_PNG import PDS_to_PNG
-from Boulder_Statistics.steps.plot_standard_detection_results import \
+from boulder_statistics.steps.PDS_downloader import PDSDownloader
+from boulder_statistics.steps.PDS_to_PNG import PDS_to_PNG
+from boulder_statistics.steps.plot_standard_detection_results import \
     PlotStandardDetectionResults
-from Boulder_Statistics.steps.simple_function_import_export import \
+from boulder_statistics.steps.simple_function_import_export import \
     SimpleFunctionImportExport
-from Boulder_Statistics.steps.simple_local_file import SimpleLocalFile
-from Boulder_Statistics.steps.simple_request import SimpleRequest
-from Boulder_Statistics.steps.SPICE_kernels_downloader import \
+from boulder_statistics.steps.simple_local_file import SimpleLocalFile
+from boulder_statistics.steps.simple_request import SimpleRequest
+from boulder_statistics.steps.SPICE_kernels_downloader import \
     SPICEKernelGrabber
-from Boulder_Statistics.steps_orchestrator import StepsOrchestrator
+from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
 pds_download_path: Path = Path(r"F:\AO33\AO33_pds_DATA")
@@ -161,20 +161,6 @@ step11 = PlotStandardDetectionResults(
 # )
 
 
-# ImageEnhance.Brightness(img).enhance(1.4)
-# ImageEnhance.Contrast(img).enhance(1.6)
-# ImageEnhance.Color(img).enhance(1.5)      # saturation
-# ImageEnhance.Sharpness(img).enhance(2.0)
-
-# img.filter(ImageFilter.GaussianBlur(radius=5))
-# img.filter(ImageFilter.UnsharpMask(radius=2, percent=150, threshold=3))
-# img.filter(ImageFilter.EDGE_ENHANCE)
-# img.filter(ImageFilter.FIND_EDGES)
-# img.filter(ImageFilter.EMBOSS)
-# img.filter(ImageFilter.CONTOUR)
-
-futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([infer_default_lod_extract], StepsOrchestrator.auto_find_steps(), StepsOrchestrator.get_result_storage())
-
-# final_env: FSEnvironment = futures[step10.task_name].result(
-# )
+if __name__ == "__main__":
+    futures: dict[str, PrefectFuture[FSEnvironment]
+                  ] = StepsOrchestrator.run_tasks_with_dependencies([step11], StepsOrchestrator.auto_find_steps(), StepsOrchestrator.get_result_storage())

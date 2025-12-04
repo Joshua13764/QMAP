@@ -2,9 +2,9 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-from Boulder_Statistics.environment_tools.base_classes.fs_adapter_base import \
+from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 

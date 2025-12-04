@@ -7,13 +7,13 @@ from jinja2 import Environment
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
 
-from Boulder_Statistics.environment_tools.base_classes.fs_adapter_base import \
+from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
-from Boulder_Statistics.environment_tools.base_classes.fs_marker_base import \
+from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
-from Boulder_Statistics.environment_tools.base_classes.fs_path_base import \
+from boulder_statistics.environment_tools.base_classes.fs_path_base import \
     FSPathBase
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 

@@ -9,22 +9,22 @@ from numpy._typing._array_like import NDArray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from Boulder_Statistics.file_storage_adapters.numpy_adapter import \
+from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
-from Boulder_Statistics.file_storage_adapters.polars_obj_adapter_fast import \
+from boulder_statistics.file_storage_adapters.polars_obj_adapter_fast import \
     FSPolarsObjAdapterFast
-from Boulder_Statistics.steps.PAN_to_LOD import PANToLOD
-from Boulder_Statistics.steps.utils.cubemap_lod_base import CubeMapLodBase
-from Boulder_Statistics.steps.utils.polars_3D_expressions import \
+from boulder_statistics.steps.PAN_to_LOD import PANToLOD
+from boulder_statistics.steps.utils.cubemap_lod_base import CubeMapLodBase
+from boulder_statistics.steps.utils.polars_3D_expressions import \
     Polars3DExpressions
-from Boulder_Statistics.steps.utils.projection_plotting import \
+from boulder_statistics.steps.utils.projection_plotting import \
     ProjectionPlotting
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.task_step_base import TaskStepBase
 
 Pair = Tuple[int, int]
 PairGroups = Tuple[Pair, ...]

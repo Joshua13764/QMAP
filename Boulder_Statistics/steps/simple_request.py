@@ -5,12 +5,12 @@ from pathlib import Path
 import requests
 from tqdm import tqdm
 
-from Boulder_Statistics.environment_tools.base_classes.fs_marker_base import \
+from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.task_step_base import TaskStepBase
 
 
 @dataclass(frozen=True)

@@ -8,9 +8,9 @@ import requests
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from Boulder_Statistics.steps.utils.download_resume_manager import \
+from boulder_statistics.steps.utils.download_resume_manager import \
     DownloadResumeManager
-from Boulder_Statistics.steps.utils.session_factory import \
+from boulder_statistics.steps.utils.session_factory import \
     DownloadSessionFactory
 
 

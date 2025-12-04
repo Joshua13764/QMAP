@@ -4,7 +4,7 @@ from typing import Any
 from requests import Session
 from tqdm import tqdm
 
-from Boulder_Statistics.steps.utils.session_factory import \
+from boulder_statistics.steps.utils.session_factory import \
     DownloadSessionFactory
 
 

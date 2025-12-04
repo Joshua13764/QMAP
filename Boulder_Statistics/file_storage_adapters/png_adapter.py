@@ -5,9 +5,9 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from Boulder_Statistics.environment_tools.base_classes.fs_adapter_base import \
+from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 

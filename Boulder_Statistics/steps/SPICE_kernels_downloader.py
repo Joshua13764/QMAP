@@ -1,4 +1,4 @@
-# src/Boulder_Statistics/SPICE_kernels_downloader.py
+# src/boulder_statistics/SPICE_kernels_downloader.py
 from __future__ import annotations
 
 import multiprocessing
@@ -14,10 +14,10 @@ from requests.adapters import HTTPAdapter
 from tqdm_joblib import ParallelPbar
 from urllib3.util.retry import Retry
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.utils.FS_environment_factory import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.utils.FS_environment_factory import \
     FSEnvironmentFactory
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.task_step_base import TaskStepBase
 
 
 # ---------- Domain models ----------

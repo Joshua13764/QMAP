@@ -10,19 +10,19 @@ import scienceplots
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from Boulder_Statistics.file_storage_adapters.pandas_pickle_adapter import \
+from boulder_statistics.file_storage_adapters.pandas_pickle_adapter import \
     FSPandasPickleAdapter
-from Boulder_Statistics.file_storage_adapters.plt_plot_adapter import \
+from boulder_statistics.file_storage_adapters.plt_plot_adapter import \
     FSPltPlotAdapter
-from Boulder_Statistics.steps.detection_merge import HEADERS
-from Boulder_Statistics.steps.utils.duplicate_detection import \
+from boulder_statistics.steps.detection_merge import HEADERS
+from boulder_statistics.steps.utils.duplicate_detection import \
     Duplicate_Detection
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.task_step_base import TaskStepBase
 
 FIGSIZE = (7, 7 * ((5**0.5 - 1) / 2))
 DPI = 800

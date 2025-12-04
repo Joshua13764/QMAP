@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from Boulder_Statistics.environment_tools.base_classes.fs_marker_base import \
+from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
 
 

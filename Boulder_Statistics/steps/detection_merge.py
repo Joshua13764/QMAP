@@ -6,18 +6,18 @@ import pandas as pd
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
 
-from Boulder_Statistics.environment_tools.fs_environment import FSEnvironment
-from Boulder_Statistics.environment_tools.fs_markers.fs_marker_string import \
+from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
-from Boulder_Statistics.environment_tools.fs_paths.fs_path_local_disk import \
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from Boulder_Statistics.file_storage_adapters.adapter_custom_classes.npz_feature_detection import \
+from boulder_statistics.file_storage_adapters.adapter_custom_classes.npz_feature_detection import \
     NpzFeatureDetection
-from Boulder_Statistics.file_storage_adapters.npz_detection_adapter import \
+from boulder_statistics.file_storage_adapters.npz_detection_adapter import \
     FSNpzDetectionAdapter
-from Boulder_Statistics.file_storage_adapters.pandas_pickle_adapter import \
+from boulder_statistics.file_storage_adapters.pandas_pickle_adapter import \
     FSPandasPickleAdapter
-from Boulder_Statistics.task_step_base import TaskStepBase
+from boulder_statistics.task_step_base import TaskStepBase
 
 HEADERS: List[str] = ["face", "relative_offset", "relative_scale",
                       "box_xyxy", "score", "class_id", "fixed_weight_area"]
