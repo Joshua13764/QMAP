@@ -30,7 +30,6 @@ from boulder_statistics.steps.plot_standard_detection_results import \
 from boulder_statistics.steps.simple_function_import_export import \
     SimpleFunctionImportExport
 from boulder_statistics.steps.simple_local_file import SimpleLocalFile
-from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps.SPICE_kernels_downloader import \
     SPICEKernelGrabber
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
