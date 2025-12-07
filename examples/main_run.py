@@ -1,18 +1,11 @@
 from pathlib import Path
-from typing import Any, Coroutine, List, Sequence
-
-from numpy.typing import NDArray
-from PIL import Image, ImageEnhance
-from PIL.ImageFile import ImageFile
+from typing import List
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
-from boulder_statistics.file_storage_adapters.pillow_image_adapter import \
-    FSPillowImageAdapter
-from boulder_statistics.file_storage_adapters.png_adapter import FSPNGAdapter
 from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.step_base import StepBase
 from boulder_statistics.steps.Best_model_downloader import BestModelDownloader
@@ -25,12 +18,7 @@ from boulder_statistics.steps.PDS_downloader import PDSDownloader
 from boulder_statistics.steps.PDS_to_PNG import PDS_to_PNG
 from boulder_statistics.steps.plot_standard_detection_results import \
     PlotStandardDetectionResults
-from boulder_statistics.steps.simple_function_import_export import \
-    SimpleFunctionImportExport
-from boulder_statistics.steps.simple_local_file import SimpleLocalFile
 from boulder_statistics.steps.simple_request import SimpleRequest
-from boulder_statistics.steps.SPICE_kernels_downloader import \
-    SPICEKernelGrabber
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
