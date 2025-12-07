@@ -1,9 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import imageio.v3 as iio
-from attr import field
 from numpy.typing import NDArray
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
