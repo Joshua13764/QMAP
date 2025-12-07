@@ -1,36 +1,28 @@
-import asyncio
 import inspect
 from graphlib import TopologicalSorter
-from pathlib import Path
-from typing import Any, Callable, Coroutine, List, Set
-
-from prefect import Task, flow, task
-from prefect.filesystems import LocalFileSystem
-from prefect.futures import PrefectFuture
-from prefect.results import ResultStorage
+from typing import Callable, List, Set
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.step_base import StepBase
 from boulder_statistics.task_factory import TaskFactory
 
 
 class StepsOrchestrator:
     @staticmethod
-    @flow(name="Run all steps in auto DAG")
-    def run_steps(tasks: List[StepBase], result_cache: ResultStorage | None,
-                  flow_name: str = "Run all steps in auto DAG") -> dict[str, PrefectFuture[FSEnvironment]]:
+    def run_steps(tasks: List[StepBase], result_cache: ResultCache[StepBase,
+                  FSEnvironment]) -> dict[str, FSEnvironment]:
 
         step_order: List[StepBase] = StepsOrchestrator.get_step_order(tasks)
 
-        compiled_flow = flow(name=flow_name)(StepsOrchestrator.compile_steps)
-        return compiled_flow(step_order, result_cache)
+        return StepsOrchestrator.compile_steps(step_order, result_cache)
 
     @staticmethod
-    def run_tasks_with_dependencies(tasks: List[StepBase], dependency_pool: List[StepBase], result_cache: ResultStorage | None,
-                                    flow_name: Callable[[List[StepBase]], str] = lambda tasks: f"Run tasks {[t.task_name for t in tasks]} with dependencies in auto DAG") -> dict[str, PrefectFuture[FSEnvironment]]:
+    def run_tasks_with_dependencies(tasks: List[StepBase], dependency_pool: List[StepBase],
+                                    result_cache: ResultCache[StepBase, FSEnvironment]) -> dict[str, FSEnvironment]:
 
         dependency_pool_dict: dict[str, StepBase] = {
-            d.task_name: d for d in dependency_pool}
+            dependency.task_name: dependency for dependency in dependency_pool}
 
         dependencies: Set[StepBase] = {dependency for task in tasks for dependency in task.get_dependencies(
             dependency_pool_dict)}
@@ -40,8 +32,7 @@ class StepsOrchestrator:
 
         return StepsOrchestrator.run_steps(
             list(dependencies),
-            result_cache,
-            flow_name(tasks))
+            result_cache)
 
     @staticmethod
     def get_step_order(steps: List[StepBase]) -> List[StepBase]:
@@ -57,22 +48,22 @@ class StepsOrchestrator:
 
     @staticmethod
     def compile_steps(
-            step_order: List[StepBase], result_cache: ResultStorage | None) -> dict[str, PrefectFuture[FSEnvironment]]:
+            step_order: List[StepBase], result_cache: ResultCache) -> dict[str, FSEnvironment]:
 
-        future_results: dict[str, PrefectFuture[FSEnvironment]] = {}
+        future_results: dict[str, FSEnvironment] = {}
 
         for step in step_order:
 
-            step_required_upstream_futures: List[PrefectFuture[FSEnvironment]] = [
+            step_required_upstream_futures: List[FSEnvironment] = [
                 future_results[n] for n in step.run_after_task_names]
 
-            step_task: Task[..., FSEnvironment] = TaskFactory.construct_task(
+            step_task: Callable[[FSEnvironment], FSEnvironment] = TaskFactory.construct_task(
                 step, result_cache)
 
-            submitted_task: PrefectFuture[FSEnvironment] = step_task.submit(
-                StepsOrchestrator.handle_env_merging(
-                    step_required_upstream_futures),
-                step)
+            input_environment: FSEnvironment = StepsOrchestrator.handle_env_merging(
+                step_required_upstream_futures)
+
+            submitted_task: FSEnvironment = step_task(input_environment)
 
             future_results[step.task_name] = submitted_task
 
@@ -80,11 +71,13 @@ class StepsOrchestrator:
 
     @staticmethod
     def handle_env_merging(
-            step_required_upstream_futures: List[PrefectFuture[FSEnvironment]]) -> PrefectFuture[FSEnvironment]:
+            step_required_upstream_futures: List[FSEnvironment]) -> FSEnvironment:
         match len(step_required_upstream_futures):
-            case 0: return task(name="create_env")(FSEnvironment.empty).submit()
+            case 0: return FSEnvironment.empty()
             case 1: return step_required_upstream_futures[0]
-            case _: return task(name="merge_envs")(FSEnvironment.merge).submit(step_required_upstream_futures)
+            case _:
+                print("Merging environments...")
+                return FSEnvironment.merge(step_required_upstream_futures)
 
     @staticmethod
     def auto_find_steps(frame=None) -> List[StepBase]:
@@ -101,18 +94,3 @@ class StepsOrchestrator:
             if isinstance(value, StepBase) and not isinstance(value, type)
         ]
         return result
-
-    @staticmethod
-    def get_result_storage(name: str = "run-dir-storage",
-                           path: Path = Path(".\\.run_dir_storage")) -> LocalFileSystem:
-        try:
-            loaded: LocalFileSystem | Coroutine[Any, Any, LocalFileSystem] = LocalFileSystem.load(
-                name)
-
-            return asyncio.run(loaded) if asyncio.iscoroutine(
-                loaded) else loaded
-
-        except ValueError:
-            result_storage = LocalFileSystem(basepath=path.as_posix())
-            result_storage.save(name, overwrite=True)
-            return result_storage

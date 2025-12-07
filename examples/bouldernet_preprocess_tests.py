@@ -1,4 +1,3 @@
-# Run "prefect server start" to start server before running this script
 from pathlib import Path
 from typing import Any, Callable, Coroutine, List, Sequence
 
@@ -6,7 +5,6 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageEnhance, ImageFilter
 from PIL.ImageFile import ImageFile
-from prefect.futures import PrefectFuture
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
@@ -16,6 +14,7 @@ from boulder_statistics.file_storage_adapters.numpy_adapter import \
 from boulder_statistics.file_storage_adapters.pillow_image_adapter import \
     FSPillowImageAdapter
 from boulder_statistics.file_storage_adapters.png_adapter import FSPNGAdapter
+from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.step_base import StepBase
 from boulder_statistics.steps.Best_model_downloader import BestModelDownloader
 from boulder_statistics.steps.detection_merge import DetectionMerge
@@ -187,5 +186,8 @@ step11 = PlotStandardDetectionResults(
 
 pool = [default_lod_extract, *to_try_tasks, infer_default_lod_extract, merge]
 
-futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([merge], pool, StepsOrchestrator.get_result_storage())
+cache: ResultCache[StepBase, FSEnvironment] = ResultCache[StepBase, FSEnvironment](
+    cache_folder=Path("cache"), result_type=FSEnvironment)
+
+futures: dict[str, FSEnvironment] = StepsOrchestrator.run_tasks_with_dependencies([
+                                                                                  merge], pool, cache)

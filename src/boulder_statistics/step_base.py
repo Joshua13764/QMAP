@@ -1,11 +1,15 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from logging import Logger
+from logging import INFO, Logger, basicConfig, getLogger
+from sys import stdout
 from typing import Dict, FrozenSet, List
 
-from prefect import get_run_logger
-
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+
+basicConfig(
+    stream=stdout,
+    level=INFO,
+    format="%(levelname)s:%(name)s: %(message)s")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -24,7 +28,7 @@ class StepBase(ABC):
 
     @property
     def logger(self) -> Logger:
-        return get_run_logger()
+        return getLogger(self.task_name)
 
     def get_dependencies(
             self, dependency_pool: Dict[str, "StepBase"]) -> List["StepBase"]:

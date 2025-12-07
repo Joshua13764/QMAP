@@ -1,39 +1,39 @@
 [tool.poetry]
 name = "boulder_statistics"
 version = "0.1.0"
-description = "Foo add-on step for bennu-feature-extractor"
+description = "Find statistics from images of boulders"
 readme = "README.md"
 packages = [
   { include = "boulder_statistics", from = "src" }
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<3.15"
-graphviz = "^0.21"
-pds4-tools = "^1.4"
-attrs = "^25.4.0"
-tqdm-joblib = "^0.0.5"
-requests = "^2.32.5"
-imageio = "^2.37.0"
-opencv-python = "^4.12.0.88"
-pydantic = "2.12.3"
-datashader = "^0.18.2"
-joblib = "^1.5.2"
-libigl = "^2.6.1"
-pandas = "^2.3.3"
-polars = "^1.35.2"
-tifffile = "^2025.10.16"
-trimesh = "^4.9.0"
-urllib3 = "^2.5.0"
-pyarrow = "^22.0.0"
-scienceplots = "^2.1.1"
-more-itertools = "^10.8.0"
-prefect = "3.2.15"
+python = ">=3.11, <3.15"
+testcv2 = "0.0.1"
+docker = "7.1.0"
+graphviz = "0.21"
+jinja2 = "3.1.6"
+joblib = "1.5.2"
+more-itertools = "10.8.0"
+pandas = "2.3.3"
+pds4-tools = "1.4"
+polars = "1.35.2"
+requests = "2.32.5"
+scienceplots = "2.2.0"
+tqdm = "4.67.1"
+trimesh = "4.10.1"
+urllib3 = "2.6.0"
+datashader = "0.18.2"
+imageio = "2.37.2"
+libigl = "2.6.1"
+matplotlib = "3.10.7"
+numpy = "2.3.5"
+pillow = "12.0.0"
+tifffile = "2025.10.16"
+tqdm-joblib = "0.0.5"
+torch = "2.9.1"
+
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0"
-pytest-cov = "^4.1"
