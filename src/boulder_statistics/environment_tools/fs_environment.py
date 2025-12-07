@@ -1,8 +1,8 @@
+from dataclasses import dataclass
 from functools import reduce
-from os import listdir, path, scandir
+from os import scandir
 from typing import Callable, Counter, Dict, List, Set
 
-import attr
 from jinja2 import Environment
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
@@ -17,7 +17,7 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 
-@attr.define(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FSEnvironment():
     paths: frozenset[FSPathBase]
 

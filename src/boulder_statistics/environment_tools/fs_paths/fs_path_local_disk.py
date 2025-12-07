@@ -1,7 +1,6 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List
-
-import attr
 
 from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
@@ -9,7 +8,7 @@ from boulder_statistics.environment_tools.base_classes.fs_path_base import \
     FSPathBase
 
 
-@attr.define(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FSPathLocalDisk(FSPathBase):
     root_path: str
 
