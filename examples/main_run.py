@@ -1,8 +1,5 @@
-from dataclasses import fields, is_dataclass
 from pathlib import Path
 from typing import List
-
-from stablehash import stablehash
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
@@ -77,7 +74,7 @@ steps4: List[PDSDownloader] = [PDSDownloader(
 
 step5 = PDS_to_PNG(
     task_name=f"Convert cluster ocams_data_calibrated_detailed_survey",
-    run_after_task_names=(steps4[0].task_name),
+    run_after_task_names=(steps4[0].task_name,),
     cluster_key="ocams_data_calibrated_detailed_survey",
     run_path=pipeline_working_path.as_posix()
 )
@@ -85,7 +82,7 @@ step5 = PDS_to_PNG(
 step6 = PANToLOD(
     task_name=f"Convert bennu PAN to LODs",
     root_path=pipeline_working_path_fast,
-    run_after_task_names=(step2.task_name),
+    run_after_task_names=(step2.task_name,),
     extract_folder_prefix="PAN_lod_default",
     lod_res=512,
     lod_depth=6,
@@ -98,6 +95,7 @@ pan_to_lod_np = PANToLOD(
     run_after_task_names=(step2.task_name,),
     lod_res=512,
     skip_if_exists=True,
+    import_markers=(FSMarkerString(value="PAN_texture"),),
     export_markers=(FSMarkerString(value="PAN_lod_np"),),
     extract_folder_prefix="PAN_lod_np",
     lod_depth=6,
@@ -142,6 +140,19 @@ step11 = PlotStandardDetectionResults(
     version_index=3
 )
 
+steps = [
+    step1,
+    step2,
+    step3,
+    *steps4,
+    step5,
+    step6,
+    step7,
+    step8,
+    step10,
+    step11,
+    pan_to_lod_np]
+
 # step9 = SPICEKernelGrabber(
 #     task_name=f"Collect SPICE kernels",
 #     DownloadPath=spice_download_path.as_posix(),
@@ -153,8 +164,8 @@ step11 = PlotStandardDetectionResults(
 
 
 if __name__ == "__main__":
-    cache: ResultCache[StepBase, FSEnvironment] = ResultCache[StepBase, FSEnvironment](
+    cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](
         cache_folder=Path(".cache"), result_type=FSEnvironment)
 
     futures: dict[str, FSEnvironment] = StepsOrchestrator.run_tasks_with_dependencies(
-        [pan_to_lod_np], StepsOrchestrator.auto_find_steps(), cache)
+        [pan_to_lod_np], steps, cache)

@@ -1,27 +1,38 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from pickle import dump, load
-from typing import Any, Hashable, Type
+from typing import Any, Callable, Type
 
 from stablehash import stablehash
 
+from boulder_statistics.step_base import StepBase
+
 
 @dataclass(frozen=True)
-class ResultCache[K: Hashable, V]():
+class ResultCache[V]():
     cache_folder: Path
     result_type: Type[V]
+    verbose: bool = field(default=False)
+    hash_method: Callable[[Any], str] = field(
+        default=lambda obj: stablehash(obj).hexdigest())
 
-    def get_result_cache_path(self, obj: K, save_prefix: str) -> Path:
+    def get_result_cache_path(self, obj: StepBase, save_prefix: str) -> Path:
 
-        hashed_obj = stablehash(obj)
+        hashable_obj: tuple[Any, ...] = obj.cleaned_hashable
+
+        if self.verbose:
+            for i in hashable_obj:
+                print(f"{self.hash_method(i)} -> {i}")
+
+        hashed_obj = stablehash(hashable_obj)
 
         return Path(*self.cache_folder.parts,
-                    f"{save_prefix}-hash-{hashed_obj.hexdigest()}.pkl")
+                    f"{save_prefix}-hash-{self.hash_method(hashed_obj)}.pkl")
 
-    def does_result_cache_exist(self, obj: K, save_prefix: str) -> bool:
+    def does_result_cache_exist(self, obj: StepBase, save_prefix: str) -> bool:
         return self.get_result_cache_path(obj, save_prefix).exists()
 
-    def open_result_cache(self, obj: K,
+    def open_result_cache(self, obj: StepBase,
                           save_prefix: str) -> V:
         result_cache_path: Path = self.get_result_cache_path(obj, save_prefix)
 

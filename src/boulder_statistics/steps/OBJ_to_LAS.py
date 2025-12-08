@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import polars as pl
 from joblib import delayed
@@ -87,6 +87,10 @@ class OBJToLAS(TaskStepBase):
     skip_if_exists: bool
     debug_mode: bool
     export_folder: str
+
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.depth, self.export_folder, self.lod_res)
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 

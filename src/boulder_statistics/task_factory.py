@@ -11,14 +11,14 @@ class TaskFactory():
 
     @staticmethod
     def construct_task(
-            step: StepBase, result_cache: ResultCache[StepBase, FSEnvironment]) -> Callable[[FSEnvironment], FSEnvironment]:
+            step: StepBase, result_cache: ResultCache[FSEnvironment]) -> Callable[[FSEnvironment], FSEnvironment]:
         match step:
             case TaskStepBase(): return TaskFactory.handle_task_step_base(step, result_cache)
             case _: raise TypeError(f"Step {step} has no task factory handler")
 
     @staticmethod
     def handle_task_step_base(
-            step: TaskStepBase, result_cache: ResultCache[StepBase, FSEnvironment]) -> Callable[[FSEnvironment], FSEnvironment]:
+            step: TaskStepBase, result_cache: ResultCache[FSEnvironment]) -> Callable[[FSEnvironment], FSEnvironment]:
 
         # print(f"Compiling task {step.task_name}...")
 
@@ -27,8 +27,7 @@ class TaskFactory():
 
         result_cache_exists: bool = result_cache_path.exists()
 
-        if result_cache.does_result_cache_exist(
-                step, save_prefix=step.task_name):
+        if result_cache_exists:
 
             def load_cache_step_task(env: FSEnvironment) -> FSEnvironment:
                 res: FSEnvironment = result_cache.open_result_cache(

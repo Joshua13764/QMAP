@@ -1,4 +1,3 @@
-import inspect
 from graphlib import TopologicalSorter
 from typing import Callable, List, Set
 
@@ -10,8 +9,8 @@ from boulder_statistics.task_factory import TaskFactory
 
 class StepsOrchestrator:
     @staticmethod
-    def run_steps(tasks: List[StepBase], result_cache: ResultCache[StepBase,
-                  FSEnvironment]) -> dict[str, FSEnvironment]:
+    def run_steps(
+            tasks: List[StepBase], result_cache: ResultCache[FSEnvironment]) -> dict[str, FSEnvironment]:
 
         step_order: List[StepBase] = StepsOrchestrator.get_step_order(tasks)
 
@@ -19,7 +18,7 @@ class StepsOrchestrator:
 
     @staticmethod
     def run_tasks_with_dependencies(tasks: List[StepBase], dependency_pool: List[StepBase],
-                                    result_cache: ResultCache[StepBase, FSEnvironment]) -> dict[str, FSEnvironment]:
+                                    result_cache: ResultCache[FSEnvironment]) -> dict[str, FSEnvironment]:
 
         dependency_pool_dict: dict[str, StepBase] = {
             dependency.task_name: dependency for dependency in dependency_pool}
@@ -78,19 +77,3 @@ class StepsOrchestrator:
             case _:
                 print("Merging environments...")
                 return FSEnvironment.merge(step_required_upstream_futures)
-
-    @staticmethod
-    def auto_find_steps(frame=None) -> List[StepBase]:
-        if frame is None:
-            frame = inspect.currentframe().f_back
-
-        namespace = {}
-        namespace.update(frame.f_globals)
-        namespace.update(frame.f_locals)
-
-        result: List[StepBase] = [
-            value
-            for name, value in namespace.items()
-            if isinstance(value, StepBase) and not isinstance(value, type)
-        ]
-        return result

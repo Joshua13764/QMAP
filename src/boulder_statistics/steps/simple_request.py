@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import requests
 from tqdm import tqdm
@@ -20,6 +21,10 @@ class SimpleRequest(TaskStepBase):
     sub_path: str
     markers: tuple[FSMarkerBase, ...]
     skip_if_exists = True
+
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.url, self.fs_path, self.sub_path, self.markers)
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 

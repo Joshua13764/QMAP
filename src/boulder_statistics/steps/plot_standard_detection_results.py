@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List
+from typing import Any, Callable, List
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -41,6 +41,11 @@ class PlotStandardDetectionResults(TaskStepBase):
     export_folder: str
     result_output_folder: str
     version_index: int
+
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.marker_to_plot, self.output_marker, self.export_folder,
+                self.result_output_folder, self.version_index)
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 

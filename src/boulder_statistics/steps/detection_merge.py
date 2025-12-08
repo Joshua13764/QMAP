@@ -30,6 +30,11 @@ class DetectionMerge(TaskStepBase):
     run_path: str
     result_output_path: str
 
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.run_path, self.marker_to_merge, self.output_marker,
+                self.result_output_path)
+
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         files_to_merge: List[FSPathLocalDisk] = env.get_paths(

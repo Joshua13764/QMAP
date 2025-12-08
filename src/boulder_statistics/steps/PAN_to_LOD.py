@@ -92,8 +92,8 @@ class PANToLOD(TaskStepBase):
 
     lod_res: int = field(default_factory=lambda: 512)
 
-    import_markers: tuple[FSMarkerBase, ...] | None = field(
-        default_factory=lambda: None)
+    import_markers: tuple[FSMarkerBase, ...] = field(
+        default_factory=lambda: ())
 
     export_adapter: FSAdapterBase[NDArray[Any], FSPathLocalDisk] = field(
         default_factory=lambda: FSIIOAdapter(add_file_extension=".tif"))
@@ -101,11 +101,16 @@ class PANToLOD(TaskStepBase):
     export_markers: tuple[FSMarkerBase, ...] = field(default_factory=lambda: (
         FSMarkerString(value="PAN_lod"), FSMarkerString(value="InferableImage")))
 
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.root_path, self.lod_depth, self.extract_folder_prefix,
+                self.lod_res, self.import_markers, self.export_adapter, self.export_markers)
+
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         pan_src_files: List[FSPathLocalDisk] = env.get_paths(
             FSPathLocalDisk, lambda x: ".tif" in x.actual_path.name and (
-                self.import_markers is None or set(self.import_markers).isdisjoint(x.markers) == False)
+                set(self.import_markers).isdisjoint(x.markers) == False)
         )
 
         exports: List[FSPathLocalDisk] = []
