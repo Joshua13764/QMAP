@@ -1,20 +1,13 @@
-# Run "prefect server start" to start server before running this script
 from pathlib import Path
-from typing import Any, Coroutine, List, Sequence
-
-from numpy.typing import NDArray
-from PIL import Image, ImageEnhance
-from PIL.ImageFile import ImageFile
-from prefect.futures import PrefectFuture
+from tabnanny import verbose
+from typing import List
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
-from boulder_statistics.file_storage_adapters.pillow_image_adapter import \
-    FSPillowImageAdapter
-from boulder_statistics.file_storage_adapters.png_adapter import FSPNGAdapter
+from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.step_base import StepBase
 from boulder_statistics.steps.Best_model_downloader import BestModelDownloader
 from boulder_statistics.steps.detection_merge import DetectionMerge
@@ -26,12 +19,7 @@ from boulder_statistics.steps.PDS_downloader import PDSDownloader
 from boulder_statistics.steps.PDS_to_PNG import PDS_to_PNG
 from boulder_statistics.steps.plot_standard_detection_results import \
     PlotStandardDetectionResults
-from boulder_statistics.steps.simple_function_import_export import \
-    SimpleFunctionImportExport
-from boulder_statistics.steps.simple_local_file import SimpleLocalFile
 from boulder_statistics.steps.simple_request import SimpleRequest
-from boulder_statistics.steps.SPICE_kernels_downloader import \
-    SPICEKernelGrabber
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 model_download_path: Path = Path(r"F:\AO33\AO33_models")
@@ -55,7 +43,7 @@ step2 = SimpleRequest(
     url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif",
     fs_path=pds_download_path.as_posix(),
     sub_path=Path("OCAMS", "Global PAN Mosaic.tif").as_posix(),
-    markers=frozenset([FSMarkerString(value="PAN_texture")])
+    markers=(FSMarkerString(value="PAN_texture"),)
 )
 
 step3 = SimpleRequest(
@@ -65,8 +53,10 @@ step3 = SimpleRequest(
     sub_path=Path(
         "OCAMS",
         "Global Bennu 3D model - OLA v20 PTM.obj").as_posix(),
-    markers=frozenset(
-        [FSMarkerString(value="OCAMS Model"), FSMarkerString("ProjectModel")])
+    markers=(
+        FSMarkerString(
+            value="OCAMS Model"),
+        FSMarkerString("ProjectModel"))
 )
 
 steps4: List[PDSDownloader] = [PDSDownloader(
@@ -85,7 +75,7 @@ steps4: List[PDSDownloader] = [PDSDownloader(
 
 step5 = PDS_to_PNG(
     task_name=f"Convert cluster ocams_data_calibrated_detailed_survey",
-    run_after_task_names=frozenset([steps4[0].task_name]),
+    run_after_task_names=(steps4[0].task_name,),
     cluster_key="ocams_data_calibrated_detailed_survey",
     run_path=pipeline_working_path.as_posix()
 )
@@ -93,7 +83,7 @@ step5 = PDS_to_PNG(
 step6 = PANToLOD(
     task_name=f"Convert bennu PAN to LODs",
     root_path=pipeline_working_path_fast,
-    run_after_task_names=frozenset([step2.task_name]),
+    run_after_task_names=(step2.task_name,),
     extract_folder_prefix="PAN_lod_default",
     lod_res=512,
     lod_depth=6,
@@ -103,10 +93,11 @@ step6 = PANToLOD(
 pan_to_lod_np = PANToLOD(
     task_name=f"Convert bennu PAN to LODs - Numpy version",
     root_path=pipeline_working_path_fast,
-    run_after_task_names=frozenset([step2.task_name]),
+    run_after_task_names=(step2.task_name,),
     lod_res=512,
     skip_if_exists=True,
-    export_markers=frozenset([FSMarkerString(value="PAN_lod_np")]),
+    import_markers=(FSMarkerString(value="PAN_texture"),),
+    export_markers=(FSMarkerString(value="PAN_lod_np"),),
     extract_folder_prefix="PAN_lod_np",
     lod_depth=6,
     export_adapter=FSNumpyAdapter()
@@ -114,7 +105,7 @@ pan_to_lod_np = PANToLOD(
 
 step7 = OBJToLAS(
     task_name=f"Convert bennu Mesh to stretch maps",
-    run_after_task_names=frozenset([step3.task_name]),
+    run_after_task_names=(step3.task_name,),
     lod_res=512,
     export_folder=pipeline_working_path_fast.as_posix(),
     depth=6,
@@ -126,15 +117,14 @@ step8 = PDS4BoulderNetInference(
     task_name=f"Infer boulders",
     cuda=True,
     skip_converted=True,
-    run_after_task_names=frozenset([step6.task_name, step1.task_name]),
+    run_after_task_names=(step6.task_name, step1.task_name,),
     run_path=pipeline_working_path_fast.as_posix(),
-    detection_output_markers=frozenset(
-        [FSMarkerString("BoulderNet_Detections")])
+    detection_output_markers=(FSMarkerString("BoulderNet_Detections"),)
 )
 
 step10 = DetectionMerge(
     task_name=f"Merge detections",
-    run_after_task_names=frozenset([step8.task_name]),
+    run_after_task_names=(step8.task_name,),
     marker_to_merge=FSMarkerString("BoulderNet_Detections"),
     output_marker=FSMarkerString("Merged_BoulderNet_Detections"),
     run_path=pipeline_working_path_fast.as_posix(),
@@ -143,13 +133,26 @@ step10 = DetectionMerge(
 
 step11 = PlotStandardDetectionResults(
     task_name=f"Plot standard detection results",
-    run_after_task_names=frozenset([step10.task_name]),
+    run_after_task_names=(step10.task_name,),
     marker_to_plot=FSMarkerString("Merged_BoulderNet_Detections"),
     output_marker=FSMarkerString("Detection_Plots"),
     export_folder=pipeline_working_path_fast.as_posix(),
     result_output_folder=Path("exports/detection_plots").as_posix(),
     version_index=3
 )
+
+steps = [
+    step1,
+    step2,
+    step3,
+    *steps4,
+    step5,
+    step6,
+    step7,
+    step8,
+    step10,
+    step11,
+    pan_to_lod_np]
 
 # step9 = SPICEKernelGrabber(
 #     task_name=f"Collect SPICE kernels",
@@ -162,5 +165,8 @@ step11 = PlotStandardDetectionResults(
 
 
 if __name__ == "__main__":
-    futures: dict[str, PrefectFuture[FSEnvironment]
-                  ] = StepsOrchestrator.run_tasks_with_dependencies([step11], StepsOrchestrator.auto_find_steps(), StepsOrchestrator.get_result_storage())
+    cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](
+        cache_folder=Path(".cache"), result_type=FSEnvironment)
+
+    futures: dict[str, FSEnvironment] = StepsOrchestrator.run_tasks_with_dependencies(
+        [pan_to_lod_np], steps, cache)

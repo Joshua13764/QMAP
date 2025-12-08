@@ -1,7 +1,5 @@
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List
-
-import attr
 
 from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
@@ -9,7 +7,7 @@ from boulder_statistics.environment_tools.base_classes.fs_path_base import \
     FSPathBase
 
 
-@attr.define(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FSPathLocalDisk(FSPathBase):
     root_path: str
 
@@ -25,15 +23,15 @@ class FSPathLocalDisk(FSPathBase):
         self.actual_path.parent.mkdir(parents=True, exist_ok=True)
 
     def copy_as_new(self, new_root_path: Path,
-                    new_extension: str, markers: List[FSMarkerBase] = []) -> 'FSPathLocalDisk':
+                    new_extension: str, markers: tuple[FSMarkerBase, ...] = ()) -> 'FSPathLocalDisk':
         return FSPathLocalDisk(
             path=Path(*self.path).with_suffix(new_extension).parts,
-            markers=frozenset(markers),
+            markers=tuple(markers),
             root_path=new_root_path.as_posix(),
         )
 
     def copy_as_new_name(self, new_root_path: Path,
-                         new_extension: str, markers: List[FSMarkerBase] = []) -> 'FSPathLocalDisk':
+                         new_extension: str, markers: tuple[FSMarkerBase, ...] = ()) -> 'FSPathLocalDisk':
         return FSPathLocalDisk(
             path=Path(
                 *
@@ -42,12 +40,12 @@ class FSPathLocalDisk(FSPathBase):
                     *
                     self.path).stem +
                 new_extension).parts,
-            markers=frozenset(markers),
+            markers=tuple(markers),
             root_path=new_root_path.as_posix(),
         )
 
     def copy_with_stem_prefix_and_suffix(
-            self, stem_prefix: str = "", stem_suffix: str = "", markers: frozenset[FSMarkerBase] = frozenset()) -> "FSPathLocalDisk":
+            self, stem_prefix: str = "", stem_suffix: str = "", markers: tuple[FSMarkerBase, ...] = ()) -> "FSPathLocalDisk":
 
         return FSPathLocalDisk(
             path=Path(
@@ -62,9 +60,9 @@ class FSPathLocalDisk(FSPathBase):
         )
 
     def copy_from_folder(self, new_sub_path: Path,
-                         markers: List[FSMarkerBase] = []) -> 'FSPathLocalDisk':
+                         markers: tuple[FSMarkerBase, ...] = ()) -> 'FSPathLocalDisk':
         return FSPathLocalDisk(
             path=(Path(*self.path) / new_sub_path).parts,
-            markers=frozenset(markers),
+            markers=markers,
             root_path=self.root_path,
         )

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List
+from typing import Any, Callable, List
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -42,6 +42,11 @@ class PlotStandardDetectionResults(TaskStepBase):
     result_output_folder: str
     version_index: int
 
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.marker_to_plot, self.output_marker, self.export_folder,
+                self.result_output_folder, self.version_index)
+
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         files_to_plot: List[FSPathLocalDisk] = env.get_paths(
@@ -60,15 +65,15 @@ class PlotStandardDetectionResults(TaskStepBase):
                 path,
                 FSPathLocalDisk(
                     path=Path(self.result_output_folder).parts,
-                    markers=frozenset([self.output_marker]),
+                    markers=(self.output_marker,),
                     root_path=self.export_folder,
                 ),
             )
             for path in files_to_plot
         ]
 
-        return FSEnvironment(frozenset(
-            [path for paths in processed_inference_result_paths for path in paths]))
+        return FSEnvironment(
+            tuple(path for paths in processed_inference_result_paths for path in paths))
 
     @staticmethod
     def plot_detection_results(results_data_path: FSPathLocalDisk,

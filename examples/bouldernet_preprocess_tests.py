@@ -1,4 +1,3 @@
-# Run "prefect server start" to start server before running this script
 from pathlib import Path
 from typing import Any, Callable, Coroutine, List, Sequence
 
@@ -6,7 +5,6 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageEnhance, ImageFilter
 from PIL.ImageFile import ImageFile
-from prefect.futures import PrefectFuture
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
@@ -16,6 +14,7 @@ from boulder_statistics.file_storage_adapters.numpy_adapter import \
 from boulder_statistics.file_storage_adapters.pillow_image_adapter import \
     FSPillowImageAdapter
 from boulder_statistics.file_storage_adapters.png_adapter import FSPNGAdapter
+from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.step_base import StepBase
 from boulder_statistics.steps.Best_model_downloader import BestModelDownloader
 from boulder_statistics.steps.detection_merge import DetectionMerge
@@ -46,7 +45,7 @@ spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 # step11 = PlotStandardDetectionResults(
 #     task_name=f"Plot standard detection results",
-#     run_after_task_names=frozenset([step10.task_name]),
+#     run_after_task_names=(step10.task_name),
 #     marker_to_plot=FSMarkerString("Merged_BoulderNet_Detections"),
 #     output_marker=FSMarkerString("Detection_Plots"),
 #     export_folder=pipeline_working_path_fast.as_posix(),
@@ -56,12 +55,12 @@ spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 default_lod_extract = SimpleLocalFile(
     task_name="BoulderNet detect test",
-    run_after_task_names=frozenset(),
+    run_after_task_names=(),
     local_file_path=Path(
         r"C:\Users\Joshu\Documents\AO33_DATA\resources\tests\posx_512_1024_512x512_of_2048.png"),
     dst_root_path=boulderNet_preprocessor_test_folder,
     dst_sub_path=Path("lod 0/posx_512_1024_512x512_of_2048.png"),
-    markers=frozenset([FSMarkerString("default_lod_export_example")])
+    markers=(FSMarkerString("default_lod_export_example"))
 )
 
 
@@ -144,9 +143,8 @@ to_try_tasks = [
         task_name=func_name,
         output_name_suffix=func_name,
         adapter=FSPillowImageAdapter(),
-        input_markers=frozenset(
-            [FSMarkerString("default_lod_export_example")]),
-        output_markers=frozenset([FSMarkerString("BoulderNetDetects")]),
+        input_markers=(FSMarkerString("default_lod_export_example"),),
+        output_markers=(FSMarkerString("BoulderNetDetects"),),
         function_to_apply=func,
     )
     for func_name, func in to_try.items()
@@ -160,15 +158,15 @@ infer_default_lod_extract = PDS4BoulderNetInference(
     run_after_task_names=StepBase.get_task_names(
         default_lod_extract, *to_try_tasks),
     run_path=boulderNet_preprocessor_test_folder.as_posix(),
-    detection_input_markers=frozenset(
-        [FSMarkerString("default_lod_export_example"), FSMarkerString("BoulderNetDetects")]),
-    detection_output_markers=frozenset(
-        [FSMarkerString("BoulderNet_Detections")]),
+    detection_input_markers=(
+        FSMarkerString("default_lod_export_example"),
+        FSMarkerString("BoulderNetDetects")),
+    detection_output_markers=(FSMarkerString("BoulderNet_Detections"),),
 )
 
 merge = DetectionMerge(
     task_name=f"Merge detections",
-    run_after_task_names=frozenset([infer_default_lod_extract.task_name]),
+    run_after_task_names=(infer_default_lod_extract.task_name,),
     marker_to_merge=FSMarkerString("BoulderNet_Detections"),
     output_marker=FSMarkerString("Merged_BoulderNet_Detections"),
     run_path=boulderNet_preprocessor_test_folder.as_posix(),
@@ -177,7 +175,7 @@ merge = DetectionMerge(
 
 step11 = PlotStandardDetectionResults(
     task_name=f"Plot standard detection results",
-    run_after_task_names=frozenset([merge.task_name]),
+    run_after_task_names=(merge.task_name,),
     marker_to_plot=FSMarkerString("Merged_BoulderNet_Detections"),
     output_marker=FSMarkerString("Detection_Plots"),
     export_folder=pipeline_working_path_fast.as_posix(),
@@ -187,5 +185,8 @@ step11 = PlotStandardDetectionResults(
 
 pool = [default_lod_extract, *to_try_tasks, infer_default_lod_extract, merge]
 
-futures: dict[str, PrefectFuture[FSEnvironment]
-              ] = StepsOrchestrator.run_tasks_with_dependencies([merge], pool, StepsOrchestrator.get_result_storage())
+cache: ResultCache[StepBase, FSEnvironment] = ResultCache[StepBase, FSEnvironment](
+    cache_folder=Path("cache"), result_type=FSEnvironment)
+
+futures: dict[str, FSEnvironment] = StepsOrchestrator.run_tasks_with_dependencies([
+                                                                                  merge], pool, cache)

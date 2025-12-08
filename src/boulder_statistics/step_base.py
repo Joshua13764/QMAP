@@ -1,21 +1,27 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from logging import Logger
-from typing import Dict, FrozenSet, List
-
-from prefect import get_run_logger
+from logging import INFO, Logger, basicConfig, getLogger
+from pathlib import Path
+from sys import stdout
+from typing import Any, Dict, List
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.hash_cleaner_factory import HashCleanerFactory
+
+basicConfig(
+    stream=stdout,
+    level=INFO,
+    format="%(levelname)s:%(name)s: %(message)s")
 
 
 @dataclass(frozen=True, kw_only=True)
 class StepBase(ABC):
     task_name: str
-    run_after_task_names: FrozenSet[str] = field(
-        default=frozenset(), repr=True)
+    ignore_cache: bool = field(default_factory=lambda: False, repr=False)
+    run_after_task_names: tuple[str, ...] = field(
+        default=(), repr=True)
     task_description: str = field(
         default="No task description provided", repr=True)
-    persist_result: bool = field(default=True, repr=True)
 
     # When the task version changes the the older cache will be invalid
     # (should override)
@@ -24,7 +30,7 @@ class StepBase(ABC):
 
     @property
     def logger(self) -> Logger:
-        return get_run_logger()
+        return getLogger(self.task_name)
 
     def get_dependencies(
             self, dependency_pool: Dict[str, "StepBase"]) -> List["StepBase"]:
@@ -37,5 +43,17 @@ class StepBase(ABC):
         ...
 
     @staticmethod
-    def get_task_names(*tasks) -> frozenset[str]:
-        return frozenset([task.task_name for task in tasks])
+    def get_task_names(*tasks) -> set[str]:
+        return set(task.task_name for task in tasks)
+
+    @property
+    def cleaned_hashable(self) -> tuple[Any, ...]:
+        return tuple(
+            HashCleanerFactory.clean_hashable(i)
+            for i in self.hashable
+        )
+
+    @property
+    @abstractmethod
+    def hashable(self) -> tuple[Any, ...]:
+        ...

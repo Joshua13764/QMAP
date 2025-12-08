@@ -4,7 +4,7 @@ import warnings
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
@@ -24,6 +24,10 @@ class PDS_to_PNG(TaskStepBase):
     cluster_key: str
     run_path: str
     skip_converted: bool = True
+
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.cluster_key, self.run_path)
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -77,4 +81,4 @@ class PDS_to_PNG(TaskStepBase):
             delayed(_quiet_call)(convert_png, xml, pds) for xml, pds in pairs
         )
 
-        return FSEnvironment(paths=frozenset(pds_files))
+        return FSEnvironment(paths=tuple(pds_files))

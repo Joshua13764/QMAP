@@ -1,8 +1,8 @@
+from dataclasses import dataclass
 from functools import reduce
-from os import listdir, path, scandir
+from os import scandir
 from typing import Callable, Counter, Dict, List, Set
 
-import attr
 from jinja2 import Environment
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
@@ -17,19 +17,23 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 
-@attr.define(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FSEnvironment():
-    paths: frozenset[FSPathBase]
+    paths: tuple[FSPathBase, ...]
+
+    @property
+    def paths_lookup(self) -> set[FSPathBase]:
+        return set(self.paths)
 
     def get_paths[T: FSPathBase](self, cls: type[T], condition: Callable[[
                                  T], bool] = lambda x: True) -> List[T]:
         return [f for f in self.paths if isinstance(f, cls) and condition(f)]
 
     def get_paths_from_markers[T: FSPathBase](
-            self, cls: type[T], markers: frozenset[FSMarkerBase]) -> List[T]:
+            self, cls: type[T], markers: tuple[FSMarkerBase, ...]) -> List[T]:
         return [f
                 for f in self.paths
-                if isinstance(f, cls) and markers.isdisjoint(f.markers) == False
+                if isinstance(f, cls) and set(markers).isdisjoint(f.markers) == False
                 ]
 
     @staticmethod
@@ -66,7 +70,11 @@ class FSEnvironment():
 
     @classmethod
     def empty(cls) -> 'FSEnvironment':
-        return cls(paths=frozenset())
+        return cls(paths=())
+
+    @classmethod
+    def from_file(cls, file: FSPathBase) -> 'FSEnvironment':
+        return cls(paths=(file,))
 
     @staticmethod
     def save[ObjType, PathType: FSPathBase](
@@ -87,10 +95,7 @@ class FSEnvironment():
 
     @staticmethod
     def merge(envs: List['FSEnvironment']) -> 'FSEnvironment':
-        merged_paths: frozenset[FSPathBase] = frozenset({
-            p for e in envs for p in e.paths})
-        return FSEnvironment(paths=merged_paths)
+        merged_paths: tuple[FSPathBase, ...] = tuple(
+            p for e in envs for p in e.paths)
 
-    def __iadd__(self, other_env: 'FSEnvironment') -> 'FSEnvironment':
-        self = Environment.merge(self, other_env)
-        return self
+        return FSEnvironment(paths=merged_paths)

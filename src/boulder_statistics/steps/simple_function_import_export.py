@@ -17,8 +17,8 @@ from boulder_statistics.task_step_base import TaskStepBase
 @dataclass(frozen=True)
 class SimpleFunctionImportExport[T](TaskStepBase):
     adapter: FSAdapterBase[T, FSPathLocalDisk]
-    input_markers: frozenset[FSMarkerBase]
-    output_markers: frozenset[FSMarkerBase]
+    input_markers: tuple[FSMarkerBase, ...]
+    output_markers: tuple[FSMarkerBase, ...]
     function_to_apply: Callable[[T], T] = field(
         hash=False, repr=False, compare=False)
     output_name_prefix: str = field(default_factory=lambda: "")
@@ -51,4 +51,4 @@ class SimpleFunctionImportExport[T](TaskStepBase):
         #     for in_path, out_path in zip(files_to_apply_to, export_files)
         # )
 
-        return FSEnvironment(paths=frozenset(export_files))
+        return FSEnvironment(paths=tuple(export_files))

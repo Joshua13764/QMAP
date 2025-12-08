@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import List, Set
 
-from prefect import get_run_logger
-
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
@@ -17,20 +15,14 @@ class FSEnvironmentFactory():
                              for root, dirs, files in folder.walk()
                              for name in files]
 
-        get_run_logger().info(f"Found {len(paths)} files in {folder}")
-
-        fs_paths = [
+        fs_paths: List[FSPathLocalDisk] = [
             FSPathLocalDisk(
                 path=path.relative_to(folder).parts,
                 root_path=folder.as_posix(),
-                markers=frozenset()
+                markers=()
             )
             for path in paths
             if path.suffix.lower() in extensions
         ]
 
-        get_run_logger().info(
-            f"Created {
-                len(fs_paths)} FSPaths from found files")
-
-        return FSEnvironment(paths=frozenset(fs_paths))
+        return FSEnvironment(paths=tuple(fs_paths))

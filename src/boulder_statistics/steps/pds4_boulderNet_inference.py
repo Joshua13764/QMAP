@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterator, List, Set, Tuple
+from typing import Any, Dict, Iterator, List, Set, Tuple
 
 from more_itertools import chunked
 from tqdm import tqdm
@@ -31,13 +31,18 @@ class PDS4BoulderNetInference(TaskStepBase):
     batch_size: int = 64
     skip_converted: bool = field(default_factory=lambda: True)
     cuda: bool = field(default_factory=lambda: False)
-    detection_input_markers: frozenset[FSMarkerString] = field(
-        default_factory=lambda: frozenset([FSMarkerString("InferableImage")]))
+    detection_input_markers: tuple[FSMarkerString, ...] = field(
+        default_factory=lambda: (FSMarkerString("InferableImage"),))
 
-    detection_output_markers: frozenset[FSMarkerString] = field(
-        default_factory=lambda: frozenset([FSMarkerString("BoulderNet_Detections")]))
+    detection_output_markers: tuple[FSMarkerString, ...] = field(
+        default_factory=lambda: (FSMarkerString("BoulderNet_Detections"),))
 
     detection_export_custom_name_tag: str = field(default_factory=lambda: "")
+
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.run_path, self.batch_size, self.cuda,
+                self.detection_input_markers, self.detection_output_markers)
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -117,7 +122,7 @@ class PDS4BoulderNetInference(TaskStepBase):
                 )
 
         return FSEnvironment(
-            frozenset(overlay_output_files + detections_output_files))
+            tuple(overlay_output_files + detections_output_files))
 
     @staticmethod
     def sort_data_by_folders(files_to_infer: List[FSPathLocalDisk],
