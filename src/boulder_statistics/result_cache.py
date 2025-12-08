@@ -22,7 +22,7 @@ class ResultCache[V]():
 
         if self.verbose:
             for i in hashable_obj:
-                print(f"{self.hash_method(i)} -> {i}")
+                print(f"{self.hash_method(i)}\t -> {type(i)}\t -> {i}")
 
         hashed_obj = stablehash(hashable_obj)
 

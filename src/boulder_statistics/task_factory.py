@@ -33,7 +33,7 @@ class TaskFactory():
                 res: FSEnvironment = result_cache.open_result_cache(
                     step, save_prefix=step.task_name)
 
-                print(f"@Cache - Running task {step.task_name}...")
+                print(f"@Cache - Loading task result for {step.task_name}...")
 
                 return res
 
@@ -43,7 +43,7 @@ class TaskFactory():
                 print(f"Running task {step.task_name}...")
                 res: FSEnvironment = step.run(env)
 
-                print(f"@Cache - Saving task result {step.task_name}...")
+                print(f"@Cache - Saving task result for {step.task_name}...")
                 result_cache.save_result_cache(
                     result_cache_path, result_cache=res)
 
