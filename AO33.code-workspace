@@ -1,9 +1,10 @@
 {
   "folders": [
-    { "path": "packages/bennu-feature-extractor" },
-    { "path": "packages/bennu-feature-extractor-PDS" },
-    { "path": "packages/bennu-feature-extractor-BoulderNet" },
-    { "path": "packages/bennu-feature-extractor-ObjectMapping" },
-    { "path": "integration-tests" }
-  ]
+    { "path": "." }
+  ],
+  "settings": {
+    "cSpell.words": [
+      "stablehash"
+    ]
+  }
 }

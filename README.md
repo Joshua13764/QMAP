@@ -31,7 +31,7 @@ The directory needs to have the following basic structure
 ├── README.md
 ├── requirements.txt
 ├── src/
-│   └── bennu_feature_extractor_{package name}/
+│   └── boulder_statistics_{package name}/
 │       ├── __init__.py
 │       ├── ... package files
 ├── tests/
@@ -62,7 +62,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{ include = "bennu_feature_extractor_{package name}", from = "src" }]
+packages = [{ include = "boulder_statistics_{package name}", from = "src" }]
 
 [tool.poetry.dependencies]
 bennu-feature-extractor = { path = "../bennu-feature-extractor", develop = true }
