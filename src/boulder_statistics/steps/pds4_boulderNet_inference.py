@@ -31,11 +31,11 @@ class PDS4BoulderNetInference(TaskStepBase):
     batch_size: int = 64
     skip_converted: bool = field(default_factory=lambda: True)
     cuda: bool = field(default_factory=lambda: False)
-    detection_input_markers: frozenset[FSMarkerString] = field(
-        default_factory=lambda: frozenset([FSMarkerString("InferableImage")]))
+    detection_input_markers: tuple[FSMarkerString, ...] = field(
+        default_factory=lambda: (FSMarkerString("InferableImage"),))
 
-    detection_output_markers: frozenset[FSMarkerString] = field(
-        default_factory=lambda: frozenset([FSMarkerString("BoulderNet_Detections")]))
+    detection_output_markers: tuple[FSMarkerString, ...] = field(
+        default_factory=lambda: (FSMarkerString("BoulderNet_Detections"),))
 
     detection_export_custom_name_tag: str = field(default_factory=lambda: "")
 
@@ -117,7 +117,7 @@ class PDS4BoulderNetInference(TaskStepBase):
                 )
 
         return FSEnvironment(
-            frozenset(overlay_output_files + detections_output_files))
+            tuple(overlay_output_files + detections_output_files))
 
     @staticmethod
     def sort_data_by_folders(files_to_infer: List[FSPathLocalDisk],

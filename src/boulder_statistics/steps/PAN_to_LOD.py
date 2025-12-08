@@ -59,7 +59,7 @@ class LodNode:
 
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
-            markers=frozenset(self.task.export_markers),
+            markers=self.task.export_markers,
             root_path=self.task.root_path.as_posix()
         )
 
@@ -92,20 +92,20 @@ class PANToLOD(TaskStepBase):
 
     lod_res: int = field(default_factory=lambda: 512)
 
-    import_markers: frozenset[FSMarkerBase] | None = field(
+    import_markers: tuple[FSMarkerBase, ...] | None = field(
         default_factory=lambda: None)
 
     export_adapter: FSAdapterBase[NDArray[Any], FSPathLocalDisk] = field(
         default_factory=lambda: FSIIOAdapter(add_file_extension=".tif"))
 
-    export_markers: frozenset[FSMarkerBase] = field(default_factory=lambda: frozenset(
-        [FSMarkerString(value="PAN_lod"), FSMarkerString(value="InferableImage")]))
+    export_markers: tuple[FSMarkerBase, ...] = field(default_factory=lambda: (
+        FSMarkerString(value="PAN_lod"), FSMarkerString(value="InferableImage")))
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         pan_src_files: List[FSPathLocalDisk] = env.get_paths(
             FSPathLocalDisk, lambda x: ".tif" in x.actual_path.name and (
-                self.import_markers is None or self.import_markers.isdisjoint(x.markers) == False)
+                self.import_markers is None or set(self.import_markers).isdisjoint(x.markers) == False)
         )
 
         exports: List[FSPathLocalDisk] = []
@@ -116,12 +116,12 @@ class PANToLOD(TaskStepBase):
                 img=FSEnvironment.load(file, FSIIOAdapter())
             )
 
-        return FSEnvironment.merge([env, FSEnvironment(frozenset(exports))])
+        return FSEnvironment.merge([env, FSEnvironment((exports,))])
 
     def render_lods_from_img(self, src_file: FSPathLocalDisk,
                              img: Any) -> List[FSPathLocalDisk]:
 
-        export_groups: Any = ParallelPbar(f"rendering lods", unit="6 face imgs")(n_jobs=-1)(
+        export_groups: Any = ParallelPbar(f"rendering lods", unit=" 6 face imgs")(n_jobs=-1)(
             delayed(
                 LodNode.render_on_all_faces)(
                 LodNode(shape, img, src_file, self),

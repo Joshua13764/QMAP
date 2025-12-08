@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from logging import INFO, Logger, basicConfig, getLogger
 from sys import stdout
-from typing import Dict, FrozenSet, List
+from typing import Dict, List
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 
@@ -15,8 +15,8 @@ basicConfig(
 @dataclass(frozen=True, kw_only=True)
 class StepBase(ABC):
     task_name: str
-    run_after_task_names: FrozenSet[str] = field(
-        default=frozenset(), repr=True)
+    run_after_task_names: tuple[str, ...] = field(
+        default=(), repr=True)
     task_description: str = field(
         default="No task description provided", repr=True)
     persist_result: bool = field(default=True, repr=True)
@@ -41,5 +41,5 @@ class StepBase(ABC):
         ...
 
     @staticmethod
-    def get_task_names(*tasks) -> frozenset[str]:
-        return frozenset([task.task_name for task in tasks])
+    def get_task_names(*tasks) -> set[str]:
+        return set(task.task_name for task in tasks)

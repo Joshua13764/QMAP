@@ -60,15 +60,15 @@ class PlotStandardDetectionResults(TaskStepBase):
                 path,
                 FSPathLocalDisk(
                     path=Path(self.result_output_folder).parts,
-                    markers=frozenset([self.output_marker]),
+                    markers=(self.output_marker,),
                     root_path=self.export_folder,
                 ),
             )
             for path in files_to_plot
         ]
 
-        return FSEnvironment(frozenset(
-            [path for paths in processed_inference_result_paths for path in paths]))
+        return FSEnvironment(
+            tuple(path for paths in processed_inference_result_paths for path in paths))
 
     @staticmethod
     def plot_detection_results(results_data_path: FSPathLocalDisk,

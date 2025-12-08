@@ -77,4 +77,4 @@ class PDS_to_PNG(TaskStepBase):
             delayed(_quiet_call)(convert_png, xml, pds) for xml, pds in pairs
         )
 
-        return FSEnvironment(paths=frozenset(pds_files))
+        return FSEnvironment(paths=tuple(pds_files))

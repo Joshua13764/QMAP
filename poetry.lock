@@ -1881,6 +1881,18 @@ files = [
 ]
 
 [[package]]
+name = "stablehash"
+version = "0.3.0"
+description = "Stable hashing of Python data structures across separate processes and platforms."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "stablehash-0.3.0-py3-none-any.whl", hash = "sha256:82b59223e7c5c9b6df42dd4d3f1dbdc1356ecf80102405f5355dc287b28b77f6"},
+    {file = "stablehash-0.3.0.tar.gz", hash = "sha256:31d89697683c664487b6f995759aa14bc65bb9de31ad8beca5e99c8678b66baf"},
+]
+
+[[package]]
 name = "sympy"
 version = "1.14.0"
 description = "Computer algebra system (CAS) in Python"
@@ -2162,4 +2174,4 @@ viz = ["cartopy (>=0.23)", "matplotlib (>=3.8)", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.15"
-content-hash = "b0d63f7d88f15dabd3504264194c4d7f2a6343a9f032ddd049b8a1d9efa54fde"
+content-hash = "658b7b5344296957d86da0eafc0eae8295debd18dbfa2e34f3824b8ef01caaf5"

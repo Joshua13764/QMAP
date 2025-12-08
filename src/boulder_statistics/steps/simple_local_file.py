@@ -24,7 +24,7 @@ class SimpleLocalFile(TaskStepBase):
     local_file_path: Path
     dst_root_path: Path
     dst_sub_path: Path
-    markers: frozenset[FSMarkerBase]
+    markers: tuple[FSMarkerBase, ...]
     skip_if_exists = True
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
@@ -36,10 +36,10 @@ class SimpleLocalFile(TaskStepBase):
         )
 
         if pipeline_file.exists and self.skip_if_exists:
-            return FSEnvironment(paths=frozenset([pipeline_file]))
+            return FSEnvironment(paths=(pipeline_file,))
 
         FSEnvironment.save(
             None, pipeline_file, FSShutilCopy2Adapter(
                 src=self.local_file_path), skip_if_exists=True)
 
-        return FSEnvironment(paths=frozenset([pipeline_file]))
+        return FSEnvironment.from_file(pipeline_file)

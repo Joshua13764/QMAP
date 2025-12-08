@@ -45,7 +45,7 @@ spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 # step11 = PlotStandardDetectionResults(
 #     task_name=f"Plot standard detection results",
-#     run_after_task_names=frozenset([step10.task_name]),
+#     run_after_task_names=(step10.task_name),
 #     marker_to_plot=FSMarkerString("Merged_BoulderNet_Detections"),
 #     output_marker=FSMarkerString("Detection_Plots"),
 #     export_folder=pipeline_working_path_fast.as_posix(),
@@ -55,12 +55,12 @@ spice_download_path: Path = Path(r"F:\AO33\AO33_SPICE_DATA")
 
 default_lod_extract = SimpleLocalFile(
     task_name="BoulderNet detect test",
-    run_after_task_names=frozenset(),
+    run_after_task_names=(),
     local_file_path=Path(
         r"C:\Users\Joshu\Documents\AO33_DATA\resources\tests\posx_512_1024_512x512_of_2048.png"),
     dst_root_path=boulderNet_preprocessor_test_folder,
     dst_sub_path=Path("lod 0/posx_512_1024_512x512_of_2048.png"),
-    markers=frozenset([FSMarkerString("default_lod_export_example")])
+    markers=(FSMarkerString("default_lod_export_example"))
 )
 
 
@@ -143,9 +143,8 @@ to_try_tasks = [
         task_name=func_name,
         output_name_suffix=func_name,
         adapter=FSPillowImageAdapter(),
-        input_markers=frozenset(
-            [FSMarkerString("default_lod_export_example")]),
-        output_markers=frozenset([FSMarkerString("BoulderNetDetects")]),
+        input_markers=(FSMarkerString("default_lod_export_example"),),
+        output_markers=(FSMarkerString("BoulderNetDetects"),),
         function_to_apply=func,
     )
     for func_name, func in to_try.items()
@@ -159,15 +158,15 @@ infer_default_lod_extract = PDS4BoulderNetInference(
     run_after_task_names=StepBase.get_task_names(
         default_lod_extract, *to_try_tasks),
     run_path=boulderNet_preprocessor_test_folder.as_posix(),
-    detection_input_markers=frozenset(
-        [FSMarkerString("default_lod_export_example"), FSMarkerString("BoulderNetDetects")]),
-    detection_output_markers=frozenset(
-        [FSMarkerString("BoulderNet_Detections")]),
+    detection_input_markers=(
+        FSMarkerString("default_lod_export_example"),
+        FSMarkerString("BoulderNetDetects")),
+    detection_output_markers=(FSMarkerString("BoulderNet_Detections"),),
 )
 
 merge = DetectionMerge(
     task_name=f"Merge detections",
-    run_after_task_names=frozenset([infer_default_lod_extract.task_name]),
+    run_after_task_names=(infer_default_lod_extract.task_name,),
     marker_to_merge=FSMarkerString("BoulderNet_Detections"),
     output_marker=FSMarkerString("Merged_BoulderNet_Detections"),
     run_path=boulderNet_preprocessor_test_folder.as_posix(),
@@ -176,7 +175,7 @@ merge = DetectionMerge(
 
 step11 = PlotStandardDetectionResults(
     task_name=f"Plot standard detection results",
-    run_after_task_names=frozenset([merge.task_name]),
+    run_after_task_names=(merge.task_name,),
     marker_to_plot=FSMarkerString("Merged_BoulderNet_Detections"),
     output_marker=FSMarkerString("Detection_Plots"),
     export_folder=pipeline_working_path_fast.as_posix(),

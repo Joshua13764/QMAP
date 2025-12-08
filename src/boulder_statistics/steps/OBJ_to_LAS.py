@@ -52,7 +52,7 @@ class LodNode(CubeMapLodBase):
 
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
-            markers=frozenset([FSMarkerString(value="ProjectModel_lod")]),
+            markers=(FSMarkerString(value="ProjectModel_lod"),),
             root_path=self.export_folder.as_posix()
         )
 

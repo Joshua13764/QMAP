@@ -46,7 +46,7 @@ class DetectionMerge(TaskStepBase):
 
         result_path = FSPathLocalDisk(
             path=Path(self.result_output_path).parts,
-            markers=frozenset([self.output_marker]),
+            markers=(self.output_marker,),
             root_path=self.run_path,
         )
 
@@ -60,7 +60,7 @@ class DetectionMerge(TaskStepBase):
             result_path,
             FSPandasPickleAdapter())
 
-        return FSEnvironment(frozenset([result_path]))
+        return FSEnvironment((result_path,))
 
     @staticmethod
     def process_Bouldernet_inference(

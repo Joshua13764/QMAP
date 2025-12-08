@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
@@ -19,7 +20,12 @@ class TaskFactory():
     def handle_task_step_base(
             step: TaskStepBase, result_cache: ResultCache[StepBase, FSEnvironment]) -> Callable[[FSEnvironment], FSEnvironment]:
 
-        print(f"Compiling task {step.task_name}...")
+        # print(f"Compiling task {step.task_name}...")
+
+        result_cache_path: Path = result_cache.get_result_cache_path(
+            step, save_prefix=step.task_name)
+
+        result_cache_exists: bool = result_cache_path.exists()
 
         if result_cache.does_result_cache_exist(
                 step, save_prefix=step.task_name):
@@ -28,7 +34,7 @@ class TaskFactory():
                 res: FSEnvironment = result_cache.open_result_cache(
                     step, save_prefix=step.task_name)
 
-                print(f"Running task {step.task_name} from cache...")
+                print(f"@Cache - Running task {step.task_name}...")
 
                 return res
 
@@ -38,9 +44,9 @@ class TaskFactory():
                 print(f"Running task {step.task_name}...")
                 res: FSEnvironment = step.run(env)
 
-                print(f"Caching task {step.task_name} result...")
+                print(f"@Cache - Saving task result {step.task_name}...")
                 result_cache.save_result_cache(
-                    step, save_prefix=step.task_name, result_cache=res)
+                    result_cache_path, result_cache=res)
 
                 return res
 

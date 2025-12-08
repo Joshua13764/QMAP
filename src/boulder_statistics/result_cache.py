@@ -3,6 +3,8 @@ from pathlib import Path
 from pickle import dump, load
 from typing import Any, Hashable, Type
 
+from stablehash import stablehash
+
 
 @dataclass(frozen=True)
 class ResultCache[K: Hashable, V]():
@@ -10,8 +12,11 @@ class ResultCache[K: Hashable, V]():
     result_type: Type[V]
 
     def get_result_cache_path(self, obj: K, save_prefix: str) -> Path:
+
+        hashed_obj = stablehash(obj)
+
         return Path(*self.cache_folder.parts,
-                    save_prefix + str(obj.__hash__()))
+                    f"{save_prefix}-hash-{hashed_obj.hexdigest()}.pkl")
 
     def does_result_cache_exist(self, obj: K, save_prefix: str) -> bool:
         return self.get_result_cache_path(obj, save_prefix).exists()
@@ -35,9 +40,8 @@ class ResultCache[K: Hashable, V]():
                     type(self.result_type)} but instead of type {
                     type(cached_result)}""")
 
-    def save_result_cache(self, obj: K, save_prefix: str,
+    def save_result_cache(self, result_cache_path: Path,
                           result_cache: V) -> None:
-        result_cache_path: Path = self.get_result_cache_path(obj, save_prefix)
 
         result_cache_path.parent.mkdir(parents=True, exist_ok=True)
 

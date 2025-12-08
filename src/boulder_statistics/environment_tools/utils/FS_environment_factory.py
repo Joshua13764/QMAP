@@ -19,10 +19,10 @@ class FSEnvironmentFactory():
             FSPathLocalDisk(
                 path=path.relative_to(folder).parts,
                 root_path=folder.as_posix(),
-                markers=frozenset()
+                markers=()
             )
             for path in paths
             if path.suffix.lower() in extensions
         ]
 
-        return FSEnvironment(paths=frozenset(fs_paths))
+        return FSEnvironment(paths=tuple(fs_paths))

@@ -18,7 +18,7 @@ class SimpleRequest(TaskStepBase):
     url: str
     fs_path: str
     sub_path: str
-    markers: frozenset[FSMarkerBase]
+    markers: tuple[FSMarkerBase, ...]
     skip_if_exists = True
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
@@ -30,7 +30,7 @@ class SimpleRequest(TaskStepBase):
         )
 
         if file.exists and self.skip_if_exists:
-            return FSEnvironment(paths=frozenset([file]))
+            return FSEnvironment.from_file(file)
 
         with requests.get(self.url, stream=True) as r:
             r.raise_for_status()
@@ -55,4 +55,4 @@ class SimpleRequest(TaskStepBase):
 
             os.replace(tmp_dir, file.actual_path)
 
-        return FSEnvironment(paths=frozenset([file]))
+        return FSEnvironment.from_file(file)
