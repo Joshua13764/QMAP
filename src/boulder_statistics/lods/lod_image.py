@@ -5,6 +5,7 @@ from typing import Callable, Dict, Generic, List, TypeVar
 
 import cv2
 import numpy as np
+from numpy.typing import NDArray
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
@@ -16,6 +17,7 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
 from boulder_statistics.lods.img_lod_position import ImgLODPosition
 from boulder_statistics.lods.img_lod_tile import LODImageTile
 from boulder_statistics.lods.lod_image_interpolator import LODImageInterpolator
+from boulder_statistics.lods.lod_image_utils import LODImageUtils
 
 T = TypeVar("T", bound=np.floating)
 
@@ -25,6 +27,8 @@ class LODImage(Generic[T]):
     """
     Creates an image which obeys a hierarchical data structure
     """
+    array_storage_folder_location: FSPathLocalDisk
+    array_storage_adapter: FSAdapterBase[NDArray[T], FSPathLocalDisk]
 
     lod_tiles: List[LODImageTile[T]]
 
@@ -36,11 +40,11 @@ class LODImage(Generic[T]):
         using a combination of all 4 of the sub tiles and add them to its'self
         """
 
-        tiles_to_render: List[ImgLODPosition] = list(LODImage.collect_possible_render_tile_positions(
+        tiles_to_render: List[ImgLODPosition] = list(LODImageUtils.collect_possible_render_tile_positions(
             set(lod_tile.tile for lod_tile in self.lod_tiles)
         ))
 
-        ordered_tiles_to_render: List[ImgLODPosition] = LODImage.find_tile_render_order(
+        ordered_tiles_to_render: List[ImgLODPosition] = LODImageUtils.find_tile_render_order(
             current_tiles=[lod_tile.tile for lod_tile in self.lod_tiles],
             tiles_to_render=tiles_to_render
         )
@@ -54,58 +58,18 @@ class LODImage(Generic[T]):
 
             rendered_lod_tiles[tile] = LODImageTile[T](
                 tile=tile,
-                get_array_action=lambda: LODImageInterpolator.interpolate_image(
+                array_storage_folder_location=self.array_storage_folder_location,
+                array_storage_adapter=self.array_storage_adapter,
+                array_memory=LODImageInterpolator.interpolate_image(
                     resolution, tile_children[0].array, tile_children[1].array, tile_children[2].array,
                     tile_children[3].array
                 )
             )
 
+            # As children only have one parent then we will not be using there
+            # arrays for processing immediately therefore they can be unloaded
+            # to free up additional memory
+            for child in tile_children:
+                child.unload_array_from_memory()
+
         self.lod_tiles += list(rendered_lod_tiles.values())
-
-    @staticmethod
-    def collect_possible_render_tile_positions(
-            render_tiles_to_search: set[ImgLODPosition], verbose=True) -> set[ImgLODPosition]:
-
-        found_tiles = render_tiles_to_search.copy()
-        number_of_found_tiles_last_last_iteration: int = 0
-        number_of_found_tiles_last_iteration: int = len(found_tiles)
-
-        print(
-            f"Starting possible render tile search with {number_of_found_tiles_last_iteration} tiles")
-
-        while number_of_found_tiles_last_iteration != number_of_found_tiles_last_last_iteration:
-
-            found_tiles: set[ImgLODPosition] = found_tiles | set([
-                tile.parent()
-                for tile in render_tiles_to_search
-                if tile.parent().children().issubset(render_tiles_to_search)
-            ])
-
-            number_of_found_tiles_last_last_iteration = number_of_found_tiles_last_iteration
-            number_of_found_tiles_last_iteration = len(found_tiles)
-
-            print(
-                f"Found an additional {number_of_found_tiles_last_last_iteration - number_of_found_tiles_last_iteration} tiles")
-
-        return found_tiles
-
-    @staticmethod
-    def find_tile_render_order(
-            current_tiles: List[ImgLODPosition], tiles_to_render: List[ImgLODPosition]) -> List[ImgLODPosition]:
-
-        tile_to_render_requirements: dict[str, set[str]] = {
-            tile.string_rep: (
-                set()
-                if tile in current_tiles
-                else {required_child.string_rep for required_child in tile.children()}
-            )
-            for tile in tiles_to_render
-        }
-
-        ts: TopologicalSorter[str] = TopologicalSorter(
-            tile_to_render_requirements)
-
-        tiles_to_render_ordered: List[ImgLODPosition] = [
-            ImgLODPosition.from_string_rep(string_rep) for string_rep in ts.static_order()]
-
-        return tiles_to_render_ordered

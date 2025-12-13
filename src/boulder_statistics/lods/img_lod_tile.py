@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
+from email.policy import default
 from pathlib import Path
-from typing import Callable, Generic, TypeVar
+from typing import Generic, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -18,18 +19,28 @@ T = TypeVar("T", bound=np.floating)
 @dataclass()
 class LODImageTile(Generic[T]):
     tile: ImgLODPosition
-    get_array_action: Callable[[], NDArray[T]]
-    cached_array: NDArray[T] | None = field(default=None)
+
+    array_storage_folder_location: FSPathLocalDisk
+    array_storage_adapter: FSAdapterBase[NDArray[T], FSPathLocalDisk]
+    array_memory: NDArray[T] | None = field(default=None)
 
     @property
     def array(self) -> NDArray[T]:
-        if self.cached_array is None:
-            self.cached_array = self.get_array_action()
+        """Used to lazily generate the array and then cache the result
 
-        return self.cached_array
+        Returns:
+            NDArray[T]: _description_
+        """
+        if self.array_memory is None:
+            self.array_memory = self.array_from_local_disk
 
-    def get_save_path_from_root_folder(
-            self, root_path: FSPathLocalDisk) -> FSPathLocalDisk:
+        return self.array_memory
+
+    def unload_array_from_memory(self) -> None:
+        self.array_memory = None
+
+    @property
+    def local_disk_save_path(self) -> FSPathLocalDisk:
 
         lod_str_rep: str = self.tile.string_rep
         lod_number: int = self.tile.lod_number
@@ -39,26 +50,31 @@ class LODImageTile(Generic[T]):
                 self.array.shape}"
         )
 
-        root_path.copy_from_folder(rel_path)
+        local_disk_save_path: FSPathLocalDisk = self.array_storage_folder_location.copy_from_folder(
+            rel_path)
 
-        return root_path
+        return local_disk_save_path
 
-    def save(self, folder_path: FSPathLocalDisk,
-             adapter: FSAdapterBase) -> None:
+    @property
+    def array_from_local_disk(self) -> NDArray[T]:
+        return FSEnvironment.load(
+            path=self.local_disk_save_path,
+            adapter=self.array_storage_adapter
+        )
 
+    def save_array_to_local_disk(self) -> None:
         FSEnvironment.save(
             obj=self.array,
-            path=self.get_save_path_from_root_folder(folder_path),
-            adapter=adapter)
-
-    @classmethod
-    def from_file(cls, file_path: FSPathLocalDisk,
-                  adapter: FSAdapterBase) -> "LODImageTile[T]":
-        lod_str_rep: str = file_path.actual_path.stem.split(" ")[2]
-
-        return cls(
-            get_array_action=lambda: FSEnvironment.load(
-                path=file_path,
-                adapter=adapter),
-            tile=ImgLODPosition.from_string_rep(lod_str_rep)
+            path=self.local_disk_save_path,
+            adapter=self.array_storage_adapter
         )
+
+    # @classmethod
+    # def from_file(cls, file_path: FSPathLocalDisk,
+    #               adapter: FSAdapterBase) -> "LODImageTile[T]":
+    #     lod_str_rep: str = file_path.actual_path.stem.split(" ")[2]
+
+    #     return cls(
+    #         get_array_action=lambda:),
+    #     tile = ImgLODPosition.from_string_rep(lod_str_rep)
+    #     )
