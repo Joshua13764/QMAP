@@ -25,14 +25,23 @@ class Polars3DExpressions:
         return tris.filter(ensure_not_behind_plane & ensure_non_degenerate)
 
     @staticmethod
-    def process_mesh(points: pl.LazyFrame,
-                     tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
+    def process_mesh_projection_scaling(points: pl.LazyFrame,
+                                        tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
         # points already have a vertex id column "vid" that tris["0"/"1"/"2"]
         # reference.
 
         points = Polars3DExpressions._project_points(points)
         tris = Polars3DExpressions._attach_points_to_tris(points, tris)
         tris = Polars3DExpressions._add_area_and_ratio_columns(tris)
+
+        return points, tris
+
+    @staticmethod
+    def process_mesh_displacement(points: pl.LazyFrame,
+                                  tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
+
+        points = Polars3DExpressions._project_points(points)
+        tris = Polars3DExpressions._attach_points_to_tris(points, tris)
 
         return points, tris
 
@@ -95,6 +104,44 @@ class Polars3DExpressions:
         # later
 
     @staticmethod
+    def add_displacement_columns(points: pl.LazyFrame,
+                                 tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
+
+        tris = tris.with_columns(
+            Polars3DExpressions.get_mean_radius(),
+        )
+
+        return points, tris
+
+    @staticmethod
+    def get_mean_radius() -> pl.Expr:
+        x_tri_mean: Expr = (pl.col("x0") + pl.col("x1") +
+                            pl.col("x2")) * (1 / 3)
+        y_tri_mean: Expr = (pl.col("y0") + pl.col("y1") +
+                            pl.col("y2")) * (1 / 3)
+        z_tri_mean: Expr = (pl.col("z0") + pl.col("z1") +
+                            pl.col("z2")) * (1 / 3)
+
+        r_tri_mean: Expr = (
+            x_tri_mean ** 2 +
+            y_tri_mean ** 2 +
+            z_tri_mean ** 2) ** 0.5
+
+        return r_tri_mean
+
+    @staticmethod
+    def get_mean_projected_radius() -> pl.Expr:
+
+        x_mean: Expr = (pl.col("x0") + pl.col("x1") + pl.col("x2")) * (1 / 3)
+        y_mean: Expr = (pl.col("y0") + pl.col("y1") + pl.col("y2")) * (1 / 3)
+        z_mean: Expr = (pl.col("z0") + pl.col("z1") + pl.col("z2")) * (1 / 3)
+
+        r_mean_projected: Expr = Polars3DExpressions.get_mean_radius() / \
+            pl.max_horizontal(x_mean.abs(), y_mean.abs(), z_mean.abs())
+
+        return r_mean_projected
+
+    @staticmethod
     def _add_area_and_ratio_columns(tris: pl.LazyFrame) -> pl.LazyFrame:
         """Add area_xyz, face uv areas, and area ratios."""
 
@@ -115,13 +162,8 @@ class Polars3DExpressions:
     def process_extra_mesh_data(points: pl.LazyFrame,
                                 tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
 
-        x_mean: Expr = (pl.col("x0") + pl.col("x1") + pl.col("x2")) * (1 / 3)
-        y_mean: Expr = (pl.col("y0") + pl.col("y1") + pl.col("y2")) * (1 / 3)
-        z_mean: Expr = (pl.col("z0") + pl.col("z1") + pl.col("z2")) * (1 / 3)
-
-        r_mean: Expr = (x_mean ** 2 + y_mean ** 2 + z_mean ** 2) ** 0.5
-        r_mean_projected: Expr = r_mean / \
-            pl.max_horizontal(x_mean.abs(), y_mean.abs(), z_mean.abs())
+        r_mean: Expr = Polars3DExpressions.get_mean_radius()
+        r_mean_projected: Expr = Polars3DExpressions.get_mean_projected_radius()
 
         tris = tris.with_columns(r_mean.alias("xyz_radius"))
         tris = tris.with_columns(

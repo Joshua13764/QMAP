@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, List, Tuple
 
@@ -9,6 +9,8 @@ from numpy._typing._array_like import NDArray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
+from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
+    FSMarkerBase
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
@@ -18,6 +20,7 @@ from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
 from boulder_statistics.file_storage_adapters.polars_obj_adapter_fast import \
     FSPolarsObjAdapterFast
+from boulder_statistics.step_default_markers import StepDefaultMarkers
 from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from boulder_statistics.steps.utils.cubemap_lod_base import CubeMapLodBase
 from boulder_statistics.steps.utils.polars_3D_expressions import \
@@ -48,7 +51,7 @@ class LodNode(CubeMapLodBase):
             tris, face)
 
         relative_path: Path = Path(*self.src_file.path).parent / Path(
-            f"{Path(*self.src_file.path).name} LAS_lod_extract", f"lod_{len(self.shape)}", f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.npy")
+            f"{Path(*self.src_file.path).name} DIS_lod_extract", f"lod_{len(self.shape)}", f"{face}_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}_of_{total}.npy")
 
         export_file = FSPathLocalDisk(
             path=relative_path.parts,
@@ -81,7 +84,7 @@ class LodNode(CubeMapLodBase):
 
 
 @dataclass(frozen=True)
-class OBJToLAS(TaskStepBase):
+class OBJToDIS(TaskStepBase, StepDefaultMarkers):
     lod_res: int
     depth: int
     skip_if_exists: bool
@@ -90,12 +93,12 @@ class OBJToLAS(TaskStepBase):
 
     @property
     def hashable(self) -> tuple[Any, ...]:
-        return (self.depth, self.export_folder, self.lod_res)
+        return self.include_markers_in_hashable(
+            self.depth, self.export_folder, self.lod_res)
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
-        paths: List[FSPathLocalDisk] = env.get_paths(
-            FSPathLocalDisk, lambda x: FSMarkerString("ProjectModel") in x.markers)
+        paths: List[FSPathLocalDisk] = self.get_files_with_markers(env)
 
         for path in paths:
             self.project_model(path)
@@ -109,14 +112,13 @@ class OBJToLAS(TaskStepBase):
 
         lazy_file_data = Polars3DExpressions.process_mesh_projection_scaling(
             *lazy_file_data)
-        if self.debug_mode:
-            lazy_file_data = Polars3DExpressions.process_extra_mesh_data(
-                *lazy_file_data)
+        lazy_file_data = Polars3DExpressions.add_displacement_columns(
+            *lazy_file_data)
 
         export_groups: List[FSPathLocalDisk] = []
 
         for lod_depth in range(self.depth + 1):
-            export_groups += ParallelPbar(f"rendering lod_depth {lod_depth} for model {file.actual_path.name}")(n_jobs=1)(
+            export_groups += ParallelPbar(f"Rendering DIS for lod_depth {lod_depth} and model {file.actual_path.name}")(n_jobs=1)(
                 delayed(
                     LodNode.render_on_all_faces)(
                     LodNode(

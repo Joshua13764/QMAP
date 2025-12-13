@@ -124,7 +124,7 @@ step8 = PDS4BoulderNetInference(
 
 step10 = DetectionMerge(
     task_name=f"Merge detections",
-    run_after_task_names=(step8.task_name,),
+    run_after_task_names=(step8.task_name, step7.task_name),
     marker_to_merge=FSMarkerString("BoulderNet_Detections"),
     output_marker=FSMarkerString("Merged_BoulderNet_Detections"),
     run_path=pipeline_working_path_fast.as_posix(),
@@ -169,4 +169,4 @@ if __name__ == "__main__":
         cache_folder=Path(".cache"), result_type=FSEnvironment)
 
     futures: dict[str, FSEnvironment] = StepsOrchestrator.run_tasks_with_dependencies(
-        [pan_to_lod_np], steps, cache)
+        [step11], steps, cache)
