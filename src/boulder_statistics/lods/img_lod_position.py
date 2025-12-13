@@ -1,3 +1,4 @@
+import math
 import re
 from ast import List
 from dataclasses import dataclass
@@ -58,6 +59,22 @@ class ImgLODPosition():
     @property
     def lod_number(self) -> int:
         return len(self.pos_pairs)
+
+    @property
+    def x_range(self) -> Tuple[float, float]:
+        left_x_value: float = math.fsum(int(pair[0]) * (2 ** (-i - 1))
+                                        for i, pair in enumerate(self.pos_pairs))
+
+        right_x_value: float = left_x_value + 1 / self.reciprocal_length
+        return (left_x_value, right_x_value)
+
+    @property
+    def y_range(self) -> Tuple[float, float]:
+        left_y_value: float = math.fsum(int(pair[1]) * (2 ** (-i - 1))
+                                        for i, pair in enumerate(self.pos_pairs))
+
+        right_y_value: float = left_y_value + 1 / self.reciprocal_length
+        return (left_y_value, right_y_value)
 
     @classmethod
     def parent(cls) -> "ImgLODPosition":

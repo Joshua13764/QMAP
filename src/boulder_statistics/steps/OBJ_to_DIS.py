@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, List, Tuple
 
+import numpy as np
 import polars as pl
 from joblib import delayed
 from numpy import float64
@@ -9,6 +10,8 @@ from numpy._typing._array_like import NDArray
 from numpy.typing import NDArray
 from tqdm_joblib import ParallelPbar
 
+from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
+    FSAdapterBase
 from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
@@ -20,6 +23,8 @@ from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
 from boulder_statistics.file_storage_adapters.polars_obj_adapter_fast import \
     FSPolarsObjAdapterFast
+from boulder_statistics.lods.img_lod_position import ImgLODPosition
+from boulder_statistics.lods.img_lod_tile import LODImageTile
 from boulder_statistics.step_default_markers import StepDefaultMarkers
 from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from boulder_statistics.steps.utils.cubemap_lod_base import CubeMapLodBase
@@ -31,6 +36,7 @@ from boulder_statistics.task_step_base import TaskStepBase
 
 Pair = Tuple[int, int]
 PairGroups = Tuple[Pair, ...]
+LazyFileData = tuple[pl.LazyFrame, pl.LazyFrame]
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +53,7 @@ class LodNode(CubeMapLodBase):
         y_range: Tuple[float, float] = (posY, posY + depth)
 
         points, tris = self.img
-        tris_filtered: pl.LazyFrame = Polars3DExpressions.filter_faces_for_rasterization(
+        tris_filtered: pl.LazyFrame = Polars3DExpressions.filter_faces_for_rasterization_by_face(
             tris, face)
 
         relative_path: Path = Path(*self.src_file.path).parent / Path(
@@ -90,6 +96,7 @@ class OBJToDIS(TaskStepBase, StepDefaultMarkers):
     skip_if_exists: bool
     debug_mode: bool
     export_folder: str
+    adapter: FSAdapterBase[NDArray[np.float64], FSPathLocalDisk]
 
     @property
     def hashable(self) -> tuple[Any, ...]:
@@ -107,7 +114,7 @@ class OBJToDIS(TaskStepBase, StepDefaultMarkers):
 
     def project_model(self, file: FSPathLocalDisk) -> List[FSPathLocalDisk]:
 
-        lazy_file_data: tuple[pl.LazyFrame, pl.LazyFrame] = FSEnvironment.load(
+        lazy_file_data: LazyFileData = FSEnvironment.load(
             file, FSPolarsObjAdapterFast())
 
         lazy_file_data = Polars3DExpressions.process_mesh_projection_scaling(
@@ -133,3 +140,23 @@ class OBJToDIS(TaskStepBase, StepDefaultMarkers):
             )
 
         return export_groups
+
+    def render_lod(self, face: str, tile: ImgLODPosition, points: pl.LazyFrame,
+                   tris: pl.LazyFrame, face_lods_save_folder: FSPathLocalDisk, resolution: int = 512) -> LODImageTile[np.float64]:
+
+        rendered_lod: NDArray[np.float64] = ProjectionPlotting.rasterize_tris(
+            points, tris, face, tile.x_range, tile.y_range, (resolution, resolution))
+
+        lod_tile: LODImageTile[np.float64] = LODImageTile[np.float64](
+            tile=tile,
+            array_storage_folder_location=face_lods_save_folder.copy_from_folder(
+                Path("faces", f"face {face}"), self.output_markers
+            ),
+            array_storage_adapter=self.adapter,
+            array_memory=rendered_lod
+        )
+
+        # To reduce memory usage
+        lod_tile.unload_array_from_memory()
+
+        return lod_tile

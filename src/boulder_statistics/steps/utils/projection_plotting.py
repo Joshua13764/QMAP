@@ -1,5 +1,8 @@
+import operator
+from functools import reduce
+from math import e
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, List, Tuple
 
 import datashader as ds
 import datashader.transfer_functions as tf
@@ -11,6 +14,9 @@ import pandas as pd
 import polars as pl
 import scienceplots
 from numpy.typing import NDArray
+
+from boulder_statistics.steps.utils.polars_3D_expressions import (
+    PROJECTED_POINT_ATTRS, VERT_ID_COLS)
 
 # Plot settings
 matplotlib.use("Agg")
@@ -102,14 +108,50 @@ class ProjectionPlotting:
         plt.close(fig)
 
     @staticmethod
+    def get_verts_filter(
+            face: str, x_range: Tuple[float, float], y_range: Tuple[float, float]) -> pl.Expr:
+        verts_in_x_range: pl.Expr = (
+            (pl.col(f"{face}_u") > x_range[0]) &
+            (pl.col(f"{face}_u") < x_range[1])
+        )
+
+        verts_in_y_range: pl.Expr = (
+            (pl.col(f"{face}_v") > y_range[0]) &
+            (pl.col(f"{face}_v") < y_range[1])
+        )
+
+        return verts_in_x_range & verts_in_y_range
+
+    @staticmethod
+    def get_tris_filter(
+            face, x_range: Tuple[float, float], y_range: Tuple[float, float]) -> pl.Expr:
+
+        conditions: List[pl.Expr] = [
+            (
+                (pl.col(f"{face}_u{vertex_index}") > x_range[0]) &
+                (pl.col(f"{face}_u{vertex_index}") < x_range[1]) &
+
+                (pl.col(f"{face}_v{vertex_index}") > y_range[0]) &
+                (pl.col(f"{face}_v{vertex_index}") < y_range[1])
+            )
+            for vertex_index in VERT_ID_COLS
+        ]
+
+        return reduce(operator.and_, conditions)
+
+    @staticmethod
     def rasterize_tris(points: pl.LazyFrame,
                        tris: pl.LazyFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
 
-        pd_verts: pd.DataFrame = (points.select([f'{face}_u', f'{face}_v'])
+        pd_verts: pd.DataFrame = (points
+                                  .filter(ProjectionPlotting.get_verts_filter(face, x_range, y_range))
+                                  .select([f'{face}_u', f'{face}_v'])
                                   .rename({f'{face}_u': 'x', f'{face}_v': 'y'})
                                   .collect().to_pandas())
 
-        pd_tris: pd.DataFrame = (tris.select(['0', '1', '2', colour_column_name(face)])
+        pd_tris: pd.DataFrame = (tris
+                                 .filter(ProjectionPlotting.get_tris_filter(face, x_range, y_range))
+                                 .select(['0', '1', '2', colour_column_name(face)])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
                                      pl.col('1').cast(pl.Int32),

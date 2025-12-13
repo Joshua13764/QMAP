@@ -62,7 +62,10 @@ class LODImageTile(Generic[T]):
             adapter=self.array_storage_adapter
         )
 
-    def save_array_to_local_disk(self) -> None:
+    def save_array_to_local_disk(self, skip_if_unloaded_array=True) -> None:
+        if self.array_memory is None and skip_if_unloaded_array:
+            return
+
         FSEnvironment.save(
             obj=self.array,
             path=self.local_disk_save_path,

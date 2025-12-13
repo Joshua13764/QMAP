@@ -12,7 +12,7 @@ VERT_ID_COLS: List[str] = ["0", "1", "2"]
 class Polars3DExpressions:
 
     @staticmethod
-    def filter_faces_for_rasterization(
+    def filter_faces_for_rasterization_by_face(
             tris: pl.LazyFrame, face: str, eps_uv=1e-12) -> pl.LazyFrame:
         ensure_not_behind_plane: pl.Expr = (
             (pl.col(f"{face}_N0") > 0) &

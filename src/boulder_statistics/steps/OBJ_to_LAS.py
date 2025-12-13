@@ -44,7 +44,7 @@ class LodNode(CubeMapLodBase):
         y_range: Tuple[float, float] = (posY, posY + depth)
 
         points, tris = self.img
-        tris_filtered: pl.LazyFrame = Polars3DExpressions.filter_faces_for_rasterization(
+        tris_filtered: pl.LazyFrame = Polars3DExpressions.filter_faces_for_rasterization_by_face(
             tris, face)
 
         relative_path: Path = Path(*self.src_file.path).parent / Path(
