@@ -137,20 +137,20 @@ class ProjectionPlotting:
             for vertex_index in VERT_ID_COLS
         ]
 
-        return reduce(operator.and_, conditions)
+        return reduce(operator.or_, conditions)
 
     @staticmethod
     def rasterize_tris(points: pl.LazyFrame,
                        tris: pl.LazyFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
 
         pd_verts: pd.DataFrame = (points
-                                  .filter(ProjectionPlotting.get_verts_filter(face, x_range, y_range))
+                                  #   .filter(ProjectionPlotting.get_verts_filter(face, x_range, y_range))
                                   .select([f'{face}_u', f'{face}_v'])
                                   .rename({f'{face}_u': 'x', f'{face}_v': 'y'})
                                   .collect().to_pandas())
 
         pd_tris: pd.DataFrame = (tris
-                                 .filter(ProjectionPlotting.get_tris_filter(face, x_range, y_range))
+                                 #  .filter(ProjectionPlotting.get_tris_filter(face, x_range, y_range))
                                  .select(['0', '1', '2', colour_column_name(face)])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
