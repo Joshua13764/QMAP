@@ -53,6 +53,7 @@ class LodFromProjectionRenderer():
                 Path("faces", f"face {self.face}"), self.output_markers
             ),
             array_storage_adapter=self.adapter,
+            array_storage_markers=self.output_markers,
             array_memory=rendered_lod,
         )
 

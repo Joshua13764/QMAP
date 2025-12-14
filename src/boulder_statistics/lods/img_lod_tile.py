@@ -1,13 +1,15 @@
 from dataclasses import dataclass, field
 from email.policy import default
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Generic, Tuple, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
+from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
+    FSMarkerBase
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
@@ -22,6 +24,7 @@ class LODImageTile(Generic[T]):
 
     array_storage_folder_location: FSPathLocalDisk
     array_storage_adapter: FSAdapterBase[NDArray[T], FSPathLocalDisk]
+    array_storage_markers: Tuple[FSMarkerBase, ...]
     array_memory: NDArray[T] | None = field(default=None)
 
     @property
@@ -60,7 +63,7 @@ class LODImageTile(Generic[T]):
         )
 
         local_disk_save_path: FSPathLocalDisk = self.array_storage_folder_location.copy_from_folder(
-            rel_path)
+            rel_path, markers=self.array_storage_markers)
 
         return local_disk_save_path
 
@@ -80,13 +83,3 @@ class LODImageTile(Generic[T]):
             path=self.local_disk_save_path,
             adapter=self.array_storage_adapter
         )
-
-    # @classmethod
-    # def from_file(cls, file_path: FSPathLocalDisk,
-    #               adapter: FSAdapterBase) -> "LODImageTile[T]":
-    #     lod_str_rep: str = file_path.actual_path.stem.split(" ")[2]
-
-    #     return cls(
-    #         get_array_action=lambda:),
-    #     tile = ImgLODPosition.from_string_rep(lod_str_rep)
-    #     )
