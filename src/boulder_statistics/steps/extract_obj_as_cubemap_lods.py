@@ -86,7 +86,7 @@ class ExtractOBJAsCubemapLods(TaskStepBase, StepDefaultMarkers):
             LodFromProjectionRenderer(self.output_markers, self.adapter,
                                       face, tile, points, tris, self.export_folder,
                                       resolution=self.export_resolution, verbose=self.verbose,
-                                      colour_column_name=self.colour_column_name)
+                                      colour_column_name=self.colour_column_name, skip_if_exists=self.skip_if_exists)
             for face in FACES
             for tile in LODImageUtils.get_all_lod_tiles(depth=self.depth)
         ]

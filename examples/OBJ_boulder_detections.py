@@ -34,7 +34,7 @@ get_local_area_scaling_lods = OBJToLAS(
     task_name=f"Convert bennu Mesh to stretch maps",
     run_after_task_names=(get_bennu_obj.task_name,),
     export_folder=FSPathLocalDisk(
-        path=tuple(),
+        path=tuple("Bennu mesh LQ OBJ to LAS"),
         markers=tuple(),
         root_path=detections_from_bennu_model.as_posix()),
     depth=4,
@@ -42,7 +42,7 @@ get_local_area_scaling_lods = OBJToLAS(
     input_markers=(FSMarkerString("ProjectModel"),),
     output_markers=(FSMarkerString("ProjectModel_LAS"),),
     adapter=FSNumpyAdapter(),
-    verbose=True
+    verbose=False
 )
 
 steps = [get_bennu_obj, get_local_area_scaling_lods]

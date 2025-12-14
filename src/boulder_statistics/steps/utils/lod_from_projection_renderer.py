@@ -30,6 +30,7 @@ class LodFromProjectionRenderer():
     face_lods_save_folder: FSPathLocalDisk
     resolution: int = field(default=512)
     verbose: bool = field(default=False)
+    skip_if_exists: bool = field(default=True)
     colour_column_name: Callable[[str], str] = field(
         default=lambda face: f'{face}_ratio')
 
@@ -52,11 +53,11 @@ class LodFromProjectionRenderer():
                 Path("faces", f"face {self.face}"), self.output_markers
             ),
             array_storage_adapter=self.adapter,
-            array_memory=rendered_lod
+            array_memory=rendered_lod,
         )
 
         if self.verbose:
-            print("Applying to tile")
+            print("Created tile")
 
         # To reduce memory usage save and unload
         lod_tile.unload_array_from_memory(save_if_in_memory=True)

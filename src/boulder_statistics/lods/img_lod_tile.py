@@ -36,6 +36,10 @@ class LODImageTile(Generic[T]):
 
         return self.array_memory
 
+    def set_array_from_memory(self, array: NDArray[T]) -> None:
+        self.array_memory = array.copy()
+        self.save_array_to_local_disk()
+
     def unload_array_from_memory(self, save_if_in_memory=True) -> None:
         if save_if_in_memory and self.array_memory is not None:
             self.save_array_to_local_disk()
@@ -47,6 +51,8 @@ class LODImageTile(Generic[T]):
 
         lod_str_rep: str = self.tile.string_rep
         lod_number: int = self.tile.lod_number
+
+        assert self.array is not None
 
         rel_path: Path = Path(
             f"lod {lod_number}", f"lod tile {lod_str_rep} with shape {
