@@ -36,7 +36,10 @@ class LODImageTile(Generic[T]):
 
         return self.array_memory
 
-    def unload_array_from_memory(self) -> None:
+    def unload_array_from_memory(self, save_if_in_memory=True) -> None:
+        if save_if_in_memory and self.array_memory is not None:
+            self.save_array_to_local_disk()
+
         self.array_memory = None
 
     @property

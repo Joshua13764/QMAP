@@ -19,6 +19,7 @@ from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
+from boulder_statistics.steps.utils.cubemaps_shared import FACES
 from boulder_statistics.task_step_base import TaskStepBase
 
 Pair = Tuple[int, int]
@@ -70,10 +71,9 @@ class LodNode:
         return export_file
 
     def render_on_all_faces(self, target_width: int) -> List[FSPathLocalDisk]:
-        faces: List[str] = ["posx", "negx", "posy", "negy", "posz", "negz"]
         export_files: List[FSPathLocalDisk] = []
 
-        for face in faces:
+        for face in FACES:
             export_files.append(self.render_region(face, target_width))
 
         return export_files

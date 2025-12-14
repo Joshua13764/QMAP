@@ -1,10 +1,23 @@
 from graphlib import TopologicalSorter
+from itertools import product
 from typing import List
 
 from boulder_statistics.lods.img_lod_position import ImgLODPosition
 
 
 class LODImageUtils:
+
+    @staticmethod
+    def get_all_lod_tiles(depth: int) -> set[ImgLODPosition]:
+        iter_chars: List[str] = ["A", "B", "C", "D"]
+        combinations: map[str] = map(
+            ''.join, product(
+                iter_chars, repeat=depth))
+
+        lod_tiles: set[ImgLODPosition] = {ImgLODPosition.from_string_rep(
+            combination) for combination in combinations}
+
+        return lod_tiles
 
     @staticmethod
     def collect_possible_render_tile_positions(
