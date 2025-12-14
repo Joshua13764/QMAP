@@ -20,14 +20,12 @@ from boulder_statistics.file_storage_adapters.polars_obj_adapter_fast import \
     FSPolarsObjAdapterFast
 from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from boulder_statistics.steps.utils.cubemap_lod_base import CubeMapLodBase
+from boulder_statistics.steps.utils.cubemaps_shared import Pair, PairGroups
 from boulder_statistics.steps.utils.polars_3D_expressions import \
     Polars3DExpressions
 from boulder_statistics.steps.utils.projection_plotting import \
     ProjectionPlotting
 from boulder_statistics.task_step_base import TaskStepBase
-
-Pair = Tuple[int, int]
-PairGroups = Tuple[Pair, ...]
 
 
 @dataclass(frozen=True, slots=True)

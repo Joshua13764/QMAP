@@ -22,5 +22,8 @@
   "autopep8.args": [
     "--max-line-length", "79",
     "--aggressive"
+  ],
+  "cSpell.words": [
+    "Lods"
   ]
 }

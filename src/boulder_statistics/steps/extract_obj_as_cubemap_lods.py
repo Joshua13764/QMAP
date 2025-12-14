@@ -1,5 +1,7 @@
-from dataclasses import dataclass
-from typing import Any, List
+from dataclasses import dataclass, field
+from email.policy import default
+from pathlib import Path
+from typing import Any, Callable, List
 
 import numpy as np
 import polars as pl
@@ -29,13 +31,20 @@ from boulder_statistics.task_step_base import TaskStepBase
 
 
 @dataclass(frozen=True)
-class OBJToDIS(TaskStepBase, StepDefaultMarkers):
+class ExtractOBJAsCubemapLods(TaskStepBase, StepDefaultMarkers):
     lod_res: int
     depth: int
     skip_if_exists: bool
     debug_mode: bool
     export_folder: FSPathLocalDisk
     adapter: FSAdapterBase[NDArray[np.float64], FSPathLocalDisk]
+    message_prefix_generator: Callable[[int, Path], str] = field(
+        default=lambda depth, src_path: f"""Rendering features for lod_depth {depth} and model {
+            src_path.name}"""
+    )
+    n_jobs: int = field(default=1)
+    export_resolution: int = field(default=512)
+    verbose: bool = field(default=False)
 
     @property
     def hashable(self) -> tuple[Any, ...]:
@@ -72,7 +81,7 @@ class OBJToDIS(TaskStepBase, StepDefaultMarkers):
             message=f"""Rendering DIS for lod_depth {
                 self.depth} and model {
                 file.actual_path.name}""",
-            n_jobs=1
+            n_jobs=self.n_jobs
         )
 
         return [tile.local_disk_save_path for tile in result_tiles]
@@ -83,7 +92,7 @@ class OBJToDIS(TaskStepBase, StepDefaultMarkers):
         return [
             LodFromProjectionRenderer(self.output_markers, self.adapter,
                                       face, tile, points, tris, self.export_folder,
-                                      resolution=512, verbose=False)
+                                      resolution=self.export_resolution, verbose=self.verbose)
             for face in FACES
             for tile in LODImageUtils.get_all_lod_tiles(depth=self.depth)
         ]

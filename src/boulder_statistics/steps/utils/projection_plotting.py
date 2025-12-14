@@ -150,7 +150,7 @@ class ProjectionPlotting:
                                   .collect().to_pandas())
 
         pd_tris: pd.DataFrame = (tris
-                                 #  .filter(ProjectionPlotting.get_tris_filter(face, x_range, y_range))
+                                 .filter(ProjectionPlotting.get_tris_filter(face, x_range, y_range))
                                  .select(['0', '1', '2', colour_column_name(face)])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
