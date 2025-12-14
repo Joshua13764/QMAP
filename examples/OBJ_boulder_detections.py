@@ -1,8 +1,13 @@
 from pathlib import Path
+from tabnanny import verbose
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
+from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
+    FSPathLocalDisk
+from boulder_statistics.file_storage_adapters.numpy_adapter import \
+    FSNumpyAdapter
 from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.steps.OBJ_to_LAS import OBJToLAS
 from boulder_statistics.steps.simple_request import SimpleRequest
@@ -24,14 +29,20 @@ get_bennu_obj = SimpleRequest(
         FSMarkerString("ProjectModel"))
 )
 
+
 get_local_area_scaling_lods = OBJToLAS(
     task_name=f"Convert bennu Mesh to stretch maps",
     run_after_task_names=(get_bennu_obj.task_name,),
-    lod_res=512,
-    export_folder=detections_from_bennu_model.as_posix(),
-    depth=6,
+    export_folder=FSPathLocalDisk(
+        path=tuple(),
+        markers=tuple(),
+        root_path=detections_from_bennu_model.as_posix()),
+    depth=4,
     skip_if_exists=True,
-    debug_mode=False
+    input_markers=(FSMarkerString("ProjectModel"),),
+    output_markers=(FSMarkerString("ProjectModel_LAS"),),
+    adapter=FSNumpyAdapter(),
+    verbose=True
 )
 
 steps = [get_bennu_obj, get_local_area_scaling_lods]

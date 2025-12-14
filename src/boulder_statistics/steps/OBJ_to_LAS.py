@@ -7,7 +7,7 @@ from boulder_statistics.steps.extract_obj_as_cubemap_lods import \
 
 
 @dataclass(frozen=True)
-class OBJToDIS(ExtractOBJAsCubemapLods):
+class OBJToLAS(ExtractOBJAsCubemapLods):
     colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio'
     message_prefix_generator: Callable[[int, Path], str] = field(
         default=lambda depth, src_path: f"""Rendering LAS for lod_depth {depth} and model {
