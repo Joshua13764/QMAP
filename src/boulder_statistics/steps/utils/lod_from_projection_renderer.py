@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 import polars as pl
@@ -30,6 +30,8 @@ class LodFromProjectionRenderer():
     face_lods_save_folder: FSPathLocalDisk
     resolution: int = field(default=512)
     verbose: bool = field(default=False)
+    colour_column_name: Callable[[str], str] = field(
+        default=lambda face: f'{face}_ratio')
 
     @property
     def array_shape(self) -> Tuple[int, int]:

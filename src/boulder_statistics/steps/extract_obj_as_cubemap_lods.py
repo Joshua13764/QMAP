@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from email.policy import default
 from pathlib import Path
 from typing import Any, Callable, List
 
@@ -14,15 +13,10 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.file_storage_adapters.polars_obj_adapter_fast import \
     FSPolarsObjAdapterFast
-from boulder_statistics.lods.img_lod_position import ImgLODPosition
 from boulder_statistics.lods.img_lod_tile import LODImageTile
 from boulder_statistics.lods.lod_image_utils import LODImageUtils
 from boulder_statistics.step_default_markers import StepDefaultMarkers
-from boulder_statistics.steps.PAN_to_LOD import PANToLOD
-from boulder_statistics.steps.utils.cubemap_lod_base import CubeMapLodBase
-from boulder_statistics.steps.utils.cubemaps_shared import (FACES,
-                                                            LazyFileData, Pair,
-                                                            PairGroups)
+from boulder_statistics.steps.utils.cubemaps_shared import FACES, LazyFileData
 from boulder_statistics.steps.utils.lod_from_projection_renderer import \
     LodFromProjectionRenderer
 from boulder_statistics.steps.utils.polars_3D_expressions import \
@@ -32,12 +26,11 @@ from boulder_statistics.task_step_base import TaskStepBase
 
 @dataclass(frozen=True)
 class ExtractOBJAsCubemapLods(TaskStepBase, StepDefaultMarkers):
-    lod_res: int
     depth: int
     skip_if_exists: bool
-    debug_mode: bool
     export_folder: FSPathLocalDisk
     adapter: FSAdapterBase[NDArray[np.float64], FSPathLocalDisk]
+    colour_column_name: Callable[[str], str]
     message_prefix_generator: Callable[[int, Path], str] = field(
         default=lambda depth, src_path: f"""Rendering features for lod_depth {depth} and model {
             src_path.name}"""
@@ -49,7 +42,8 @@ class ExtractOBJAsCubemapLods(TaskStepBase, StepDefaultMarkers):
     @property
     def hashable(self) -> tuple[Any, ...]:
         return self.include_markers_in_hashable(
-            self.depth, self.export_folder, self.lod_res)
+            self.depth, self.export_folder, self.n_jobs,
+            self.export_resolution, self.verbose)
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
@@ -78,9 +72,8 @@ class ExtractOBJAsCubemapLods(TaskStepBase, StepDefaultMarkers):
         result_tiles: List[LODImageTile[np.float64]] = self.run_in_parallel(
             function=LodFromProjectionRenderer.render_lod,
             inputs=lod_from_projection_renderers,
-            message=f"""Rendering DIS for lod_depth {
-                self.depth} and model {
-                file.actual_path.name}""",
+            message=self.message_prefix_generator(
+                self.depth, file.actual_path),
             n_jobs=self.n_jobs
         )
 
@@ -92,7 +85,8 @@ class ExtractOBJAsCubemapLods(TaskStepBase, StepDefaultMarkers):
         return [
             LodFromProjectionRenderer(self.output_markers, self.adapter,
                                       face, tile, points, tris, self.export_folder,
-                                      resolution=self.export_resolution, verbose=self.verbose)
+                                      resolution=self.export_resolution, verbose=self.verbose,
+                                      colour_column_name=self.colour_column_name)
             for face in FACES
             for tile in LODImageUtils.get_all_lod_tiles(depth=self.depth)
         ]
