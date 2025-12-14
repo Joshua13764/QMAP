@@ -1,5 +1,4 @@
 from pathlib import Path
-from tabnanny import verbose
 from typing import List
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
