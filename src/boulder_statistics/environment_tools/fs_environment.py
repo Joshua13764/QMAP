@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from functools import reduce
 from os import scandir
-from typing import Callable, Counter, Dict, List, Set
+from typing import Callable, Counter, Dict, Generic, List, Set, TypeVar, cast
 
 from jinja2 import Environment
 from joblib import delayed
+from sympy import EX
 from tqdm_joblib import ParallelPbar
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
@@ -91,7 +92,22 @@ class FSEnvironment():
     @staticmethod
     def load[ObjType, PathType: FSPathBase](
             path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> ObjType:
-        return adapter.read(path)
+
+        # If has no extension
+        if isinstance(
+                path, FSPathLocalDisk) and path.actual_path.stem == path.actual_path.name:
+
+            if adapter.standard_extension is not None:
+                path_with_extension: FSPathLocalDisk = path.copy_with_extension(
+                    adapter.standard_extension)
+
+            else:
+                raise Exception(
+                    "Trying to read using a extension less path where the adapter has not specified a standard_extension")
+
+            return adapter.read(cast(PathType, path_with_extension))
+        else:
+            return adapter.read(path)
 
     @staticmethod
     def merge(envs: List['FSEnvironment']) -> 'FSEnvironment':

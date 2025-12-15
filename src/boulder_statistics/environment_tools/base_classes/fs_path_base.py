@@ -19,6 +19,7 @@ class FSPathBase(ABC):
     def make_directory(self) -> None:
         ...
 
+    @property
     @abstractmethod
     def exists(self) -> bool:
         ...

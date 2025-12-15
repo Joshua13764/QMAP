@@ -7,6 +7,8 @@ from boulder_statistics.environment_tools.base_classes.fs_path_base import \
 
 @dataclass(frozen=True)
 class FSAdapterBase[ObjType, PathType: FSPathBase](ABC):
+    standard_extension: str | None = field(default=None)
+
     @abstractmethod
     def write(self, obj: ObjType, path: PathType) -> None:
         ...

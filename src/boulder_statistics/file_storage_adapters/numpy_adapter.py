@@ -13,6 +13,7 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
 @dataclass(frozen=True)
 class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
     """Uses the np module to read / write arrays"""
+    standard_extension = "npy"
 
     def read(self, path: FSPathLocalDisk) -> NDArray[Any]:
         return np.load(path.actual_path.as_posix())

@@ -114,6 +114,8 @@ class LODImageTile(Generic[T]):
             array_shape=array_shape,
             array_memory=None)
 
+        print(shell.array_exist_in_local_disk and skip_if_exists)
+
         shell.array = shell.get_array_from_local_disk(
         ) if shell.array_exist_in_local_disk and skip_if_exists else get_array_action()
 
