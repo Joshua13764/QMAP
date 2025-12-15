@@ -81,6 +81,8 @@ class FSEnvironment():
     def save[ObjType, PathType: FSPathBase](
             obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType], skip_if_exists=False) -> FSPathBase:
 
+        path = FSEnvironment.correct_path_if_no_extension(path, adapter)
+
         if path.exists and skip_if_exists:
             return path
 
@@ -93,6 +95,21 @@ class FSEnvironment():
     def load[ObjType, PathType: FSPathBase](
             path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> ObjType:
 
+        path = FSEnvironment.correct_path_if_no_extension(path, adapter)
+
+        return adapter.read(path)
+
+    @staticmethod
+    def merge(envs: List['FSEnvironment']) -> 'FSEnvironment':
+        merged_paths: tuple[FSPathBase, ...] = tuple(
+            p for e in envs for p in e.paths)
+
+        return FSEnvironment(paths=merged_paths)
+
+    @staticmethod
+    def correct_path_if_no_extension[ObjType, PathType: FSPathBase](
+            path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> PathType:
+
         # If has no extension
         if isinstance(
                 path, FSPathLocalDisk) and path.actual_path.stem == path.actual_path.name:
@@ -103,15 +120,9 @@ class FSEnvironment():
 
             else:
                 raise Exception(
-                    "Trying to read using a extension less path where the adapter has not specified a standard_extension")
+                    "Trying to write using a extension less path where the adapter has not specified a standard_extension")
 
-            return adapter.read(cast(PathType, path_with_extension))
+            return cast(PathType, path_with_extension)
+
         else:
-            return adapter.read(path)
-
-    @staticmethod
-    def merge(envs: List['FSEnvironment']) -> 'FSEnvironment':
-        merged_paths: tuple[FSPathBase, ...] = tuple(
-            p for e in envs for p in e.paths)
-
-        return FSEnvironment(paths=merged_paths)
+            return path
