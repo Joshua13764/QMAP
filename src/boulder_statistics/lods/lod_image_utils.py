@@ -8,7 +8,16 @@ from boulder_statistics.lods.img_lod_position import ImgLODPosition
 class LODImageUtils:
 
     @staticmethod
-    def get_all_lod_tiles(depth: int) -> set[ImgLODPosition]:
+    def get_all_lod_tiles_for_depths(max_depth: int) -> set[ImgLODPosition]:
+        lod_tiles: set[ImgLODPosition] = set()
+
+        for depth in range(max_depth + 1):
+            lod_tiles |= LODImageUtils.get_all_lod_tiles_for_depth(depth)
+
+        return lod_tiles
+
+    @staticmethod
+    def get_all_lod_tiles_for_depth(depth: int) -> set[ImgLODPosition]:
         iter_chars: List[str] = ["A", "B", "C", "D"]
         combinations: map[str] = map(
             ''.join, product(

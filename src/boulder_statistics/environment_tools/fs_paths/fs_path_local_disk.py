@@ -24,6 +24,9 @@ class FSPathLocalDisk(FSPathBase):
             return self.actual_path.exists()
 
         else:
+            if self.actual_path.parent.exists() == False:
+                return False
+
             files_in_path: Set[str] = {
                 Path(name).stem for name in listdir(
                     self.actual_path.parent)}
