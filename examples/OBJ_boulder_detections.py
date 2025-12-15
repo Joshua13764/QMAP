@@ -32,7 +32,7 @@ get_bennu_obj = SimpleRequest(
 
 
 get_local_area_scaling_lods = OBJToLAS(
-    task_name=f"Convert bennu Mesh to stretch maps",
+    task_name=f"Convert bennu Mesh to LAS maps",
     run_after_task_names=(get_bennu_obj.task_name,),
     export_folder=FSPathLocalDisk(
         path=("Bennu mesh LQ OBJ to LAS",),
