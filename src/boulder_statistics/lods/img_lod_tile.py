@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
-from email.policy import default
 from pathlib import Path
-from typing import Generic, Tuple, TypeVar
+from typing import Callable, Generic, Tuple, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -25,29 +24,47 @@ class LODImageTile(Generic[T]):
     array_storage_folder_location: FSPathLocalDisk
     array_storage_adapter: FSAdapterBase[NDArray[T], FSPathLocalDisk]
     array_storage_markers: Tuple[FSMarkerBase, ...]
-    array_memory: NDArray[T] | None = field(default=None)
+    array_shape: Tuple[int, ...]
+    array_memory: NDArray[T] | None
+
+    cache_array_loads: bool = field(default=True)
+    auto_update_local_disk_upon_array_set: bool = field(default=True)
 
     @property
     def array(self) -> NDArray[T]:
-        """Used to lazily generate the array and then cache the result
 
-        Returns:
-            NDArray[T]: _description_
-        """
-        if self.array_memory is None:
-            self.array_memory = self.array_from_local_disk
+        if self.array_memory is not None:
+            return self.array_memory.copy()
 
-        return self.array_memory
+        elif self.array_exist_in_local_disk == True and self.cache_array_loads == True:
+            self.array = self.get_array_from_local_disk()
+            return self.array
 
-    def set_array_from_memory(self, array: NDArray[T]) -> None:
-        self.array_memory = array.copy()
-        self.save_array_to_local_disk()
+        elif self.array_exist_in_local_disk == True and self.cache_array_loads == False:
+            return self.get_array_from_local_disk()
 
-    def unload_array_from_memory(self, save_if_in_memory=True) -> None:
-        if save_if_in_memory and self.array_memory is not None:
-            self.save_array_to_local_disk()
+        elif self.array_exist_in_local_disk == False:
+            raise NotADirectoryError(
+                "Cannot find an array in either memory or local disk for the LODImageTile")
 
-        self.array_memory = None
+        else:
+            raise NotImplementedError("Unhandled condition")
+
+    @array.setter
+    def array(self, value: NDArray[T]) -> None:
+
+        if self.array_shape != value.shape:
+            raise Exception("Array shape mismatch for setter")
+
+        else:
+            self.array_memory = value
+
+            if self.auto_update_local_disk_upon_array_set:
+                self.save_array_to_local_disk()
+
+    @property
+    def array_exist_in_local_disk(self) -> bool:
+        return self.local_disk_save_path.exists
 
     @property
     def local_disk_save_path(self) -> FSPathLocalDisk:
@@ -55,11 +72,9 @@ class LODImageTile(Generic[T]):
         lod_str_rep: str = self.tile.string_rep
         lod_number: int = self.tile.lod_number
 
-        assert self.array is not None
-
         rel_path: Path = Path(
             f"lod {lod_number}", f"lod tile {lod_str_rep} with shape {
-                self.array.shape}"
+                self.array_shape}"
         )
 
         local_disk_save_path: FSPathLocalDisk = self.array_storage_folder_location.copy_from_folder(
@@ -67,8 +82,10 @@ class LODImageTile(Generic[T]):
 
         return local_disk_save_path
 
-    @property
-    def array_from_local_disk(self) -> NDArray[T]:
+    def unload_array_from_memory(self) -> None:
+        self.array_memory = None
+
+    def get_array_from_local_disk(self) -> NDArray[T]:
         return FSEnvironment.load(
             path=self.local_disk_save_path,
             adapter=self.array_storage_adapter
@@ -83,3 +100,21 @@ class LODImageTile(Generic[T]):
             path=self.local_disk_save_path,
             adapter=self.array_storage_adapter
         )
+
+    @classmethod
+    def from_get_array_action(cls, tile: ImgLODPosition, array_storage_folder_location: FSPathLocalDisk, array_storage_adapter:
+                              FSAdapterBase[NDArray[T], FSPathLocalDisk], array_storage_markers: Tuple[FSMarkerBase, ...],
+                              get_array_action: Callable[[], NDArray[T]], array_shape: Tuple[int, ...], skip_if_exists=True) -> "LODImageTile[T]":
+
+        shell: "LODImageTile[T]" = cls(
+            tile=tile,
+            array_storage_folder_location=array_storage_folder_location,
+            array_storage_adapter=array_storage_adapter,
+            array_storage_markers=array_storage_markers,
+            array_shape=array_shape,
+            array_memory=None)
+
+        shell.array = shell.get_array_from_local_disk(
+        ) if shell.array_exist_in_local_disk and skip_if_exists else get_array_action()
+
+        return shell

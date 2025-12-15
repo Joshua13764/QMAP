@@ -40,30 +40,24 @@ class LodFromProjectionRenderer():
 
     def render_lod(self) -> LODImageTile[np.float64]:
 
-        rendered_lod: NDArray[np.float64] = ProjectionPlotting.rasterize_tris(
+        get_rendered_lod_action: Callable[[], NDArray[np.float64]] = lambda: ProjectionPlotting.rasterize_tris(
             self.points, self.tris, self.face, self.tile.x_range, self.tile.y_range,
             self.array_shape)
 
-        if self.verbose:
-            print("Rasterized LOD tris")
-
-        lod_tile: LODImageTile[np.float64] = LODImageTile[np.float64](
+        lod_tile: LODImageTile[np.float64] = LODImageTile[np.float64].from_get_array_action(
             tile=self.tile,
             array_storage_folder_location=self.face_lods_save_folder.copy_from_folder(
                 Path("faces", f"face {self.face}"), self.output_markers
             ),
             array_storage_adapter=self.adapter,
             array_storage_markers=self.output_markers,
-            array_memory=rendered_lod,
+            get_array_action=get_rendered_lod_action,
+            array_shape=self.array_shape,
+            skip_if_exists=True
         )
 
-        if self.verbose:
-            print("Created tile")
-
-        # To reduce memory usage save and unload
-        lod_tile.unload_array_from_memory(save_if_in_memory=True)
-
-        if self.verbose:
-            print("Unloading from memory")
+        # To reduce memory usage (since created it would have already saved so
+        # ok to free up)
+        lod_tile.unload_array_from_memory()
 
         return lod_tile

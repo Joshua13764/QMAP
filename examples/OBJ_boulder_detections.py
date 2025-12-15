@@ -9,6 +9,7 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
 from boulder_statistics.result_cache import ResultCache
+from boulder_statistics.steps.OBJ_to_DIS import OBJToDIS
 from boulder_statistics.steps.OBJ_to_LAS import OBJToLAS
 from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
@@ -45,11 +46,26 @@ get_local_area_scaling_lods = OBJToLAS(
     verbose=False
 )
 
-steps = [get_bennu_obj, get_local_area_scaling_lods]
+get_displacement_lods = OBJToDIS(
+    task_name=f"Convert bennu Mesh to displacement maps",
+    run_after_task_names=(get_bennu_obj.task_name,),
+    export_folder=FSPathLocalDisk(
+        path=("Bennu mesh LQ OBJ to DIS",),
+        markers=tuple(),
+        root_path=detections_from_bennu_model.as_posix()),
+    depth=4,
+    skip_if_exists=True,
+    input_markers=(FSMarkerString("ProjectModel"),),
+    output_markers=(FSMarkerString("ProjectModel_DIS"),),
+    adapter=FSNumpyAdapter(),
+    verbose=False
+)
+
+steps = [get_bennu_obj, get_local_area_scaling_lods, get_displacement_lods]
 
 if __name__ == "__main__":
     cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](
         cache_folder=Path(".cache"), result_type=FSEnvironment)
 
     futures: dict[str, FSEnvironment] = StepsOrchestrator.run_tasks_with_dependencies(
-        [get_local_area_scaling_lods], steps, cache)
+        [get_local_area_scaling_lods, get_displacement_lods], steps, cache)
