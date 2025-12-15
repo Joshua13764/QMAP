@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import ClassVar
 
 from boulder_statistics.environment_tools.base_classes.fs_path_base import \
     FSPathBase
@@ -7,7 +8,7 @@ from boulder_statistics.environment_tools.base_classes.fs_path_base import \
 
 @dataclass(frozen=True)
 class FSAdapterBase[ObjType, PathType: FSPathBase](ABC):
-    standard_extension: str | None = field(default=None)
+    standard_extension: ClassVar[str | None] = None
 
     @abstractmethod
     def write(self, obj: ObjType, path: PathType) -> None:
