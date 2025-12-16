@@ -15,6 +15,16 @@ class TaskStepBase(StepBase):
     def run(self, env: FSEnvironment) -> FSEnvironment:
         ...
 
+    def run_actions_in_parallel[O](self, functions: List[Callable[[], O]],
+                                   message="", n_jobs=-1):
+
+        return self.run_in_parallel(
+            function=lambda func: func(),
+            inputs=functions,
+            message=message,
+            n_jobs=n_jobs,
+        )
+
     def run_in_parallel[I, O](
             self, function: Callable[[I], O], inputs: Iterable[I],
             message="", n_jobs=-1) -> List[O]:
