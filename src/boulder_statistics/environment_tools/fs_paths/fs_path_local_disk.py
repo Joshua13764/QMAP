@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from os import listdir
 from pathlib import Path
-from typing import Set
+from typing import Set, Tuple
 
 from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
@@ -35,6 +35,18 @@ class FSPathLocalDisk(FSPathBase):
 
     def make_directory(self) -> None:
         self.actual_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def transfer_root(self, src_root: "FSPathLocalDisk",
+                      dst_root: "FSPathLocalDisk", markers: Tuple[FSMarkerBase, ...]) -> "FSPathLocalDisk":
+
+        relative_path: Path = self.actual_path.relative_to(
+            src_root.actual_path)
+        new_sub_path: Path = Path(*dst_root.path) / relative_path
+
+        return dst_root.copy_from_folder(
+            new_sub_path=new_sub_path,
+            markers=markers
+        )
 
     def copy_as_new(self, new_root_path: Path,
                     new_extension: str, markers: tuple[FSMarkerBase, ...] = ()) -> 'FSPathLocalDisk':

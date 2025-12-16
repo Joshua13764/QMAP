@@ -1,5 +1,10 @@
 from pathlib import Path
 from tabnanny import verbose
+from typing import Optional
+
+import numpy as np
+from numpy.typing import NDArray
+from scipy.ndimage import gaussian_filter
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
@@ -13,7 +18,9 @@ from boulder_statistics.file_storage_adapters.numpy_adapter_matrix_plot import \
 from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.steps.OBJ_to_DIS import OBJToDIS
 from boulder_statistics.steps.OBJ_to_LAS import OBJToLAS
-from boulder_statistics.steps.simple_function_import_export import SimpleFunctionImportExport
+from boulder_statistics.steps.simple_function_apply import SimpleFunctionApply
+from boulder_statistics.steps.simple_function_import_export import \
+    SimpleFunctionImportExport
 from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
@@ -81,7 +88,6 @@ get_displacement_lods = OBJToDIS(
     adapter=FSNumpyAdapter(),
     verbose=False
 )
-
 plot_displacement_lods_plotted = OBJToDIS(
     task_name=f"Convert bennu Mesh to displacement maps (plotted)",
     run_after_task_names=(get_bennu_obj.task_name,),
@@ -100,8 +106,27 @@ plot_displacement_lods_plotted = OBJToDIS(
     verbose=False
 )
 
-apply_blur_to_displacement_lods = SimpleFunctionImportExport(
-    adapter=)
+
+def blur_by_fraction(img: NDArray[np.float64],
+                     fraction: float = 0.5, truncate: float = 4.0) -> NDArray[np.float64]:
+    return gaussian_filter(img, sigma=max(img.shape) *
+                           fraction, truncate=truncate)
+
+
+size = 0.5
+apply_blur_to_displacement_lods = SimpleFunctionApply(
+    task_name=f"Apply a LPF of {size} bennu Mesh displacement maps",
+    input_markers=(FSMarkerString("ProjectModel_DIS"),),
+    output_markers=(FSMarkerString("ProjectModel_DIS_LPF"),),
+    read_adapter=FSNumpyAdapter(),
+    write_adapter=FSNumpyAdapter(),
+    function_to_apply=lambda img: blur_by_fraction(img, fraction=size),
+    import_folder=export_folder=FSPathLocalDisk(
+        path=(f"Bennu mesh LQ OBJ to DIS LPF size {size}",),
+        markers=tuple(),
+        root_path=detections_from_bennu_model.as_posix()),
+
+)
 
 steps = [get_bennu_obj, get_local_area_scaling_lods, get_displacement_lods,
          get_local_area_scaling_lods_plotted, get_local_area_scaling_lods_plotted]

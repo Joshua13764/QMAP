@@ -19,6 +19,8 @@ from boulder_statistics.task_step_base import TaskStepBase
 class SimpleFunctionApply[T](TaskStepBase, StepDefaultMarkers):
     read_adapter: FSAdapterBase[T, FSPathLocalDisk]
     write_adapter: FSAdapterBase[T, FSPathLocalDisk]
+    import_folder: FSPathLocalDisk
+    export_folder: FSPathLocalDisk
     function_to_apply: Callable[[T], T] = field(
         hash=False, repr=False, compare=False)
     output_name_prefix_no_extension: str = field(default="")
@@ -33,6 +35,10 @@ class SimpleFunctionApply[T](TaskStepBase, StepDefaultMarkers):
         export_files: List[FSPathLocalDisk] = [file.copy_with_stem_prefix_and_suffix(
             stem_prefix=self.output_name_prefix_no_extension, stem_suffix=self.output_name_suffix_no_extension, markers=self.output_markers)
             for file in files_to_apply_to]
+
+        self.export_folder.copy_from_folder(
+            Path("faces", f"face {self.face}"), self.output_markers
+        ),
 
         run_for_obj: Callable[[FSPathLocalDisk, FSPathLocalDisk], FSPathBase] = SimpleFunctionApply.get_apply_action(
             function=self.function_to_apply,
