@@ -1,5 +1,6 @@
 
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any, Callable, List
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
@@ -55,10 +56,10 @@ class SimpleFunctionApply[T](TaskStepBase, StepDefaultMarkers):
             write_adapter=self.write_adapter,
         )
 
-        run_actions: List[Callable[[], FSPathBase]] = [
-            lambda: run_for_obj(in_path, out_path)
+        run_actions: List[partial[FSPathBase]] = [
+            partial(run_for_obj, in_path, out_path)
             for in_path, out_path in zip(files_to_apply_to, export_files)
-            if out_path.exists == False
+            if not out_path.exists
         ]
 
         self.run_actions_in_parallel(
