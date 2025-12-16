@@ -46,12 +46,8 @@ class SimpleFunctionApply[T](TaskStepBase, StepDefaultMarkers):
             if out_path.exists == False
         ]
 
-        self.run_in_parallel()
-        # ParallelPbar(
-        #     f"Processing objects for task {self.task_name}", unit="object")(n_jobs=-1)(
-        #     delayed(run_for_obj)(in_path, out_path)
-        #     for in_path, out_path in zip(files_to_apply_to, export_files)
-        # )
+        self.run_actions_in_parallel(
+            run_actions, message="Running simple function apply actions in parallel", unit="file", n_jobs=self.n_jobs)
 
         return FSEnvironment(paths=tuple(export_files))
 

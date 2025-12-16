@@ -16,20 +16,21 @@ class TaskStepBase(StepBase):
         ...
 
     def run_actions_in_parallel[O](self, functions: List[Callable[[], O]],
-                                   message="", n_jobs=-1):
+                                   message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:
 
         return self.run_in_parallel(
             function=lambda func: func(),
             inputs=functions,
             message=message,
             n_jobs=n_jobs,
+            unit=unit,
         )
 
     def run_in_parallel[I, O](
             self, function: Callable[[I], O], inputs: Iterable[I],
-            message="", n_jobs=-1) -> List[O]:
+            message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:
 
-        parallel_results_raw = ParallelPbar(message)(n_jobs=n_jobs)(
+        parallel_results_raw = ParallelPbar(message, unit=unit)(n_jobs=n_jobs)(
             delayed(function)(input)
             for input in inputs
         )
