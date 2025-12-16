@@ -62,7 +62,7 @@ class SimpleFunctionApply[T](TaskStepBase, StepDefaultMarkers):
         ]
 
         self.run_actions_in_parallel(
-            run_actions, message="Running simple function apply actions in parallel", unit="file", n_jobs=self.n_jobs)
+            run_actions, message="Running simple function apply actions in parallel", unit="files", n_jobs=self.n_jobs)
 
         return FSEnvironment(paths=tuple(export_files))
 
