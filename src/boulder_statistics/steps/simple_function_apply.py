@@ -1,11 +1,9 @@
 
 from dataclasses import dataclass, field
-from typing import Callable, List
+from typing import Any, Callable, List
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
-from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
-    FSMarkerBase
 from boulder_statistics.environment_tools.base_classes.fs_path_base import \
     FSPathBase
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
@@ -27,18 +25,29 @@ class SimpleFunctionApply[T](TaskStepBase, StepDefaultMarkers):
     output_name_suffix_no_extension: str = field(default="")
     n_jobs: int = field(default=1)
 
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return self.include_markers_in_hashable(
+            self.read_adapter, self.write_adapter, self.import_folder,
+            self.export_folder, self.output_name_prefix_no_extension,
+            self.output_name_suffix_no_extension)
+
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
         files_to_apply_to: List[FSPathLocalDisk] = self.get_files_with_markers(
             env)
 
-        export_files: List[FSPathLocalDisk] = [file.copy_with_stem_prefix_and_suffix(
+        files_to_apply_to_stem_changes: List[FSPathLocalDisk] = [file.copy_with_stem_prefix_and_suffix(
             stem_prefix=self.output_name_prefix_no_extension, stem_suffix=self.output_name_suffix_no_extension, markers=self.output_markers)
             for file in files_to_apply_to]
 
-        self.export_folder.copy_from_folder(
-            Path("faces", f"face {self.face}"), self.output_markers
-        ),
+        export_files: List[FSPathLocalDisk] = [
+            file.transfer_root(
+                self.import_folder,
+                self.export_folder,
+                markers=self.output_markers)
+            for file in files_to_apply_to_stem_changes
+        ]
 
         run_for_obj: Callable[[FSPathLocalDisk, FSPathLocalDisk], FSPathBase] = SimpleFunctionApply.get_apply_action(
             function=self.function_to_apply,

@@ -121,11 +121,14 @@ apply_blur_to_displacement_lods = SimpleFunctionApply(
     read_adapter=FSNumpyAdapter(),
     write_adapter=FSNumpyAdapter(),
     function_to_apply=lambda img: blur_by_fraction(img, fraction=size),
-    import_folder=export_folder=FSPathLocalDisk(
+    import_folder=FSPathLocalDisk(
+        path=(f"Bennu mesh LQ OBJ to DIS",),
+        markers=tuple(),
+        root_path=detections_from_bennu_model.as_posix()),
+    export_folder=FSPathLocalDisk(
         path=(f"Bennu mesh LQ OBJ to DIS LPF size {size}",),
         markers=tuple(),
         root_path=detections_from_bennu_model.as_posix()),
-
 )
 
 steps = [get_bennu_obj, get_local_area_scaling_lods, get_displacement_lods,
