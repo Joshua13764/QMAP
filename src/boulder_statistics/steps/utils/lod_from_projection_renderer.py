@@ -28,11 +28,10 @@ class LodFromProjectionRenderer():
     points: pl.LazyFrame
     tris: pl.LazyFrame
     face_lods_save_folder: FSPathLocalDisk
+    colour_column_name: Callable[[str], str]
     resolution: int = field(default=512)
     verbose: bool = field(default=False)
     skip_if_exists: bool = field(default=True)
-    colour_column_name: Callable[[str], str] = field(
-        default=lambda face: f'{face}_ratio')
 
     @property
     def array_shape(self) -> Tuple[int, int]:
@@ -42,7 +41,7 @@ class LodFromProjectionRenderer():
 
         get_rendered_lod_action: Callable[[], NDArray[np.float64]] = lambda: ProjectionPlotting.rasterize_tris(
             self.points, self.tris, self.face, self.tile.x_range, self.tile.y_range,
-            self.array_shape)
+            self.array_shape, colour_column_name=self.colour_column_name)
 
         lod_tile: LODImageTile[np.float64] = LODImageTile[np.float64].from_get_array_action(
             tile=self.tile,
