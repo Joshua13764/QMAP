@@ -156,9 +156,9 @@ class ProjectionPlotting:
             [f"{face}_v0", f"{face}_v1", f"{face}_v2"])
 
         triangle_render_condition: pl.Expr = (
-            (tri_min_x >= pl.lit(x_min)) &
-            (tri_max_x <= pl.lit(x_max)) &
-            (tri_min_y >= pl.lit(y_min)) &
+            (tri_min_x >= pl.lit(x_min)) |
+            (tri_max_x <= pl.lit(x_max)) |
+            (tri_min_y >= pl.lit(y_min)) |
             (tri_max_y <= pl.lit(y_max))
         )
 
@@ -169,6 +169,7 @@ class ProjectionPlotting:
                        tris: pl.LazyFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
 
         pd_verts: pd.DataFrame = (points
+
                                   .select([f'{face}_u', f'{face}_v'])
                                   .rename({f'{face}_u': 'x', f'{face}_v': 'y'})
                                   .collect().to_pandas())

@@ -45,8 +45,10 @@ class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
     def export_debug_plot(
             self, obj: NDArray[Any], path: FSPathLocalDisk) -> None:
 
+        transformed_obj: NDArray[Any] = self.transform(obj)
+
         fig, ax = plt.subplots(figsize=(5, 5))
-        im = ax.imshow(obj, origin="upper",
+        im = ax.imshow(transformed_obj, origin="upper",
                        extent=(0, 1, 0, 1), aspect="equal")
 
         ax.set_xlabel("u")
