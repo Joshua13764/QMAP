@@ -47,7 +47,7 @@ class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
 
         fig, ax = plt.subplots(figsize=(5, 5))
         im = ax.imshow(obj, origin="upper",
-                       extent=[0, 1, 0, 1], aspect="equal")
+                       extent=(0, 1, 0, 1), aspect="equal")
 
         ax.set_xlabel("u")
         ax.set_ylabel("v")
