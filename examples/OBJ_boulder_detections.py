@@ -12,8 +12,6 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
-from boulder_statistics.file_storage_adapters.numpy_adapter_matrix_plot import \
-    FSNumpyAdapterMatrixPlot
 from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.steps.OBJ_to_DIS import OBJToDIS
 from boulder_statistics.steps.OBJ_to_LAS import OBJToLAS
@@ -98,7 +96,7 @@ plot_displacement_lods_plotted = OBJToDIS(
     skip_if_exists=True,
     input_markers=(FSMarkerString("ProjectModel"),),
     output_markers=(FSMarkerString("ProjectModel_DIS_plot"),),
-    adapter=FSNumpyAdapterMatrixPlot(
+    adapter=FSNumpyAdapter(
         title="Bennu mesh LQ OBJ to DIS (plotted)",
         colour_bar_title="radius"
     ),

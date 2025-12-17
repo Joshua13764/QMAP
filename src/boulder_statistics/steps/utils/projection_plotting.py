@@ -128,11 +128,11 @@ class ProjectionPlotting:
 
         conditions: List[pl.Expr] = [
             (
-                (pl.col(f"{face}_u{vertex_index}") > x_range[0]) &
-                (pl.col(f"{face}_u{vertex_index}") < x_range[1]) &
+                (pl.col(f"{face}_u{vertex_index}") >= x_range[0]) &
+                (pl.col(f"{face}_u{vertex_index}") <= x_range[1]) &
 
-                (pl.col(f"{face}_v{vertex_index}") > y_range[0]) &
-                (pl.col(f"{face}_v{vertex_index}") < y_range[1])
+                (pl.col(f"{face}_v{vertex_index}") >= y_range[0]) &
+                (pl.col(f"{face}_v{vertex_index}") <= y_range[1])
             )
             for vertex_index in VERT_ID_COLS
         ]
@@ -140,17 +140,41 @@ class ProjectionPlotting:
         return reduce(operator.or_, conditions)
 
     @staticmethod
+    def get_lazy_filter_tris_not_in_view(
+            face, x_range: Tuple[float, float], y_range: Tuple[float, float]) -> pl.Expr:
+
+        x_min, x_max = min(x_range), max(x_range)
+        y_min, y_max = min(y_range), max(y_range)
+
+        tri_min_x: pl.Expr = pl.min_horizontal(
+            [f"{face}_u0", f"{face}_u1", f"{face}_u2"])
+        tri_max_x: pl.Expr = pl.max_horizontal(
+            [f"{face}_u0", f"{face}_u1", f"{face}_u2"])
+        tri_min_y: pl.Expr = pl.min_horizontal(
+            [f"{face}_v0", f"{face}_v1", f"{face}_v2"])
+        tri_max_y: pl.Expr = pl.max_horizontal(
+            [f"{face}_v0", f"{face}_v1", f"{face}_v2"])
+
+        triangle_render_condition: pl.Expr = (
+            (tri_min_x >= pl.lit(x_min)) &
+            (tri_max_x <= pl.lit(x_max)) &
+            (tri_min_y >= pl.lit(y_min)) &
+            (tri_max_y <= pl.lit(y_max))
+        )
+
+        return triangle_render_condition
+
+    @staticmethod
     def rasterize_tris(points: pl.LazyFrame,
                        tris: pl.LazyFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
 
         pd_verts: pd.DataFrame = (points
-                                  #   .filter(ProjectionPlotting.get_verts_filter(face, x_range, y_range))
                                   .select([f'{face}_u', f'{face}_v'])
                                   .rename({f'{face}_u': 'x', f'{face}_v': 'y'})
                                   .collect().to_pandas())
 
         pd_tris: pd.DataFrame = (tris
-                                 .filter(ProjectionPlotting.get_tris_filter(face, x_range, y_range))
+                                 .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(face, x_range, y_range))
                                  .select(['0', '1', '2', colour_column_name(face)])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
