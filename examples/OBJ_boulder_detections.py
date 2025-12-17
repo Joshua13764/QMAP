@@ -49,25 +49,11 @@ get_local_area_scaling_lods = OBJToLAS(
     skip_if_exists=True,
     input_markers=(FSMarkerString("ProjectModel"),),
     output_markers=(FSMarkerString("ProjectModel_LAS"),),
-    adapter=FSNumpyAdapter(),
-    verbose=False
-)
-
-get_local_area_scaling_lods_plotted = OBJToLAS(
-    task_name=f"Convert bennu Mesh to LAS maps (plotted)",
-    run_after_task_names=(get_bennu_obj.task_name,),
-    export_folder=FSPathLocalDisk(
-        path=("Bennu mesh LQ OBJ to LAS (plotted)",),
-        markers=tuple(),
-        root_path=detections_from_bennu_model.as_posix()),
-    depth=4,
-    skip_if_exists=True,
-    input_markers=(FSMarkerString("ProjectModel"),),
-    output_markers=(FSMarkerString("ProjectModel_LAS_plot"),),
-    adapter=FSNumpyAdapterMatrixPlot(
-        title="Bennu mesh LQ LAS to DIS (plotted)",
-        colour_bar_title="local area scale factor"
-    ),
+    adapter=FSNumpyAdapter(
+        export_debug_plots=True,
+        title="LAS export",
+        transform=lambda x: 1 / x,
+        colour_bar_title="1 / LAS factor"),
     verbose=False
 )
 
@@ -82,86 +68,75 @@ get_displacement_lods = OBJToDIS(
     skip_if_exists=True,
     input_markers=(FSMarkerString("ProjectModel"),),
     output_markers=(FSMarkerString("ProjectModel_DIS"),),
-    adapter=FSNumpyAdapter(),
-    verbose=False
-)
-plot_displacement_lods_plotted = OBJToDIS(
-    task_name=f"Convert bennu Mesh to displacement maps (plotted)",
-    run_after_task_names=(get_bennu_obj.task_name,),
-    export_folder=FSPathLocalDisk(
-        path=("Bennu mesh LQ OBJ to DIS (plotted)",),
-        markers=tuple(),
-        root_path=detections_from_bennu_model.as_posix()),
-    depth=4,
-    skip_if_exists=True,
-    input_markers=(FSMarkerString("ProjectModel"),),
-    output_markers=(FSMarkerString("ProjectModel_DIS_plot"),),
     adapter=FSNumpyAdapter(
-        title="Bennu mesh LQ OBJ to DIS (plotted)",
-        colour_bar_title="radius"
+        export_debug_plots=True,
+        title="DIS export",
+        colour_bar_title="DIS factor"
     ),
     verbose=False
 )
 
 
-def blur_by_fraction(img: NDArray[np.float64],
-                     fraction: float = 0.5, truncate: float = 4.0) -> NDArray[np.float64]:
-    return gaussian_filter(img, sigma=max(img.shape) *
-                           fraction, truncate=truncate)
+# def blur_by_fraction(img: NDArray[np.float64],
+#                      fraction: float = 0.5, truncate: float = 4.0) -> NDArray[np.float64]:
+#     return gaussian_filter(img, sigma=max(img.shape) *
+#                            fraction, truncate=truncate)
 
 
-apply_blur_to_displacement_lods_tasks: List[SimpleFunctionApply[NDArray[np.float64]]] = [
-]
+# apply_blur_to_displacement_lods_tasks: List[SimpleFunctionApply[NDArray[np.float64]]] = [
+# ]
 
-sizes: List[float] = [1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32]
-for size in sizes:
+# sizes: List[float] = [1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32]
+# for size in sizes:
 
-    apply_blur_to_displacement_lods_tasks.append(SimpleFunctionApply(
-        task_name=f"Apply a LPF of {size} to bennu Mesh displacement maps",
-        run_after_task_names=(get_displacement_lods.task_name,),
-        input_markers=(FSMarkerString("ProjectModel_DIS"),),
-        output_markers=(FSMarkerString("ProjectModel_DIS_LPF"),),
-        read_adapter=FSNumpyAdapter(),
-        write_adapter=FSNumpyAdapter(),
-        function_to_apply=lambda img: blur_by_fraction(img, fraction=size),
-        import_folder=FSPathLocalDisk(
-            path=(f"Bennu mesh LQ OBJ to DIS",),
-            markers=tuple(),
-            root_path=detections_from_bennu_model.as_posix()),
-        export_folder=FSPathLocalDisk(
-            path=(f"Bennu mesh LQ OBJ to DIS LPF size {size}",),
-            markers=tuple(),
-            root_path=detections_from_bennu_model.as_posix()),
-        n_jobs=4
-    ))
+#     apply_blur_to_displacement_lods_tasks.append(SimpleFunctionApply(
+#         task_name=f"Apply a LPF of {size} to bennu Mesh displacement maps",
+#         run_after_task_names=(get_displacement_lods.task_name,),
+#         input_markers=(FSMarkerString("ProjectModel_DIS"),),
+#         output_markers=(FSMarkerString("ProjectModel_DIS_LPF"),),
+#         read_adapter=FSNumpyAdapter(),
+#         write_adapter=FSNumpyAdapter(),
+#         function_to_apply=lambda img: blur_by_fraction(img, fraction=size),
+#         import_folder=FSPathLocalDisk(
+#             path=(f"Bennu mesh LQ OBJ to DIS",),
+#             markers=tuple(),
+#             root_path=detections_from_bennu_model.as_posix()),
+#         export_folder=FSPathLocalDisk(
+#             path=(f"Bennu mesh LQ OBJ to DIS LPF size {size}",),
+#             markers=tuple(),
+#             root_path=detections_from_bennu_model.as_posix()),
+#         n_jobs=4
+#     ))
 
-    apply_blur_to_displacement_lods_tasks.append(SimpleFunctionApply(
-        task_name=f"Apply a LPF of {size} to bennu Mesh displacement maps (plotted)",
-        run_after_task_names=(get_displacement_lods.task_name,),
-        input_markers=(FSMarkerString("ProjectModel_DIS"),),
-        output_markers=(FSMarkerString("ProjectModel_DIS_LPF_plot"),),
-        read_adapter=FSNumpyAdapter(),
-        write_adapter=FSNumpyAdapterMatrixPlot(
-            title=f"Bennu mesh LQ OBJ to DIS LPF size {size} (plotted)",
-            colour_bar_title="radius"
-        ),
-        function_to_apply=lambda img: blur_by_fraction(img, fraction=size),
-        import_folder=FSPathLocalDisk(
-            path=(f"Bennu mesh LQ OBJ to DIS",),
-            markers=tuple(),
-            root_path=detections_from_bennu_model.as_posix()),
-        export_folder=FSPathLocalDisk(
-            path=(f"Bennu mesh LQ OBJ to DIS LPF size {size} (plotted)",),
-            markers=tuple(),
-            root_path=detections_from_bennu_model.as_posix()),
-        n_jobs=4
-    ))
+#     apply_blur_to_displacement_lods_tasks.append(SimpleFunctionApply(
+#         task_name=f"Apply a LPF of {size} to bennu Mesh displacement maps (plotted)",
+#         run_after_task_names=(get_displacement_lods.task_name,),
+#         input_markers=(FSMarkerString("ProjectModel_DIS"),),
+#         output_markers=(FSMarkerString("ProjectModel_DIS_LPF_plot"),),
+#         read_adapter=FSNumpyAdapter(),
+#         write_adapter=FSNumpyAdapterMatrixPlot(
+#             title=f"Bennu mesh LQ OBJ to DIS LPF size {size} (plotted)",
+#             colour_bar_title="radius"
+#         ),
+#         function_to_apply=lambda img: blur_by_fraction(img, fraction=size),
+#         import_folder=FSPathLocalDisk(
+#             path=(f"Bennu mesh LQ OBJ to DIS",),
+#             markers=tuple(),
+#             root_path=detections_from_bennu_model.as_posix()),
+#         export_folder=FSPathLocalDisk(
+#             path=(f"Bennu mesh LQ OBJ to DIS LPF size {size} (plotted)",),
+#             markers=tuple(),
+#             root_path=detections_from_bennu_model.as_posix()),
+#         n_jobs=4
+#     ))
 
 
-steps = [get_bennu_obj, get_local_area_scaling_lods, get_displacement_lods,
-         #  get_local_area_scaling_lods_plotted,
-         plot_displacement_lods_plotted,
-         *apply_blur_to_displacement_lods_tasks]
+steps = [get_bennu_obj, get_local_area_scaling_lods,
+         #  get_displacement_lods,
+         #  #  get_local_area_scaling_lods_plotted,
+         #  plot_displacement_lods_plotted,
+         #  *apply_blur_to_displacement_lods_tasks,
+         ]
 
 if __name__ == "__main__":
     cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](

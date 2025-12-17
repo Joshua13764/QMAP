@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scienceplots
+from attr import field
 from numpy.typing import NDArray
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
@@ -22,12 +23,14 @@ plt.ioff()
 
 @dataclass(frozen=True)
 class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
-    export_debug_plots = False
+    export_debug_plots: bool = field(default=False)
     standard_extension: ClassVar[str] = "npy"
 
     # --- Plot settings ---
-    title: str
-    colour_bar_title: str
+    title: str = field(default="Default title")
+    colour_bar_title: str = field(default="Default colour bar title")
+    transform: Callable[[NDArray[Any]],
+                        NDArray[Any]] = field(default=lambda x: x)
     plot_standard_extension: ClassVar[str] = "png"
 
     def read(self, path: FSPathLocalDisk) -> NDArray[Any]:
@@ -39,7 +42,8 @@ class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
 
         return np.save(path.actual_path.as_posix(), obj)
 
-    def export_debug_plot(self, obj: NDArray[Any], path: FSPathLocalDisk):
+    def export_debug_plot(
+            self, obj: NDArray[Any], path: FSPathLocalDisk) -> None:
 
         fig, ax = plt.subplots(figsize=(5, 5))
         im = ax.imshow(obj, origin="upper",
