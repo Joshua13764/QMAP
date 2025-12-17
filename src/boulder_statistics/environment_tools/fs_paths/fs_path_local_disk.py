@@ -41,7 +41,7 @@ class FSPathLocalDisk(FSPathBase):
 
         relative_path: Path = self.actual_path.relative_to(
             src_root.actual_path)
-        new_sub_path: Path = Path(*dst_root.path) / relative_path
+        new_sub_path: Path = Path(*dst_root.path).parent / relative_path
 
         return dst_root.copy_from_folder(
             new_sub_path=new_sub_path,

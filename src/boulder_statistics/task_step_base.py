@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Iterable, List
 
 from joblib import delayed
+from tenacity import retry, stop_after_attempt
 from tqdm_joblib import ParallelPbar
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
@@ -26,6 +27,7 @@ class TaskStepBase(StepBase):
             unit=unit,
         )
 
+    @retry(stop=stop_after_attempt(3))
     def run_in_parallel[I, O](
             self, function: Callable[[I], O], inputs: Iterable[I],
             message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:
