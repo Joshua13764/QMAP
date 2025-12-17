@@ -1,11 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, ClassVar
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scienceplots
-from attr import field
 from numpy.typing import NDArray
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \

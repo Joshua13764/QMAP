@@ -182,7 +182,6 @@ class ProjectionPlotting:
                        tris: pl.LazyFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
 
         pd_verts: pd.DataFrame = (points
-
                                   .select([f'{face}_u', f'{face}_v'])
                                   .rename({f'{face}_u': 'x', f'{face}_v': 'y'})
                                   .collect().to_pandas())
