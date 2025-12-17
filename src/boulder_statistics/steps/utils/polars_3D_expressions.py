@@ -127,7 +127,7 @@ class Polars3DExpressions:
             y_tri_mean ** 2 +
             z_tri_mean ** 2) ** 0.5
 
-        return r_tri_mean
+        return r_tri_mean.alias("r_tri_mean")
 
     @staticmethod
     def get_mean_projected_radius() -> pl.Expr:

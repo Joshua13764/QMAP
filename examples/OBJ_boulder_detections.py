@@ -1,6 +1,5 @@
 from pathlib import Path
-from tabnanny import verbose
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 from numpy.typing import NDArray
@@ -116,7 +115,7 @@ def blur_by_fraction(img: NDArray[np.float64],
 apply_blur_to_displacement_lods_tasks: List[SimpleFunctionApply[NDArray[np.float64]]] = [
 ]
 
-sizes = [0.5]
+sizes: List[float] = [1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32]
 for size in sizes:
 
     apply_blur_to_displacement_lods_tasks.append(SimpleFunctionApply(
