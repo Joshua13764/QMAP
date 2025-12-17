@@ -12,19 +12,6 @@ VERT_ID_COLS: List[str] = ["0", "1", "2"]
 class Polars3DExpressions:
 
     @staticmethod
-    def filter_faces_for_rasterization_by_face(
-            tris: pl.LazyFrame, face: str, eps_uv=1e-12) -> pl.LazyFrame:
-        ensure_not_behind_plane: pl.Expr = (
-            (pl.col(f"{face}_N0") > 0) &
-            (pl.col(f"{face}_N1") > 0) &
-            (pl.col(f"{face}_N2") > 0)
-        )
-
-        ensure_non_degenerate: pl.Expr = pl.col(f"{face}_area_uv") > eps_uv
-
-        return tris.filter(ensure_not_behind_plane & ensure_non_degenerate)
-
-    @staticmethod
     def process_mesh_projection_scaling(points: pl.LazyFrame,
                                         tris: pl.LazyFrame) -> tuple[pl.LazyFrame, pl.LazyFrame]:
         # points already have a vertex id column "vid" that tris["0"/"1"/"2"]

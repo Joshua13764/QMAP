@@ -131,8 +131,7 @@ get_displacement_lods = OBJToDIS(
 #     ))
 
 
-steps = [get_bennu_obj, get_local_area_scaling_lods,
-         #  get_displacement_lods,
+steps = [get_bennu_obj, get_local_area_scaling_lods, get_displacement_lods,
          #  #  get_local_area_scaling_lods_plotted,
          #  plot_displacement_lods_plotted,
          #  *apply_blur_to_displacement_lods_tasks,

@@ -140,6 +140,19 @@ class ProjectionPlotting:
         return reduce(operator.or_, conditions)
 
     @staticmethod
+    def get_lazy_filter_faces_for_rasterization_by_face(
+            face: str, eps_uv=1e-12) -> pl.Expr:
+        ensure_not_behind_plane: pl.Expr = (
+            (pl.col(f"{face}_N0") > 0) &
+            (pl.col(f"{face}_N1") > 0) &
+            (pl.col(f"{face}_N2") > 0)
+        )
+
+        ensure_non_degenerate: pl.Expr = pl.col(f"{face}_area_uv") > eps_uv
+
+        return ensure_not_behind_plane & ensure_non_degenerate
+
+    @staticmethod
     def get_lazy_filter_tris_not_in_view(
             face, x_range: Tuple[float, float], y_range: Tuple[float, float]) -> pl.Expr:
 
@@ -175,7 +188,8 @@ class ProjectionPlotting:
                                   .collect().to_pandas())
 
         pd_tris: pd.DataFrame = (tris
-                                 .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(face, x_range, y_range))
+                                 .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(face, x_range, y_range)
+                                         & ProjectionPlotting.get_lazy_filter_faces_for_rasterization_by_face(face))
                                  .select(['0', '1', '2', colour_column_name(face)])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
