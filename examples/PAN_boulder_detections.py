@@ -9,6 +9,8 @@ from boulder_statistics.file_storage_adapters.numpy_adapter import \
 from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from boulder_statistics.steps.PAN_to_LOD_supersample import PANToLODSuperSample
+from boulder_statistics.steps.pds4_boulderNet_inference import \
+    PDS4BoulderNetInference
 from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
@@ -37,7 +39,9 @@ for factor in super_sample_factors:
             import_markers=(FSMarkerString(value="PAN_texture"),),
             export_markers=(
                 FSMarkerString(
-                    value=f"PAN_lod_np (super sample x{factor})"),),
+                    value=f"PAN_lod_np (super sample x{factor})"),
+                FSMarkerString(
+                    value=f"InferableImage")),
             extract_folder_prefix=f"PAN_lod_np (super sample x{factor})",
             lod_depth=5,
             export_adapter=FSNumpyAdapter(
@@ -47,16 +51,18 @@ for factor in super_sample_factors:
             )
         ))
 
-step8 = PDS4BoulderNetInference(
+boulder_detections = PDS4BoulderNetInference(
     task_name=f"Infer boulders",
     cuda=True,
     skip_converted=True,
-    run_after_task_names=(*[step.task_name for step in super_sample_steps]),
-    run_path=pipeline_working_path_fast.as_posix(),
+    run_after_task_names=tuple(
+        [step.task_name for step in super_sample_steps]),
+    run_path=detections_from_bennu_pan.as_posix(),
+    detection_input_markers=(FSMarkerString("InferableImage"),),
     detection_output_markers=(FSMarkerString("BoulderNet_Detections"),)
 )
 
-steps: List[Any] = [get_pan, pan_to_lod_np, *super_sample_steps]
+steps: List[Any] = [get_pan, *super_sample_steps, boulder_detections]
 
 if __name__ == "__main__":
     cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](

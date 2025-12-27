@@ -131,7 +131,7 @@ class PANToLODSuperSample(TaskStepBase):
     def render_lods_from_img(self, src_file: FSPathLocalDisk,
                              img: Any) -> List[FSPathLocalDisk]:
 
-        export_groups: Any = ParallelPbar(f"rendering lods", unit=" 6 face imgs")(n_jobs=-1)(
+        export_groups: Any = ParallelPbar(f"rendering lods", unit=" 6 face imgs")(n_jobs=4)(
             delayed(
                 LodNode.render_on_all_faces)(
                 LodNode(shape, self.supersample_factor, img, src_file, self),
