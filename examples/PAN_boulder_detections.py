@@ -26,7 +26,7 @@ get_pan = SimpleRequest(
 )
 
 super_sample_steps = []
-super_sample_factors: list[int] = [1]  # , 2, 4, 8
+super_sample_factors: list[int] = [1, 2, 4, 8]
 for factor in super_sample_factors:
     super_sample_steps.append(
         PANToLODSuperSample(

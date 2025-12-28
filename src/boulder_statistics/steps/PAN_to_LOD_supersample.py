@@ -51,11 +51,8 @@ class LodNode:
 
     def render_region(self, face: str,
                       target_width: int) -> FSPathLocalDisk:
-        roi, total = self.get_region(target_width)
 
-        # total acts as the face resolution in mapping
-        tile = PANToLODSuperSample.super_sample_face_roi(
-            self.img, face, total, *roi, sample_factor=self.sample_factor)
+        roi, total = self.get_region(target_width)
 
         relative_path: Path = Path(*self.src_file.path).parent / Path(f"{self.task.extract_folder_prefix} {Path(*self.src_file.path).stem}", f"lod_{len(self.shape)}",
                                                                       f"{face}_{roi[0] // self.sample_factor}_{roi[1] // self.sample_factor}_{roi[2] // self.sample_factor}x{roi[3] // self.sample_factor}_of_{total // self.sample_factor}")
@@ -66,9 +63,14 @@ class LodNode:
             root_path=self.task.root_path.as_posix()
         )
 
-        export_file.make_directory()
-        if not (export_file.exists and self.task.skip_if_exists):
-            FSEnvironment.save(tile, export_file, self.task.export_adapter)
+        if export_file.exists and self.task.skip_if_exists:
+            return export_file
+
+        # total acts as the face resolution in mapping
+        tile = PANToLODSuperSample.super_sample_face_roi(
+            self.img, face, total, *roi, sample_factor=self.sample_factor)
+
+        FSEnvironment.save(tile, export_file, self.task.export_adapter)
 
         return export_file
 
