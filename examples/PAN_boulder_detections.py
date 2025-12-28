@@ -26,11 +26,11 @@ get_pan = SimpleRequest(
 )
 
 super_sample_steps = []
-super_sample_factors: list[int] = [1, 2, 4, 8]
+super_sample_factors: list[int] = [1]  # , 2, 4, 8
 for factor in super_sample_factors:
     super_sample_steps.append(
         PANToLODSuperSample(
-            task_name=f"Convert bennu PAN to LODs - Numpy version (super sample x{factor})",
+            task_name=f"Convert bennu PAN to LODs - Numpy export version (super sample x{factor})",
             root_path=detections_from_bennu_pan,
             run_after_task_names=(get_pan.task_name,),
             supersample_factor=factor,
@@ -56,7 +56,8 @@ boulder_detections = PDS4BoulderNetInference(
         [step.task_name for step in super_sample_steps]),
     run_path=detections_from_bennu_pan.as_posix(),
     detection_input_markers=(FSMarkerString("InferableImage"),),
-    detection_output_markers=(FSMarkerString("BoulderNet_Detections"),)
+    detection_output_markers=(FSMarkerString("BoulderNet_Detections"),),
+    append_input_extension_no_dot="npy",
 )
 
 steps: List[Any] = [get_pan, *super_sample_steps, boulder_detections]

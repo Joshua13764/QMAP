@@ -95,16 +95,13 @@ def build_predictor(cfg_path: str, weights_path: str,
 
 def load_image_bgr(in_path: Path):
 
-    if in_path.suffix.lower() in [".npy", ".npz"]:
-        return cv2.cvtColor(np.load(in_path.as_posix()), cv2.COLOR_GRAY2BGR)
-
-    else:
-
+    try:
         bgr = cv2.imread(str(in_path), cv2.IMREAD_COLOR)
-        if bgr is None:
-            raise ValueError(f"OpenCV failed to read image: {in_path}")
-
         return bgr
+    except ValueError:
+        print(in_path.as_posix())
+        print(np.load(in_path.as_posix()))
+        return cv2.cvtColor(np.load(in_path.as_posix()), cv2.COLOR_GRAY2BGR)
 
 
 def infer_image(in_path: Path, overlay_export_path: Path,

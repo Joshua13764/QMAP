@@ -37,6 +37,9 @@ class PDS4BoulderNetInference(TaskStepBase):
     detection_output_markers: tuple[FSMarkerString, ...] = field(
         default_factory=lambda: (FSMarkerString("BoulderNet_Detections"),))
 
+    append_input_extension_no_dot: str | None = field(
+        default_factory=lambda: None)
+
     detection_export_custom_name_tag: str = field(default_factory=lambda: "")
 
     @property
@@ -46,8 +49,14 @@ class PDS4BoulderNetInference(TaskStepBase):
 
     def run(self, env: FSEnvironment) -> FSEnvironment:
 
-        files_to_infer: List[FSPathLocalDisk] = env.get_paths_from_markers(
+        files_to_infer_: List[FSPathLocalDisk] = env.get_paths_from_markers(
             FSPathLocalDisk, self.detection_input_markers)
+
+        files_to_infer_with_extension: List[FSPathLocalDisk] = [
+            f.copy_with_extension(self.append_input_extension_no_dot)
+            if self.append_input_extension_no_dot is not None else f
+            for f in files_to_infer_
+        ]
 
         inference_output_files: List[FSPathLocalDisk] = [
             f.copy_as_new_name(
@@ -55,7 +64,7 @@ class PDS4BoulderNetInference(TaskStepBase):
                 # BoulderNetInference (bni)
                 new_extension=f"{self.detection_export_custom_name_tag}.bni"
             )
-            for f in files_to_infer
+            for f in files_to_infer_with_extension
         ]
 
         overlay_output_files: List[FSPathLocalDisk] = [
@@ -64,7 +73,7 @@ class PDS4BoulderNetInference(TaskStepBase):
                 new_extension=f"{
                     self.detection_export_custom_name_tag}_overlay.png"
             )
-            for f in files_to_infer
+            for f in files_to_infer_with_extension
         ]
 
         detections_output_files: List[FSPathLocalDisk] = [
@@ -72,9 +81,9 @@ class PDS4BoulderNetInference(TaskStepBase):
                 new_root_path=Path(self.run_path),
                 new_extension=f"{
                     self.detection_export_custom_name_tag}_detections.npz",
-                markers=list(self.detection_output_markers)
+                markers=tuple(self.detection_output_markers)
             )
-            for f in files_to_infer
+            for f in files_to_infer_with_extension
         ]
 
         exits_overlay: Dict[FSPathLocalDisk, bool] = FSEnvironment.quick_exists(
@@ -98,7 +107,7 @@ class PDS4BoulderNetInference(TaskStepBase):
         DockerHelpers.ensure_image_exists()
 
         in_folder_data: Dict[str, FSPathLocalDiskChunk] = self.sort_data_by_folders(
-            actual_files(files_to_infer), actual_files(inference_output_files))
+            actual_files(files_to_infer_with_extension), actual_files(inference_output_files))
 
         for chunk_folder_path, chunk in in_folder_data.items():
 
