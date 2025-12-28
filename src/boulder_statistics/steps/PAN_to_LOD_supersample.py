@@ -126,7 +126,7 @@ class PANToLODSuperSample(TaskStepBase):
                 img=FSEnvironment.load(file, FSIIOAdapter())
             )
 
-        return FSEnvironment.merge([env, FSEnvironment((exports,))])
+        return FSEnvironment(paths=tuple(exports))
 
     def render_lods_from_img(self, src_file: FSPathLocalDisk,
                              img: Any) -> List[FSPathLocalDisk]:

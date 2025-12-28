@@ -37,11 +37,8 @@ for factor in super_sample_factors:
             lod_res=512,
             skip_if_exists=True,
             import_markers=(FSMarkerString(value="PAN_texture"),),
-            export_markers=(
-                FSMarkerString(
-                    value=f"PAN_lod_np (super sample x{factor})"),
-                FSMarkerString(
-                    value=f"InferableImage")),
+            export_markers=(FSMarkerString(
+                value=f"InferableImage"),),
             extract_folder_prefix=f"PAN_lod_np (super sample x{factor})",
             lod_depth=5,
             export_adapter=FSNumpyAdapter(
@@ -52,7 +49,7 @@ for factor in super_sample_factors:
         ))
 
 boulder_detections = PDS4BoulderNetInference(
-    task_name=f"Infer boulders",
+    task_name=f"Infer boulders on bennu PAN LODs with BoulderNet -",
     cuda=True,
     skip_converted=True,
     run_after_task_names=tuple(
