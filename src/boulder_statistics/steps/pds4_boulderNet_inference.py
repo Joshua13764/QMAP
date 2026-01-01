@@ -28,7 +28,7 @@ class FSPathLocalDiskChunk():
 @dataclass(frozen=True)
 class PDS4BoulderNetInference(TaskStepBase):
     run_path: str
-    batch_size: int = 64
+    batch_size: int = 4096
     skip_converted: bool = field(default_factory=lambda: True)
     cuda: bool = field(default_factory=lambda: False)
     detection_input_markers: tuple[FSMarkerString, ...] = field(

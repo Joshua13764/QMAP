@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, List
+from typing import Callable, Iterable, List
 
 from joblib import delayed
 from tenacity import retry, stop_after_attempt
