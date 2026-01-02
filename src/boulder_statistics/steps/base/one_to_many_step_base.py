@@ -12,7 +12,7 @@ from boulder_statistics.task_step_base import TaskStepBase
 
 
 @dataclass(frozen=True)
-class StepDefaultPaths[InputObjType, OutputObjType](
+class OneToOneStepBase[InputObjType, OutputObjType](
         TaskStepBase, StepDefaultMarkers, StepDefaultAdapters[InputObjType, OutputObjType, FSPathLocalDisk]):
     pipeline_data_path: Path
     n_jobs: int = field(default_factory=lambda: 4, repr=False)
