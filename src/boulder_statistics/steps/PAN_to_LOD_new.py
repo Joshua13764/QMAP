@@ -121,7 +121,10 @@ class BetterPANToLOD(OneToManyStepBase[ArrayType, ArrayType],
     def render_lod_tile(lod_tile: ImgLODPosition,
                         pan_img: ArrayType) -> ArrayType:
 
-        sample_image = PANToCubemap.sample_face_roi()
+        sample_image = PANToCubemap.sample_face_roi_simple_super_sample(
+            pan_img=pan_img,
+
+        )
 
     def process_job_output_to_fs_objects(
             self, output: ArrayType) -> List[FSObject[Any, FSPathLocalDisk]]:
