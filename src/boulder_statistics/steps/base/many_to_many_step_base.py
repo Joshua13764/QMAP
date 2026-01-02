@@ -10,7 +10,6 @@ from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_object import FSObject
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from boulder_statistics.step_default_adapters import StepDefaultAdapters
 from boulder_statistics.step_default_markers import StepDefaultMarkers
 from boulder_statistics.task_step_base import TaskStepBase
 

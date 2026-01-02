@@ -1,8 +1,48 @@
+from typing import Tuple
+
 import cv2
 import numpy as np
+from cv2 import resize
+from numpy.typing import NDArray
 
 
 class PANToCubemap():
+
+    @staticmethod
+    def sample_face_roi_simple_super_sample(pan_img: NDArray[np.float64], face: str, x_range: Tuple[float, float],
+                                            y_range: Tuple[float, float], sample_resolution: Tuple[int, int], super_sample_factor: int) -> NDArray[np.float64]:
+
+        sample_full: NDArray[np.float64] = PANToCubemap.sample_face_roi_simple(
+            pan_img, face, x_range, y_range,
+            sample_resolution=(
+                sample_resolution[0] *
+                super_sample_factor,
+                sample_resolution[1] * super_sample_factor)
+        )
+
+        return resize(sample_full, sample_resolution,
+                      interpolation=cv2.INTER_AREA).astype(np.float64, copy=False)
+
+    @staticmethod
+    def sample_face_roi_simple(
+            pan_img: NDArray[np.float64], face: str, x_range: Tuple[float, float],
+            y_range: Tuple[float, float], sample_resolution: Tuple[int, int]) -> NDArray[np.float64]:
+
+        face_width: float = sample_resolution[0] // (x_range[1] - x_range[0])
+
+        # Left for use if switch to non-square faces
+        face_height: float = sample_resolution[1] // (y_range[1] - y_range[0])
+
+        return PANToCubemap.sample_face_roi(
+            e_img=pan_img,
+            face=face,
+            face_w=int(face_width),
+            x0=int(face_width * x_range[0]),
+            y0=int(face_width * y_range[0]),
+            w=sample_resolution[0],
+            h=sample_resolution[1]
+        )
+
     @staticmethod
     def sample_face_roi(e_img, face: str, face_w: int,
                         x0: int, y0: int, w: int, h: int):
