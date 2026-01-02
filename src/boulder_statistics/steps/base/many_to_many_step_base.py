@@ -18,9 +18,9 @@ from boulder_statistics.task_step_base import TaskStepBase
 @dataclass(frozen=True)
 class ManyToManyStepBase[ProcessJobInputObjectsType, ProcessJobOutputObjectsType](
     TaskStepBase,
-    StepDefaultAdapters[ProcessJobInputObjectsType,
-                        ProcessJobOutputObjectsType, FSPathLocalDisk]
+    StepDefaultMarkers,
 ):
+    """General many to many task base class backend"""
 
     pipeline_data_path: Path
     n_jobs: int = field(default_factory=lambda: 4, repr=False)
