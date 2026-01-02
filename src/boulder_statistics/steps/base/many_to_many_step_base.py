@@ -2,7 +2,7 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Any, Callable, List, Tuple
 
 from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
@@ -121,5 +121,5 @@ class ManyToManyStepBase[ProcessJobInputObjectsType, ProcessJobOutputObjectsType
 
     @abstractmethod
     def process_job_output_to_fs_objects(
-            self, output: ProcessJobOutputObjectsType) -> List[FSObject]:
+            self, output: ProcessJobOutputObjectsType) -> List[FSObject[Any, FSPathLocalDisk]]:
         ...

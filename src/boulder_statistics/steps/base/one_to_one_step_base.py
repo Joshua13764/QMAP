@@ -1,85 +1,75 @@
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, List, Tuple
+from typing import Any, Callable, List, Tuple
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_object import FSObject
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.step_default_adapters import StepDefaultAdapters
 from boulder_statistics.step_default_markers import StepDefaultMarkers
+from boulder_statistics.steps.base.input_adapter_step_base import \
+    InputAdapterStepBase
+from boulder_statistics.steps.base.many_to_many_step_base import \
+    ManyToManyStepBase
+from boulder_statistics.steps.base.output_adapter_step_base import \
+    OutputAdapterStepBase
 from boulder_statistics.task_step_base import TaskStepBase
 
 
 @dataclass(frozen=True)
-class OneToOneStepBase[InputObjType, OutputObjType](
-        TaskStepBase, StepDefaultMarkers, StepDefaultAdapters[InputObjType, OutputObjType, FSPathLocalDisk]):
-    pipeline_data_path: Path
-    n_jobs: int = field(default_factory=lambda: 4, repr=False)
-    loading_message: str = field(default="Running task...", repr=False)
-    loading_unit: str = field(default="files", repr=False)
+class OneToOneStepBase[ProcessJobInputObjectType, ProcessJobOutputObjectType](
+        ManyToManyStepBase[FSObject[ProcessJobInputObjectType, FSPathLocalDisk],
+                           FSObject[ProcessJobOutputObjectType, FSPathLocalDisk]],
+        InputAdapterStepBase[ProcessJobInputObjectType, FSPathLocalDisk],
+        OutputAdapterStepBase[ProcessJobOutputObjectType, FSPathLocalDisk],
+):
+    """General one to one task base class backend"""
 
-    @property
-    def task_path(self) -> Path:
-        return self.pipeline_data_path / \
-            Path(
-                f"""Pipeline data for task {
-                    self.task_name} with input hash {
-                    self.task_hash}""")
+    def input_objects_from_paths(
+            self, input_paths: List[FSPathLocalDisk]) -> List[FSObject[ProcessJobInputObjectType, FSPathLocalDisk]]:
+        return [
+            FSObject(
+                fs_path=path,
+                fs_adapter=self.input_adapter
+            ) for path in input_paths
+        ]
 
-    @property
-    def core_task_operation(
-            self) -> Callable[[FSPathLocalDisk], FSPathLocalDisk]:
+    def process_job_output_to_fs_objects(
+            self, output: FSObject[ProcessJobOutputObjectType, FSPathLocalDisk]) -> List[FSObject[Any, FSPathLocalDisk]]:
+        return [output]
 
-        def operation(input_path: FSPathLocalDisk) -> FSPathLocalDisk:
-            input_object: InputObjType = self.get_input_object(input_path)
-            output_object: OutputObjType = self.object_operation(input_object)
+    def job_operation(
+            self, input_objects: FSObject[ProcessJobInputObjectType, FSPathLocalDisk]) -> FSObject[ProcessJobOutputObjectType, FSPathLocalDisk]:
+        """
+        This job must include the exporting of the files in ProcessJobOutputObjectsType
 
-            output_path: FSPathLocalDisk = self.get_FSPath_from_path(
-                input_object, output_object)
+        Args:
+            input_objects (ProcessJobInputObjectsType): A object which encapsulates the inputs for the job
 
-            return output_path
+        Returns:
+            ProcessJobOutputObjectsType: A object which encapsulates the outputs for the job
+        """
 
-        return operation
+        output_object: ProcessJobOutputObjectType = self.object_operation(
+            input_objects.object)
 
-    def get_output_file_path(self, input_object: InputObjType,
-                             output_object: OutputObjType) -> Path:
-        return self.task_path / \
-            Path(
-                *
-                self.get_object_relative_export_path(
-                    input_object,
-                    output_object))
-
-    def run(self, env: FSEnvironment) -> FSEnvironment:
-
-        files_with_markers: List[FSPathLocalDisk] = self.get_files_with_markers(
-            env)
-
-        export_files: List[FSPathLocalDisk] = self.run_in_parallel(
-            function=self.core_task_operation,
-            inputs=files_with_markers,
-            n_jobs=self.n_jobs,
-            message=self.loading_message,
-            unit=self.loading_unit,
+        return FSObject(
+            fs_path=self.get_FSPath_from_path(
+                input_objects.object,
+                output_object,
+                self.get_object_relative_export_path,
+                output_markers=self.output_markers),
+            fs_adapter=self.output_adapter,
         )
-
-        return FSEnvironment(tuple(export_files))
-
-    def get_FSPath_from_path(
-            self, input_object: InputObjType, output_object: OutputObjType) -> FSPathLocalDisk:
-
-        return FSPathLocalDisk(
-            root_path=self.pipeline_data_path.as_posix(),
-            path=self.get_output_file_path(input_object, output_object).parts,
-            markers=self.output_markers
-        )
-
-    @abstractmethod
-    def object_operation(input_object: InputObjType) -> OutputObjType:
-        ...
 
     @abstractmethod
     def get_object_relative_export_path(
-            self, input_object: InputObjType, output_object: OutputObjType) -> Tuple[str, ...]:
+            self, input_object: ProcessJobInputObjectType, output_object: ProcessJobOutputObjectType) -> Tuple[str, ...]:
+        ...
+
+    @abstractmethod
+    def object_operation(self,
+                         input_object: ProcessJobInputObjectType) -> ProcessJobOutputObjectType:
         ...
