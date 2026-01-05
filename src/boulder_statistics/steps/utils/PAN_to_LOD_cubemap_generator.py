@@ -22,10 +22,11 @@ from boulder_statistics.steps.utils.pan_to_cubemap import PANToCubemap
 ArrayType = NDArray[np.float64]
 
 
-@dataclass(frozen=True)
 class PANToLODCubemapGenerator(CubemapGeneratorBase[ArrayType, ArrayType]):
+    tile_resolution: int
+    tile_super_sample_factor: int
 
-    def render_lod_tile(
+    def get_lod_tile(
             self, cubemaps_tile: CubemapLodPosition) -> ArrayType:
 
         sample_image: ArrayType = PANToCubemap.sample_face_roi_simple_super_sample(
