@@ -47,17 +47,21 @@ class OneToOneStepBase[ProcessJobInputObjectType, ProcessJobOutputObjectType](
             ProcessJobOutputObjectsType: A object which encapsulates the outputs for the job
         """
 
-        output_object: ProcessJobOutputObjectType = self.object_operation(
+        output_value: ProcessJobOutputObjectType = self.object_operation(
             input_objects.object)
 
-        return FSObject(
+        output_object: FSObject[ProcessJobOutputObjectType, FSPathLocalDisk] = FSObject(
             fs_path=self.get_FSPath_from_path(
                 input_objects.object,
-                output_object,
+                output_value,
                 self.get_object_relative_export_path,
                 output_markers=self.output_markers),
             fs_adapter=self.output_adapter,
         )
+
+        output_object.save_object(output_value)
+
+        return output_object
 
     @abstractmethod
     def get_object_relative_export_path(

@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, List, Set, Tuple
 
@@ -31,13 +30,17 @@ class BetterPANToLOD(
     super_sample_factor: int = field(default_factory=lambda: 4)
     skip_if_exists: bool = field(default_factory=lambda: True)
 
+    @property
+    def hashable(self) -> tuple[Any, ...]:
+        return (self.task_name,)
+
     def get_object_relative_export_path(
             self, input_object: ArrayType, output_object: PANToLODCubemapGenerator) -> Tuple[str, ...]:
         return (
-            f"""cubemap_lod_depth_{
-                self.lod_depth}_res_{
-                self.lod_res}_super_sample_factor{
-                self.super_sample_factor}""",
+            f"""cubemap_lod_depth ({
+                self.lod_depth}) res ({
+                self.lod_res}) super_sample_factor ({
+                self.super_sample_factor})""",
         )
 
     def object_operation(

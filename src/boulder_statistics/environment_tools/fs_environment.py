@@ -113,6 +113,9 @@ class FSEnvironment():
         if isinstance(
                 path, FSPathLocalDisk) and path.actual_path.stem == path.actual_path.name:
 
+            if adapter.standard_extension is False:
+                return path
+
             if adapter.standard_extension is not None:
                 path_with_extension: FSPathLocalDisk = path.copy_with_extension(
                     adapter.standard_extension)

@@ -19,11 +19,16 @@ DPI = 600
 plt.rcParams["figure.dpi"] = 600
 plt.ioff()
 
+# Temp issue ifx
+plt.rcParams.update({
+    "text.usetex": False,
+})
+
 
 @dataclass(frozen=True)
 class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
     export_debug_plots: bool = field(default=False)
-    standard_extension: ClassVar[str] = "npy"
+    standard_extension: ClassVar[str | None | bool] = "npy"
 
     # --- Plot settings ---
     title: str = field(default="Default title")

@@ -27,7 +27,7 @@ class TaskStepBase(StepBase):
             unit=unit,
         )
 
-    @retry(stop=stop_after_attempt(3))
+    # @retry(stop=stop_after_attempt(3))
     def run_in_parallel[I, O](
             self, function: Callable[[I], O], inputs: Iterable[I],
             message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:

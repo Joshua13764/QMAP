@@ -16,6 +16,5 @@ class FSObject[ObjectType, PathType: FSPathBase]():
     def object(self) -> ObjectType:
         return FSEnvironment.load(self.fs_path, self.fs_adapter)
 
-    @object.setter
-    def object(self, obj: ObjectType) -> None:
+    def save_object(self, obj: ObjectType) -> None:
         FSEnvironment.save(obj, self.fs_path, self.fs_adapter)

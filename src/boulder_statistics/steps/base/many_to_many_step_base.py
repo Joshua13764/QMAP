@@ -25,6 +25,7 @@ class ManyToManyStepBase[ProcessJobInputObjectsType, ProcessJobOutputObjectsType
     n_jobs: int = field(default_factory=lambda: 4, repr=False)
     loading_message: str = field(default="Running task...", repr=False)
     loading_unit: str = field(default="files", repr=False)
+    folder_name_hash_length: int = field(default=8)
 
     def process_job(self,
                     input_object: ProcessJobInputObjectsType) -> List[FSPathLocalDisk]:
@@ -66,7 +67,7 @@ class ManyToManyStepBase[ProcessJobInputObjectsType, ProcessJobOutputObjectsType
             Path(
                 f"""Pipeline data for task {
                     self.task_name} with input hash {
-                    self.task_hash}""")
+                    self.task_hash[:self.folder_name_hash_length]}""")
 
     def get_output_file_path[I, O](
             self,

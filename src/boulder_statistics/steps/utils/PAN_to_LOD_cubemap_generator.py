@@ -22,6 +22,7 @@ from boulder_statistics.steps.utils.pan_to_cubemap import PANToCubemap
 ArrayType = NDArray[np.float64]
 
 
+@dataclass
 class PANToLODCubemapGenerator(CubemapGeneratorBase[ArrayType, ArrayType]):
     tile_resolution: int
     tile_super_sample_factor: int
