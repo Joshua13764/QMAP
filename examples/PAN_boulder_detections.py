@@ -4,13 +4,21 @@ from typing import Any, List
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
+from boulder_statistics.file_storage_adapters.fs_copy_cubemap_generator_adapter import \
+    FSCopyCubemapGeneratorAdapter
+from boulder_statistics.file_storage_adapters.fs_cubemap_generator_adapter import \
+    FSCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
 from boulder_statistics.file_storage_adapters.pan_to_lod_cubemap_generator_adapter import \
     FSPANToLODCubemapGeneratorAdapter
+from boulder_statistics.file_storage_adapters.shutil_copy_adapter import \
+    FSShutilCopyAdapter
 from boulder_statistics.result_cache import ResultCache
 from boulder_statistics.steps.Better_PAN_to_LOD import BetterPANToLOD
+from boulder_statistics.steps.better_PDS4_boulder_net_inference import \
+    BetterPDS4BoulderNetInference
 from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from boulder_statistics.steps.PAN_to_LOD_supersample import PANToLODSuperSample
 from boulder_statistics.steps.pds4_boulderNet_inference import \
@@ -43,6 +51,16 @@ divide_pan: BetterPANToLOD = BetterPANToLOD(
     n_jobs=1,
 )
 
+detection = BetterPDS4BoulderNetInference(
+    task_name=f"Infer boulders on bennu PAN LODs with BoulderNet",
+    run_after_task_names=tuple(divide_pan.task_name),
+    cuda=True,
+    input_adapter=FSCopyCubemapGeneratorAdapter(),
+    output_adapter=FSCopyCubemapGeneratorAdapter(),
+    input_markers=(FSMarkerString(value="PAN_lod"),),
+    output_markers=(FSMarkerString(value="INF_lod"),),
+    pipeline_data_path=detections_from_bennu_pan
+)
 
 # boulder_detections = PDS4BoulderNetInference(
 #     task_name=f"Infer boulders on bennu PAN LODs with BoulderNet -",

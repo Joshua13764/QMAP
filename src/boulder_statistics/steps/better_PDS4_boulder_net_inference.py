@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Set, Tuple
 
 import numpy as np
-from more_itertools import chunked
 from numpy.typing import NDArray
 from tqdm import tqdm
 
@@ -27,6 +26,8 @@ from boulder_statistics.steps.base.one_to_many_step_base import \
 from boulder_statistics.steps.base.one_to_one_step_base import OneToOneStepBase
 from boulder_statistics.steps.base.output_adapter_step_base import \
     OutputAdapterStepBase
+from boulder_statistics.steps.pds4_boulderNet_inference import \
+    FSPathLocalDiskChunk
 from boulder_statistics.steps.utils.pan_to_cubemap import PANToCubemap
 from boulder_statistics.steps.utils.PAN_to_LOD_cubemap_generator import \
     PANToLODCubemapGenerator
@@ -34,21 +35,9 @@ from boulder_statistics.steps.utils.PAN_to_LOD_cubemap_generator import \
 ArrayType = NDArray[np.float64]
 
 
-@dataclass()
-class FSPathLocalDiskChunk():
-    files_to_infer: List[FSPathLocalDisk] = field(default_factory=list)
-    inference_output_files: List[FSPathLocalDisk] = field(default_factory=list)
-
-    def get_sub_chunks(
-            self, batch_size: int = 64) -> Iterator[Tuple[list[FSPathLocalDisk], list[FSPathLocalDisk]]]:
-
-        return zip(chunked(self.files_to_infer, batch_size),
-                   chunked(self.inference_output_files, batch_size))
-
-
 @dataclass(frozen=True)
 class BetterPDS4BoulderNetInference(
-        OneToOneStepBase[FSCubemapGenerator, FSCopyCubemapGenerator]):
+        OneToOneStepBase[FSCopyCubemapGenerator, FSCopyCubemapGenerator]):
 
     cuda: bool = field(default=True)
     skip_if_exists: bool = field(default=True)
@@ -63,11 +52,11 @@ class BetterPDS4BoulderNetInference(
         return (self.task_name, self.skip_if_exists)
 
     def get_object_relative_export_path(
-            self, input_object: FSCubemapGenerator, output_object: CubemapGeneratorBase) -> Tuple[str, ...]:
-        return tuple()
+            self, input_object: FSCopyCubemapGenerator, output_object: CubemapGeneratorBase) -> Tuple[str, ...]:
+        return ("detections",)
 
     def object_operation(
-            self, input_object: FSCubemapGenerator) -> FSCopyCubemapGenerator:
+            self, input_object: FSCopyCubemapGenerator) -> FSCopyCubemapGenerator:
 
         self.copy_cubemap_structure_to_work_folder(input_object)
         overlay_output_files, detections_output_files = self.infer_flattened_cubemap_structure(
@@ -80,7 +69,7 @@ class BetterPDS4BoulderNetInference(
             array_adapter=FSShutilCopyAdapter(overwrite=True))
 
     def infer_flattened_cubemap_structure(
-            self, cubemap_structure: FSCubemapGenerator) -> Tuple[List[FSPathLocalDisk], List[FSPathLocalDisk]]:
+            self, cubemap_structure: FSCopyCubemapGenerator) -> Tuple[List[FSPathLocalDisk], List[FSPathLocalDisk]]:
 
         flattened_paths: List[FSPathLocalDisk] = [self.get_flatted_cubemap_tile_path(
             tile) for tile in cubemap_structure.tiles]
@@ -217,11 +206,11 @@ class BetterPDS4BoulderNetInference(
         )
 
     def copy_cubemap_structure_to_work_folder(
-            self, cubemap_structure: FSCubemapGenerator) -> None:
+            self, cubemap_structure: FSCopyCubemapGenerator) -> None:
 
         for tile in cubemap_structure.tiles:
             FSEnvironment.save(
                 obj=cubemap_structure.get_lod_tile(tile),
                 path=self.get_flatted_cubemap_tile_path(tile),
-                adapter=FSIIOAdapter()
+                adapter=FSShutilCopyAdapter()
             )
