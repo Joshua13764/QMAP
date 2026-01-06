@@ -200,8 +200,8 @@ class BetterPDS4BoulderNetInference(
         return self.get_FSPath_from_path(
             input_object=tile,
             output_object=None,
-            get_object_relative_export_path=lambda i, o: (
-                "temp", tile.string_rep),
+            get_object_relative_export_path=lambda tile, o: (
+                "temp", f"tile at {tile.face} {tile.string_rep}.npy"),
             output_markers=tuple()
         )
 

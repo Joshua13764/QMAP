@@ -1,9 +1,5 @@
 from dataclasses import dataclass, field
-from math import fabs
-from os import walk
-from os.path import join
-from pathlib import Path
-from typing import Any, ClassVar, Dict
+from typing import Any
 
 from joblib import delayed
 from numpy import float64
@@ -28,9 +24,9 @@ ArrayType = NDArray[float64]
 class FSPANToLODCubemapGeneratorAdapter(
         FSAdapterBase[PANToLODCubemapGenerator, FSPathLocalDisk]):
 
-    standard_extension: ClassVar[str | None | bool] = False
     tiles_adapter: FSAdapterBase[ArrayType, FSPathLocalDisk]
     n_jobs: int = field(default=4)
+    standard_extension: str | None | bool = field(default=False)
 
     def read(
             self, path: FSPathLocalDisk) -> PANToLODCubemapGenerator:

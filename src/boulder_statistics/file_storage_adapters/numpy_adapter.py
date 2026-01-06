@@ -28,7 +28,7 @@ plt.rcParams.update({
 @dataclass(frozen=True)
 class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
     export_debug_plots: bool = field(default=False)
-    standard_extension: ClassVar[str | None | bool] = "npy"
+    standard_extension: str | None | bool = field(default="npy")
 
     # --- Plot settings ---
     title: str = field(default="Default title")

@@ -1,4 +1,7 @@
 from dataclasses import dataclass, field
+from os import walk
+from os.path import join
+from pathlib import Path
 from typing import Any, ClassVar, Dict
 
 from joblib import delayed
@@ -31,12 +34,36 @@ class FSCopyCubemapGeneratorAdapter(
 
     tiles_adapter: FSAdapterBase[FSPathLocalDisk, FSPathLocalDisk] = field(
         default_factory=lambda: FSShutilCopyAdapter())
-    standard_extension: ClassVar[str | None | bool] = False
+    standard_extension: str | None | bool = field(default=False)
     n_jobs: int = field(default=4)
 
     def read(
             self, path: FSPathLocalDisk) -> FSCopyCubemapGenerator:
-        raise NotImplementedError
+
+        position_paths_lookup: FilePathLookupType = {}
+
+        for dirpath, dirnames, filenames in walk(path.actual_path):
+            for filename in filenames:
+                full_path: Path = Path(join(dirpath, filename))
+
+                if not CubemapLodPosition.is_correct_path_format(
+                        path=full_path):
+                    continue
+
+                fs_full_path: FSPathLocalDisk = path.copy_from_folder(
+                    new_sub_path=full_path.relative_to(path.actual_path)
+                )
+
+                cubemap_position: CubemapLodPosition = CubemapLodPosition.from_fs_path(
+                    full_path)
+
+                position_paths_lookup[cubemap_position] = fs_full_path
+
+        return FSCopyCubemapGenerator(
+            tiles=set(position_paths_lookup.keys()),
+            generator_input=position_paths_lookup,
+            array_adapter=self.tiles_adapter
+        )
 
     def write(
             self, obj: FSCopyCubemapGenerator, path: FSPathLocalDisk) -> None:

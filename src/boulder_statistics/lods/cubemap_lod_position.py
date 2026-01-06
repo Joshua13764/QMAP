@@ -55,7 +55,7 @@ class CubemapLodPosition(ImgLODPosition):
 
         face: str = raw_tile_face_name.replace("face ", "")
         tile_position_repr, tile_shape_repr = raw_tile_name.replace(
-            "lod tile (", "").replace(") with_shape (", ",").replace(")", "").split()
+            "lod tile (", "").replace(") with_shape (", "|")[:-1].split("|")
 
         lod_position: ImgLODPosition = ImgLODPosition.from_string_rep(
             tile_position_repr)

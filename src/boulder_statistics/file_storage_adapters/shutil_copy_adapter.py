@@ -1,6 +1,7 @@
 import shutil
 from dataclasses import dataclass
 from os import remove
+from typing import ClassVar
 
 from attr import field
 
@@ -13,6 +14,7 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
 @dataclass(frozen=True)
 class FSShutilCopyAdapter(FSAdapterBase[FSPathLocalDisk, FSPathLocalDisk]):
     """Copies a file from the src (object) to a path (path)"""
+    standard_extension: str | None | bool = field(default=False)
     overwrite: bool = field(default=True)
 
     def read(self, path: FSPathLocalDisk) -> FSPathLocalDisk:

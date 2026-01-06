@@ -53,13 +53,13 @@ divide_pan: BetterPANToLOD = BetterPANToLOD(
 
 detection = BetterPDS4BoulderNetInference(
     task_name=f"Infer boulders on bennu PAN LODs with BoulderNet",
-    run_after_task_names=tuple(divide_pan.task_name),
+    run_after_task_names=(divide_pan.task_name,),
     cuda=True,
     input_adapter=FSCopyCubemapGeneratorAdapter(),
     output_adapter=FSCopyCubemapGeneratorAdapter(),
     input_markers=(FSMarkerString(value="PAN_lod"),),
     output_markers=(FSMarkerString(value="INF_lod"),),
-    pipeline_data_path=detections_from_bennu_pan
+    pipeline_data_path=detections_from_bennu_pan,
 )
 
 # boulder_detections = PDS4BoulderNetInference(
@@ -74,7 +74,7 @@ detection = BetterPDS4BoulderNetInference(
 #     append_input_extension_no_dot="npy",
 # )
 
-steps: List[Any] = [get_pan, divide_pan]
+steps: List[Any] = [get_pan, divide_pan, detection]
 
 if __name__ == "__main__":
     cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](
