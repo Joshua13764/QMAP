@@ -20,7 +20,7 @@ ArrayType = NDArray[float64]
 
 
 @dataclass(frozen=True)
-class FSCubemapGeneratorAdapter(
+class FSActionCubemapGeneratorAdapter(
         FSAdapterBase[FSCubemapGenerator, FSPathLocalDisk]):
 
     tiles_adapter: FSAdapterBase[ArrayType, FSPathLocalDisk]
