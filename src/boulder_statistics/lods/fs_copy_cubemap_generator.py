@@ -30,8 +30,6 @@ ArrayType = NDArray[np.float64]
 @dataclass
 class FSCopyCubemapGenerator(
         CubemapGeneratorBase[Dict[CubemapLodPosition, FSPathLocalDisk], FSPathLocalDisk]):
-    array_adapter: FSAdapterBase[FSPathLocalDisk, FSPathLocalDisk]
-
     def get_lod_tile(
             self, cubemaps_tile: CubemapLodPosition) -> FSPathLocalDisk:
 

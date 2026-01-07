@@ -20,7 +20,7 @@ from boulder_statistics.steps.utils.PAN_to_LOD_cubemap_generator import \
 ArrayType = NDArray[float64]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FSPANToLODCubemapGeneratorAdapter(
         FSAdapterBase[PANToLODCubemapGenerator, FSPathLocalDisk]):
 

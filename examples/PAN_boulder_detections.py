@@ -38,7 +38,7 @@ get_pan = SimpleRequest(
 )
 
 lod_export_adapter: FSPANToLODCubemapGeneratorAdapter = FSPANToLODCubemapGeneratorAdapter(
-    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export lod", colour_bar_title="colour value"), n_jobs=4)
+    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export lod", colour_bar_title="colour value"), n_jobs=18)
 
 divide_pan: BetterPANToLOD = BetterPANToLOD(
     task_name="divide pan into lods",
@@ -56,7 +56,6 @@ detection = BetterPDS4BoulderNetInference(
     run_after_task_names=(divide_pan.task_name,),
     cuda=True,
     input_adapter=FSCopyCubemapGeneratorAdapter(),
-    output_adapter=FSCopyCubemapGeneratorAdapter(),
     input_markers=(FSMarkerString(value="PAN_lod"),),
     output_markers=(FSMarkerString(value="INF_lod"),),
     pipeline_data_path=detections_from_bennu_pan,

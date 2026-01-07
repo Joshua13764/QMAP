@@ -95,13 +95,16 @@ def build_predictor(cfg_path: str, weights_path: str,
 
 def load_image_bgr(in_path: Path):
 
+    print(f"Loading file {in_path.as_posix()}")
     match in_path.suffix.lower():
         case ".png" | ".jpg" | ".jpeg" | ".tif" | ".tiff" | ".bmp":
             bgr = cv2.imread(str(in_path), cv2.IMREAD_COLOR)
             return bgr
         case ".npy":
-            return cv2.cvtColor(
-                np.load(in_path.as_posix()), cv2.COLOR_GRAY2BGR)
+            gray = np.load(in_path.as_posix())
+            gray = np.clip(gray, 0, 255).astype(np.uint8)
+            bgr = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+            return bgr
         case _:
             raise ValueError(
                 f"""Unsupported image format: {

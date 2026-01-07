@@ -10,6 +10,8 @@ from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_object import FSObject
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
+from boulder_statistics.file_storage_adapters.fs_copy_cubemap_generator_adapter import \
+    FSCopyCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
@@ -35,11 +37,15 @@ from boulder_statistics.steps.utils.PAN_to_LOD_cubemap_generator import \
 ArrayType = NDArray[np.float64]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class BetterPDS4BoulderNetInference(
         OneToOneStepBase[FSCopyCubemapGenerator, FSCopyCubemapGenerator]):
 
     cuda: bool = field(default=True)
+    output_adapter: FSCopyCubemapGeneratorAdapter = field(
+        default=FSCopyCubemapGeneratorAdapter(
+            tiles_adapter=FSShutilCopyAdapter(
+                overwrite=True, standard_extension="npz")))
     skip_if_exists: bool = field(default=True)
     append_input_extension_no_dot: str | None = field(
         default_factory=lambda: None)
@@ -65,8 +71,7 @@ class BetterPDS4BoulderNetInference(
         return FSCopyCubemapGenerator(
             tiles=input_object.tiles,
             generator_input={tile: detections_output_file for tile, detections_output_file in zip(
-                input_object.tiles, detections_output_files)},
-            array_adapter=FSShutilCopyAdapter(overwrite=True))
+                input_object.tiles, detections_output_files)})
 
     def infer_flattened_cubemap_structure(
             self, cubemap_structure: FSCopyCubemapGenerator) -> Tuple[List[FSPathLocalDisk], List[FSPathLocalDisk]]:

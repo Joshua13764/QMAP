@@ -14,7 +14,7 @@ from boulder_statistics.step_default_markers import StepDefaultMarkers
 from boulder_statistics.task_step_base import TaskStepBase
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class ManyToManyStepBase[ProcessJobInputObjectsType, ProcessJobOutputObjectsType](
     TaskStepBase,
     StepDefaultMarkers,

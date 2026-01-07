@@ -1,8 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import ClassVar
-
-from attr import field
+from dataclasses import dataclass, field
 
 from boulder_statistics.environment_tools.base_classes.fs_path_base import \
     FSPathBase

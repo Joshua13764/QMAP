@@ -13,7 +13,7 @@ from boulder_statistics.steps.base.output_adapter_step_base import \
     OutputAdapterStepBase
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class OneToOneStepBase[ProcessJobInputObjectType, ProcessJobOutputObjectType](
         ManyToManyStepBase[FSObject[ProcessJobInputObjectType, FSPathLocalDisk],
                            FSObject[ProcessJobOutputObjectType, FSPathLocalDisk]],

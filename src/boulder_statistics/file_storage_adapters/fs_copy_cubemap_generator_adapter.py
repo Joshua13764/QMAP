@@ -62,7 +62,6 @@ class FSCopyCubemapGeneratorAdapter(
         return FSCopyCubemapGenerator(
             tiles=set(position_paths_lookup.keys()),
             generator_input=position_paths_lookup,
-            array_adapter=self.tiles_adapter
         )
 
     def write(

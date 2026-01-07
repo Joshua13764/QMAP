@@ -1,9 +1,7 @@
 import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import remove
 from typing import ClassVar
-
-from attr import field
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase

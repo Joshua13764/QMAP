@@ -36,11 +36,15 @@ class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
     transform: Callable[[NDArray[Any]],
                         NDArray[Any]] = field(default=lambda x: x)
     plot_standard_extension: ClassVar[str] = "png"
+    plot_name_suffix: str = field(default="debug view")
 
     def read(self, path: FSPathLocalDisk) -> NDArray[Any]:
         return np.load(path.actual_path.as_posix())
 
     def write(self, obj: NDArray[Any], path: FSPathLocalDisk) -> None:
+
+        assert obj.dtype != object, obj.dtype
+
         if self.export_debug_plots:
             self.export_debug_plot(obj, path)
 
@@ -62,8 +66,8 @@ class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
         fig.tight_layout()
 
         fig.savefig(
-            path.actual_path.as_posix().replace(
-                self.standard_extension, self.plot_standard_extension),
+            path.actual_path.with_name(
+                f"{path.actual_path.stem} {self.plot_name_suffix}.{self.plot_standard_extension}"),
             dpi=DPI,
             bbox_inches="tight",
             facecolor="white"
