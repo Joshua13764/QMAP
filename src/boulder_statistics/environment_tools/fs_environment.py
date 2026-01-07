@@ -30,10 +30,10 @@ class FSEnvironment():
         return [f for f in self.paths if isinstance(f, cls) and condition(f)]
 
     def get_paths_from_markers[T: FSPathBase](
-            self, cls: type[T], markers: tuple[FSMarkerBase, ...]) -> List[T]:
+            self, cls: type[T], markers: tuple[FSMarkerBase, ...] | None) -> List[T]:
         return [f
                 for f in self.paths
-                if isinstance(f, cls) and set(markers).isdisjoint(f.markers) == False
+                if isinstance(f, cls) and (markers is None or set(markers).isdisjoint(f.markers) == False)
                 ]
 
     @staticmethod

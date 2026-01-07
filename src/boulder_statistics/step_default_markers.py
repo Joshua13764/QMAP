@@ -12,7 +12,8 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
 
 @dataclass(frozen=True)
 class StepDefaultMarkers():
-    input_markers: Tuple[FSMarkerBase, ...]
+    # In this case None is used to represent include all
+    input_markers: Tuple[FSMarkerBase, ...] | None
     output_markers: Tuple[FSMarkerBase, ...]
 
     def include_markers_in_hashable(
@@ -21,4 +22,5 @@ class StepDefaultMarkers():
 
     def get_files_with_markers(
             self, env: FSEnvironment) -> List[FSPathLocalDisk]:
+
         return env.get_paths_from_markers(FSPathLocalDisk, self.input_markers)
