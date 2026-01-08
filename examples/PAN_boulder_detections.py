@@ -72,6 +72,7 @@ detection = BetterPDS4BoulderNetInference(
 )
 
 grades = SetupBoulderNetInferencesForGrading(
+    debug_mode=True,
     task_name=f"Setup inferences for grading",
     run_after_task_names=(detection.task_name,),
     pipeline_data_path=detections_from_bennu_pan,
@@ -103,7 +104,7 @@ grades = SetupBoulderNetInferencesForGrading(
 #     append_input_extension_no_dot="npy",
 # )
 
-steps: List[Any] = [get_pan, divide_pan, detection]
+steps: List[Any] = [get_pan, divide_pan, detection, grades]
 
 if __name__ == "__main__":
     cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](

@@ -2,6 +2,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Iterable, List
 
+from attr import field
 from joblib import delayed
 from tenacity import retry, stop_after_attempt
 from tqdm_joblib import ParallelPbar
@@ -12,6 +13,8 @@ from boulder_statistics.step_base import StepBase
 
 @dataclass(frozen=True, kw_only=True)
 class TaskStepBase(StepBase):
+    debug_mode: bool = field(default=False)
+
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:
         ...
@@ -31,6 +34,10 @@ class TaskStepBase(StepBase):
     def run_in_parallel[I, O](
             self, function: Callable[[I], O], inputs: Iterable[I],
             message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:
+
+        if self.debug_mode:
+            print(message)
+            return [function(input) for input in inputs]
 
         parallel_results_raw = ParallelPbar(message, unit=unit)(n_jobs=n_jobs)(
             delayed(function)(input)
