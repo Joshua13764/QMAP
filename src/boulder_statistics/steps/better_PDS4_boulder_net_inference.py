@@ -21,7 +21,6 @@ from boulder_statistics.lods.cubemap_generator_base import CubemapGeneratorBase
 from boulder_statistics.lods.cubemap_lod_position import CubemapLodPosition
 from boulder_statistics.lods.fs_copy_cubemap_generator import \
     FSCopyCubemapGenerator
-from boulder_statistics.lods.fs_cubemap_generator import FSCubemapGenerator
 from boulder_statistics.lods.lod_cubemap_utils import LODCubemapUtils
 from boulder_statistics.steps.base.one_to_many_step_base import \
     OneToManyStepBase

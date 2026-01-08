@@ -11,9 +11,6 @@ from boulder_statistics.environment_tools.fs_input import FSInput
 from boulder_statistics.environment_tools.fs_object import FSObject
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
-from boulder_statistics.lods.fs_cubemap_generator import FSCubemapGenerator
-from boulder_statistics.lods.inferences_cubemap_generator import \
-    FSInferencesCubemapGenerator
 from boulder_statistics.lods.inferences_cubemap_grader import \
     FSInferencesCubemapGrader
 from boulder_statistics.steps.base.input_adapter_step_base import \
@@ -70,11 +67,6 @@ class SelectedToOneStepBase[ProcessJobOutputObjectType](
         output_object.save_object(output_value)
 
         return output_object
-
-    @abstractmethod
-    def get_object_relative_export_path(
-            self, env: FSEnvironment, output_object: ProcessJobOutputObjectType) -> Tuple[str, ...]:
-        ...
 
     @abstractmethod
     def selected_objects_operation(self,

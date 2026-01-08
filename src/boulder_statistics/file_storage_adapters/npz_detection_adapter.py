@@ -17,6 +17,7 @@ from boulder_statistics.file_storage_adapters.adapter_custom_classes.npz_feature
 class FSNpzDetectionAdapter(
         FSAdapterBase[List[NpzFeatureDetection], FSPathLocalDisk]):
     """Uses the np module to load detection data"""
+    standard_extension = "npz"
 
     def read(self, path: FSPathLocalDisk) -> List[NpzFeatureDetection]:
         data: Any = np.load(path.actual_path.as_posix())

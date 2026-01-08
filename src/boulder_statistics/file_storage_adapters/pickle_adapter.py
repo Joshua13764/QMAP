@@ -10,6 +10,7 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
 
 @dataclass(frozen=True)
 class FSPickleAdapter(FSAdapterBase[Any, FSPathLocalDisk]):
+    standard_extension = "pkl"
 
     def read(self, path: FSPathLocalDisk) -> Any:
         with path.actual_path.open("rb") as f:

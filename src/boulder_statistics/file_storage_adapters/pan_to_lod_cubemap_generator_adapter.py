@@ -13,7 +13,6 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.lods.cubemap_generator_base import CubemapGeneratorBase
 from boulder_statistics.lods.cubemap_lod_position import CubemapLodPosition
-from boulder_statistics.lods.fs_cubemap_generator import FSCubemapGenerator
 from boulder_statistics.steps.utils.PAN_to_LOD_cubemap_generator import \
     PANToLODCubemapGenerator
 

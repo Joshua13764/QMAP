@@ -1,18 +1,26 @@
 from pathlib import Path
 from typing import Any, List
 
+from numpy import float64
+from numpy.typing import NDArray
+
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
+from boulder_statistics.environment_tools.fs_input import FSInput
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from boulder_statistics.file_storage_adapters.fs_copy_cubemap_generator_adapter import \
     FSCopyCubemapGeneratorAdapter
-from boulder_statistics.file_storage_adapters.fs_cubemap_generator_adapter import \
-    FSCubemapGeneratorAdapter
+from boulder_statistics.file_storage_adapters.fs_generic_cubemap_generator_adapter import \
+    FSGenericCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
+from boulder_statistics.file_storage_adapters.npz_detection_adapter import \
+    FSNpzDetectionAdapter
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
 from boulder_statistics.file_storage_adapters.pan_to_lod_cubemap_generator_adapter import \
     FSPANToLODCubemapGeneratorAdapter
+from boulder_statistics.file_storage_adapters.pickle_adapter import \
+    FSPickleAdapter
 from boulder_statistics.file_storage_adapters.shutil_copy_adapter import \
     FSShutilCopyAdapter
 from boulder_statistics.result_cache import ResultCache
@@ -23,6 +31,8 @@ from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from boulder_statistics.steps.PAN_to_LOD_supersample import PANToLODSuperSample
 from boulder_statistics.steps.pds4_boulderNet_inference import \
     PDS4BoulderNetInference
+from boulder_statistics.steps.setup_boulder_net_inferences_for_grading import \
+    SetupBoulderNetInferencesForGrading
 from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
@@ -59,6 +69,26 @@ detection = BetterPDS4BoulderNetInference(
     input_markers=(FSMarkerString(value="PAN_lod"),),
     output_markers=(FSMarkerString(value="INF_lod"),),
     pipeline_data_path=detections_from_bennu_pan,
+)
+
+grades = SetupBoulderNetInferencesForGrading(
+    task_name=f"Setup inferences for grading",
+    run_after_task_names=(detection.task_name,),
+    pipeline_data_path=detections_from_bennu_pan,
+    output_markers=(FSMarkerString(value="INFCOLL_lod"),),
+    output_adapter=FSPickleAdapter(),
+    lod_images_input=FSInput(
+        fs_marker=FSMarkerString(value="PAN_lod"),
+        fs_adapter=FSGenericCubemapGeneratorAdapter[NDArray[float64]](
+            tiles_adapter=FSNumpyAdapter())
+    ),
+    lod_detections_input=FSInput(
+        fs_marker=FSMarkerString(value="INF_lod"),
+        fs_adapter=FSGenericCubemapGeneratorAdapter(
+            tiles_adapter=FSNpzDetectionAdapter())
+    ),
+    input_markers=None
+
 )
 
 # boulder_detections = PDS4BoulderNetInference(

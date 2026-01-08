@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from numpy.typing import NDArray
@@ -22,8 +22,8 @@ class ImageDetectionGrade():
     detections_path: FSPathLocalDisk
     detection_index: int
 
-    # Depending on the folder will dictate the grade of the detection
-    graded_path: FSPathLocalDisk
+    # # Depending on the folder will dictate the grade of the detection
+    # graded_path: FSPathLocalDisk = field(default=)
 
     @property
     def detection_data(self) -> ImageDetectionData:

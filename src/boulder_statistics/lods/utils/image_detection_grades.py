@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 from boulder_statistics.lods.utils.image_detection_grade import \
     ImageDetectionGrade
@@ -7,4 +7,4 @@ from boulder_statistics.lods.utils.image_detection_grade import \
 
 @dataclass
 class ImageDetectionGrades():
-    grades: List[ImageDetectionGrade]
+    grades: Tuple[ImageDetectionGrade, ...]

@@ -4,30 +4,26 @@ from os.path import join
 from pathlib import Path
 from typing import Dict
 
-from numpy import float64
-from numpy.typing import NDArray
-
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
     FSAdapterBase
-from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.lods.cubemap_lod_position import CubemapLodPosition
-from boulder_statistics.lods.fs_cubemap_generator import FSCubemapGenerator
+from boulder_statistics.lods.fs_generic_cubemap_generator import \
+    FSGenericCubemapGenerator
 
 FilePathLookupType = Dict[CubemapLodPosition, FSPathLocalDisk]
-ArrayType = NDArray[float64]
 
 
 @dataclass(frozen=True)
-class FSCubemapGeneratorAdapter(
-        FSAdapterBase[FSCubemapGenerator, FSPathLocalDisk]):
+class FSGenericCubemapGeneratorAdapter[T](
+        FSAdapterBase[FSGenericCubemapGenerator, FSPathLocalDisk]):
 
-    tiles_adapter: FSAdapterBase[ArrayType, FSPathLocalDisk]
+    tiles_adapter: FSAdapterBase[T, FSPathLocalDisk]
     n_jobs: int = field(default=4)
 
     def read(
-            self, path: FSPathLocalDisk) -> FSCubemapGenerator:
+            self, path: FSPathLocalDisk) -> FSGenericCubemapGenerator:
 
         position_paths_lookup: FilePathLookupType = {}
 
@@ -48,12 +44,12 @@ class FSCubemapGeneratorAdapter(
 
                 position_paths_lookup[cubemap_position] = fs_full_path
 
-        return FSCubemapGenerator(
+        return FSGenericCubemapGenerator(
             tiles=set(position_paths_lookup.keys()),
             generator_input=position_paths_lookup,
-            array_adapter=self.tiles_adapter
+            adapter=self.tiles_adapter
         )
 
     def write(
-            self, obj: FSCubemapGenerator, path: FSPathLocalDisk) -> None:
+            self, obj: FSGenericCubemapGenerator, path: FSPathLocalDisk) -> None:
         raise NotImplementedError

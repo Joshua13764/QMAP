@@ -28,16 +28,9 @@ ArrayType = NDArray[np.float64]
 
 
 @dataclass
-class FSCubemapGenerator(
-        CubemapGeneratorBase[Dict[CubemapLodPosition, FSPathLocalDisk], ArrayType]):
-    array_adapter: FSAdapterBase[ArrayType, FSPathLocalDisk]
+class FSBasedCubemapGeneratorBase[T](
+        CubemapGeneratorBase[Dict[CubemapLodPosition, FSPathLocalDisk], T]):
 
-    def get_lod_tile(
-            self, cubemaps_tile: CubemapLodPosition) -> ArrayType:
-
-        img: ArrayType = FSEnvironment.load(
-            path=self.generator_input[cubemaps_tile],
-            adapter=self.array_adapter,
-        )
-
-        return img
+    def get_tile_path(
+            self, cubemap_tile: CubemapLodPosition) -> FSPathLocalDisk:
+        return self.generator_input[cubemap_tile]
