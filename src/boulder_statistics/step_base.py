@@ -19,6 +19,7 @@ basicConfig(
 @dataclass(frozen=True, kw_only=True)
 class StepBase(ABC):
     task_name: str
+    debug_mode: bool = field(default=False)
     ignore_cache: bool = field(default_factory=lambda: False, repr=False)
     run_after_task_names: tuple[str, ...] = field(
         default=(), repr=True)

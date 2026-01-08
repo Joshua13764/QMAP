@@ -122,7 +122,7 @@ class FSEnvironment():
 
             else:
                 raise Exception(
-                    "Trying to write using a extension less path where the adapter has not specified a standard_extension")
+                    f"Trying to write using a extension less path where the adapter ({adapter.__class__.__name__}) has not specified a standard_extension")
 
             return cast(PathType, path_with_extension)
 

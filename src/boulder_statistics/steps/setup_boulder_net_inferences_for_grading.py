@@ -7,6 +7,8 @@ from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_input import FSInput
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
+from boulder_statistics.file_storage_adapters.adapter_custom_classes.inference_detection_data import \
+    InferenceDetectionData
 from boulder_statistics.file_storage_adapters.adapter_custom_classes.npz_feature_detection import \
     NpzFeatureDetection
 from boulder_statistics.lods.cubemap_lod_position import CubemapLodPosition
@@ -22,7 +24,7 @@ from boulder_statistics.steps.base.many_to_one_step_base import \
 ArrayType = NDArray[Any]
 FSArrayCubemapGenerator = FSGenericCubemapGenerator[ArrayType]
 
-FSInferencesCubemapGenerator = FSGenericCubemapGenerator[List[NpzFeatureDetection]]
+FSInferencesCubemapGenerator = FSGenericCubemapGenerator[List[InferenceDetectionData]]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -75,7 +77,7 @@ class SetupBoulderNetInferencesForGrading(
         img_path: FSPathLocalDisk = image_generator.get_tile_path(tile)
         inference_path: FSPathLocalDisk = inference_generator.get_tile_path(
             tile)
-        inferences_data: List[NpzFeatureDetection] = inference_generator.get_lod_tile(
+        inferences_data: List[InferenceDetectionData] = inference_generator.get_lod_tile(
             tile)
 
         return tuple(

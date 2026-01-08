@@ -72,3 +72,8 @@ class SelectedToOneStepBase[ProcessJobOutputObjectType](
     def selected_objects_operation(self,
                                    env: FSEnvironment) -> ProcessJobOutputObjectType:
         ...
+
+    @abstractmethod
+    def get_object_relative_export_path(
+            self, env: FSEnvironment, output_object: ProcessJobOutputObjectType) -> Tuple[str, ...]:
+        ...

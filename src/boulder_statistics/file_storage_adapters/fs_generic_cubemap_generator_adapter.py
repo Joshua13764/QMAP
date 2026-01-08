@@ -15,11 +15,12 @@ from boulder_statistics.lods.fs_generic_cubemap_generator import \
 FilePathLookupType = Dict[CubemapLodPosition, FSPathLocalDisk]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FSGenericCubemapGeneratorAdapter[T](
         FSAdapterBase[FSGenericCubemapGenerator, FSPathLocalDisk]):
 
     tiles_adapter: FSAdapterBase[T, FSPathLocalDisk]
+    standard_extension: str | None | bool = field(default=False)
     n_jobs: int = field(default=4)
 
     def read(
@@ -36,7 +37,7 @@ class FSGenericCubemapGeneratorAdapter[T](
                     continue
 
                 fs_full_path: FSPathLocalDisk = path.copy_from_folder(
-                    new_sub_path=path.actual_path.relative_to(full_path)
+                    new_sub_path=full_path.relative_to(path.actual_path)
                 )
 
                 cubemap_position: CubemapLodPosition = CubemapLodPosition.from_fs_path(

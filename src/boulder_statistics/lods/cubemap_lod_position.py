@@ -38,12 +38,13 @@ class CubemapLodPosition(ImgLODPosition):
         raw_tile_face_name: str = path.parent.parent.stem
 
         raw_tile_name_check: bool = "lod tile (" in raw_tile_name and ") with_shape (" in raw_tile_name
+        raw_tile_name_end_check: bool = raw_tile_name[-1] == ")"
         raw_tile_lod_name_check: bool = "lod " in raw_tile_lod_name
         raw_tile_face_name_check: bool = "face " in raw_tile_face_name
 
         return all(
             (raw_tile_name_check, raw_tile_lod_name_check,
-             raw_tile_face_name_check)
+             raw_tile_face_name_check, raw_tile_name_end_check)
         )
 
     @classmethod

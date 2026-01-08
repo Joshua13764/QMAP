@@ -25,7 +25,7 @@ plt.rcParams.update({
 })
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
     export_debug_plots: bool = field(default=False)
     standard_extension: str | None | bool = field(default="npy")

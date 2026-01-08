@@ -20,14 +20,12 @@ class TaskFactory():
     def handle_task_step_base(
             step: TaskStepBase, result_cache: ResultCache[FSEnvironment]) -> Callable[[FSEnvironment], FSEnvironment]:
 
-        # print(f"Compiling task {step.task_name}...")
-
         result_cache_path: Path = result_cache.get_result_cache_path(
             step, save_prefix=step.task_name)
 
         result_cache_exists: bool = result_cache_path.exists()
 
-        if result_cache_exists:
+        if result_cache_exists and step.debug_mode == False:
 
             def load_cache_step_task(env: FSEnvironment) -> FSEnvironment:
                 res: FSEnvironment = result_cache.open_result_cache(

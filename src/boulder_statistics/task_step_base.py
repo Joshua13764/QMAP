@@ -13,7 +13,6 @@ from boulder_statistics.step_base import StepBase
 
 @dataclass(frozen=True, kw_only=True)
 class TaskStepBase(StepBase):
-    debug_mode: bool = field(default=False)
 
     @abstractmethod
     def run(self, env: FSEnvironment) -> FSEnvironment:

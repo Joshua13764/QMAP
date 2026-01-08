@@ -13,6 +13,8 @@ from boulder_statistics.file_storage_adapters.fs_copy_cubemap_generator_adapter 
 from boulder_statistics.file_storage_adapters.fs_generic_cubemap_generator_adapter import \
     FSGenericCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
+from boulder_statistics.file_storage_adapters.inference_detection_adapter import \
+    FSInferenceDetectionAdapter
 from boulder_statistics.file_storage_adapters.npz_detection_adapter import \
     FSNpzDetectionAdapter
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
@@ -72,37 +74,25 @@ detection = BetterPDS4BoulderNetInference(
 )
 
 grades = SetupBoulderNetInferencesForGrading(
-    debug_mode=True,
+    # debug_mode=True,
     task_name=f"Setup inferences for grading",
-    run_after_task_names=(detection.task_name,),
+    run_after_task_names=(detection.task_name, divide_pan.task_name),
     pipeline_data_path=detections_from_bennu_pan,
     output_markers=(FSMarkerString(value="INFCOLL_lod"),),
     output_adapter=FSPickleAdapter(),
     lod_images_input=FSInput(
         fs_marker=FSMarkerString(value="PAN_lod"),
-        fs_adapter=FSGenericCubemapGeneratorAdapter[NDArray[float64]](
+        fs_adapter=FSGenericCubemapGeneratorAdapter(
             tiles_adapter=FSNumpyAdapter())
     ),
     lod_detections_input=FSInput(
         fs_marker=FSMarkerString(value="INF_lod"),
         fs_adapter=FSGenericCubemapGeneratorAdapter(
-            tiles_adapter=FSNpzDetectionAdapter())
+            tiles_adapter=FSInferenceDetectionAdapter())
     ),
     input_markers=None
 
 )
-
-# boulder_detections = PDS4BoulderNetInference(
-#     task_name=f"Infer boulders on bennu PAN LODs with BoulderNet -",
-#     cuda=True,
-#     skip_converted=True,
-#     run_after_task_names=tuple(
-#         [step.task_name for step in super_sample_steps]),
-#     run_path=detections_from_bennu_pan.as_posix(),
-#     detection_input_markers=(FSMarkerString("InferableImage"),),
-#     detection_output_markers=(FSMarkerString("BoulderNet_Detections"),),
-#     append_input_extension_no_dot="npy",
-# )
 
 steps: List[Any] = [get_pan, divide_pan, detection, grades]
 
