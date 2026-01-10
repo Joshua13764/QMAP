@@ -23,7 +23,9 @@ from boulder_statistics.file_storage_adapters.pan_to_lod_cubemap_generator_adapt
 from boulder_statistics.file_storage_adapters.pickle_adapter import \
     FSPickleAdapter
 from boulder_statistics.file_storage_adapters.polars_lazy_action_csv_batched_adapter import \
-    FSPolarsLazyActionCSVBatched
+    FSPolarsLazyActionBatched
+from boulder_statistics.file_storage_adapters.polars_lazy_parquet_adapter import \
+    FSPolarsLazyParquetAdapter
 from boulder_statistics.file_storage_adapters.shutil_copy_adapter import \
     FSShutilCopyAdapter
 from boulder_statistics.file_storage_adapters.type_safe_pickle_adapter import \
@@ -36,6 +38,8 @@ from boulder_statistics.steps.better_PDS4_boulder_net_inference import \
     BetterPDS4BoulderNetInference
 from boulder_statistics.steps.export_boulder_net_inferences_as_df import \
     ExportBoulderNetInferencesAsDF
+from boulder_statistics.steps.export_pan_images_as_df import \
+    ExportPANImagesAsDF
 from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from boulder_statistics.steps.PAN_to_LOD_supersample import PANToLODSuperSample
 from boulder_statistics.steps.pds4_boulderNet_inference import \
@@ -100,17 +104,31 @@ grades = SetupBoulderNetInferencesForGrading(
     input_markers=None
 )
 
-export_as_parts = ExportBoulderNetInferencesAsDF(
+export_detections = ExportBoulderNetInferencesAsDF(
     debug_mode=True,
     task_name=f"Export grading to csv",
     run_after_task_names=(grades.task_name,),
     pipeline_data_path=detections_from_bennu_pan,
     input_adapter=FSTypeSafePickleAdapter(expected_type=ImageDetectionGrades),
-    output_adapter=FSPolarsLazyActionCSVBatched(temp_folder_path=Path(
+    output_adapter=FSPolarsLazyActionBatched(temp_folder_path=Path(
         r"C:\Users\Joshu\Documents\AO33\temp\export_lazyframe").as_posix(),
         n_jobs=4),
     input_markers=(FSMarkerString(value="INFCOLL_lod"),),
     output_markers=(FSMarkerString(value="GRAD_lod_export"),),
+)
+
+export_pan = ExportPANImagesAsDF(
+    debug_mode=True,
+    task_name=f"Export grading to csv",
+    run_after_task_names=(grades.task_name,),
+    pipeline_data_path=detections_from_bennu_pan,
+    input_adapter=FSTypeSafePickleAdapter(expected_type=ImageDetectionGrades),
+    output_adapter=FSPolarsLazyActionBatched(temp_folder_path=Path(
+        r"C:\Users\Joshu\Documents\AO33\temp\export_lazyframe").as_posix(),
+        lazy_frame_adapter=FSPolarsLazyParquetAdapter(),
+        n_jobs=4),
+    input_markers=(FSMarkerString(value="INFCOLL_lod"),),
+    output_markers=(FSMarkerString(value="PAN_lod_export"),),
 )
 
 steps: List[Any] = [get_pan, divide_pan, detection, grades, export_as_parts]

@@ -16,18 +16,20 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.file_storage_adapters.polars_lazy_csv_adapter import \
     FSPolarsLazyCSVAdapter
+from boulder_statistics.file_storage_adapters.polars_lazy_parquet_adapter import \
+    FSPolarsLazyParquetAdapter
 
 LazyFrameAction = Callable[[], LazyFrame]
 LazyFrameActionBatch = List[LazyFrameAction]
 
 
 @dataclass(frozen=True, kw_only=True)
-class FSPolarsLazyActionCSVBatched(
+class FSPolarsLazyActionBatched(
         FSAdapterBase[LazyFrameActionBatch, FSPathLocalDisk]):
     standard_extension: str | None | bool = field(default="csv")
     temp_folder_path: str
-    lazy_frame_adapter: FSPolarsLazyCSVAdapter = field(
-        default_factory=lambda: FSPolarsLazyCSVAdapter())
+    lazy_frame_adapter: FSAdapterBase[LazyFrame, FSPathLocalDisk] = field(
+        default_factory=lambda: FSPolarsLazyParquetAdapter())
     temp_path_function: Callable[[LazyFrame, int], Tuple[str, ...]] = field(
         default=lambda obj, obj_index: ("temp", f"export obj {str(obj_index).zfill(9)}"))
     lazy_merge_function: Callable[[List[LazyFrame]], LazyFrame] = field(
@@ -77,11 +79,11 @@ class FSPolarsLazyActionCSVBatched(
         # ]
 
         parallel_results_raw = ParallelPbar(message, unit=unit)(n_jobs=self.n_jobs)(
-            delayed(FSPolarsLazyActionCSVBatched.export_obj)(
+            delayed(FSPolarsLazyActionBatched.export_obj)(
                 action,
                 self.lazy_frame_adapter,
                 partial(
-                    FSPolarsLazyActionCSVBatched.get_temp_path,
+                    FSPolarsLazyActionBatched.get_temp_path,
                     self.temp_path_function,
                     self.temp_folder_path,
                     obj_index=action_index,
