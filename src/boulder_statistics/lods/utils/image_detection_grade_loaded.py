@@ -26,14 +26,22 @@ class ImageDetectionGradeLoaded():
     position: CubemapLodPosition
 
     @classmethod
-    def from_grade(cls, grade: ImageDetectionGrade,
-                   image_adapter: FSAdapterBase[NDArray[Any], FSPathLocalDisk],
-                   detection_adapter: FSAdapterBase[List[InferenceDetectionData], FSPathLocalDisk]) -> "ImageDetectionGradeLoaded":
+    def all_from_detection(cls,
+                           image_path: FSPathLocalDisk,
+                           detections_path: FSPathLocalDisk,
+                           image_adapter: FSAdapterBase[NDArray[Any], FSPathLocalDisk],
+                           detection_adapter: FSAdapterBase[List[InferenceDetectionData], FSPathLocalDisk]) -> List["ImageDetectionGradeLoaded"]:
 
-        return cls(
-            image_array=FSEnvironment.load(
-                grade.image_path, image_adapter),
-            detection_data=FSEnvironment.load(
-                grade.image_path, detection_adapter)[grade.detection_index],
-            position=grade.cubemap_position
-        )
+        img_array: NDArray[Any] = FSEnvironment.load(
+            image_path, image_adapter)
+
+        return [
+            cls(
+                image_array=img_array,
+                detection_data=detection_data,
+                position=CubemapLodPosition.from_fs_path(
+                    image_path.actual_path),
+            )
+            for detection_data in FSEnvironment.load(
+                detections_path, detection_adapter)
+        ]

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 from shutil import rmtree
 from typing import Callable, List, Tuple
@@ -37,8 +38,7 @@ class FSPolarsLazyActionCSVBatched(
         raise NotImplementedError
 
     def write(self, obj: LazyFrameActionBatch, path: FSPathLocalDisk) -> None:
-
-        rmtree(self.temp_folder_path)
+        self.clean_temp_folder()
 
         temp_file_paths: List[FSPathLocalDisk] = self.export_temp_files(
             action_batch=obj,
@@ -50,9 +50,14 @@ class FSPolarsLazyActionCSVBatched(
 
         merged_file: LazyFrame = self.lazy_merge_function(temp_files)
 
-        rmtree(self.temp_folder_path)
-
         FSEnvironment.save(merged_file, path, self.lazy_frame_adapter)
+
+        self.clean_temp_folder()
+
+    def clean_temp_folder(self) -> None:
+        Path(self.temp_folder_path).mkdir(parents=True, exist_ok=True)
+        rmtree(self.temp_folder_path)
+        Path(self.temp_folder_path).mkdir(parents=True, exist_ok=True)
 
     def export_temp_files(
             self, action_batch: LazyFrameActionBatch, root_path: FSPathLocalDisk) -> List[FSPathLocalDisk]:
@@ -60,12 +65,26 @@ class FSPolarsLazyActionCSVBatched(
         message: str = f"Saving LazyFrame action with {self.n_jobs} jobs"
         unit: str = "sub frame"
 
+        # parallel_results_raw: List[FSPathLocalDisk] = [
+        #     FSPolarsLazyActionCSVBatched.export_obj(
+        #         action,
+        #         self.lazy_frame_adapter,
+        #         lambda obj: FSPolarsLazyActionCSVBatched.get_temp_path(
+        #             self.temp_path_function, self.temp_folder_path, obj, action_index)
+        #     )
+        #     for action_index, action in enumerate(action_batch)
+        # ]
+
         parallel_results_raw = ParallelPbar(message, unit=unit)(n_jobs=self.n_jobs)(
             delayed(FSPolarsLazyActionCSVBatched.export_obj)(
                 action,
                 self.lazy_frame_adapter,
-                lambda obj: FSPolarsLazyActionCSVBatched.get_temp_path(
-                    self.temp_path_function, self.temp_folder_path, obj, action_index)
+                partial(
+                    FSPolarsLazyActionCSVBatched.get_temp_path,
+                    self.temp_path_function,
+                    self.temp_folder_path,
+                    obj_index=action_index,
+                )
             )
             for action_index, action in enumerate(action_batch)
         )
@@ -81,10 +100,10 @@ class FSPolarsLazyActionCSVBatched(
     @staticmethod
     def export_obj(
             obj_action: Callable[[], LazyFrame], adapter: FSAdapterBase[LazyFrame, FSPathLocalDisk],
-            temp_path_function: Callable[[LazyFrame], FSPathLocalDisk]) -> FSPathLocalDisk:
+            temp_path_function_partial: Callable[[LazyFrame], FSPathLocalDisk]) -> FSPathLocalDisk:
 
         obj: LazyFrame = obj_action()
-        temp_path: FSPathLocalDisk = temp_path_function(obj)
+        temp_path: FSPathLocalDisk = temp_path_function_partial(obj)
 
         FSEnvironment.save(
             obj=obj_action(),

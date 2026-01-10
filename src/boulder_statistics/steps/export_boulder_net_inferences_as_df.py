@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
-from more_itertools import chunked
 from numpy.typing import NDArray
 from polars import LazyFrame
 
@@ -34,8 +33,6 @@ LazyFrameActionBatch = List[LazyFrameAction]
 class ExportBoulderNetInferencesAsDF(
         OneToOneStepBase[ImageDetectionGrades, LazyFrameActionBatch]):
 
-    batch_size: int = field(default=1024)
-
     @property
     def hashable(self) -> Tuple[Any, ...]:
         return (self.task_name,)
@@ -47,21 +44,37 @@ class ExportBoulderNetInferencesAsDF(
     def object_operation(self,
                          input_object: ImageDetectionGrades) -> LazyFrameActionBatch:
 
-        output_batches: List[LazyFrameAction] = [self.get_lazy_frame_from_batch(batch) for batch in chunked(
-            input_object.grades, self.batch_size)]
+        output_batches: List[LazyFrameAction] = [self.get_lazy_frame_from_batch(batch) for batch in self.batch_grades(
+            input_object)]
 
         return output_batches
+
+    def batch_grades(
+            self, grades: ImageDetectionGrades) -> List[List[ImageDetectionGrade]]:
+
+        grouped_by_detect_path: Dict[FSPathLocalDisk,
+                                     List[ImageDetectionGrade]] = {}
+
+        for grade in grades.grades:
+
+            if grade.detections_path in grouped_by_detect_path:
+                grouped_by_detect_path[grade.detections_path].append(grade)
+
+            else:
+                grouped_by_detect_path[grade.detections_path] = [grade]
+
+        return list(grouped_by_detect_path.values())
 
     def get_lazy_frame_from_batch(
             self, batch: List[ImageDetectionGrade]) -> LazyFrameAction:
 
         def action() -> LazyFrame:
-            loaded_grades: List[ImageDetectionGradeLoaded] = [
-                ImageDetectionGradeLoaded.from_grade(grade,
-                                                     image_adapter=FSNumpyAdapter(),
-                                                     detection_adapter=FSInferenceDetectionAdapter())
-                for grade in batch
-            ]
+            first_grade: ImageDetectionGrade = batch[0]
+            loaded_grades: List[ImageDetectionGradeLoaded] = ImageDetectionGradeLoaded.all_from_detection(
+                image_path=first_grade.image_path,
+                detections_path=first_grade.detections_path,
+                image_adapter=FSNumpyAdapter(),
+                detection_adapter=FSInferenceDetectionAdapter())
 
             return LazyFrame({
                 # Position

@@ -212,3 +212,4 @@ models*
 venvs*
 *.run_dir_storage
 .cache
+*temp

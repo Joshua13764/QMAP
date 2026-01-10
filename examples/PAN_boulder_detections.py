@@ -1,12 +1,3 @@
-from boulder_statistics.file_storage_adapters.polars_lazy_action_csv_batched_adapter import FSPolarsLazyActionCSVBatched
-from boulder_statistics.steps_orchestrator import StepsOrchestrator
-from boulder_statistics.steps.simple_request import SimpleRequest
-from boulder_statistics.steps.setup_boulder_net_inferences_for_grading import \
-    SetupBoulderNetInferencesForGrading
-from boulder_statistics.steps.pds4_boulderNet_inference import \
-    PDS4BoulderNetInference
-from boulder_statistics.steps.PAN_to_LOD_supersample import PANToLODSuperSample
-from boulder_statistics.steps.PAN_to_LOD import PANToLOD
 from pathlib import Path
 from typing import Any, List
 
@@ -31,8 +22,8 @@ from boulder_statistics.file_storage_adapters.pan_to_lod_cubemap_generator_adapt
     FSPANToLODCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.pickle_adapter import \
     FSPickleAdapter
-from boulder_statistics.file_storage_adapters.polars_lazy_csv_adapter import \
-    FSPolarsLazyCSV
+from boulder_statistics.file_storage_adapters.polars_lazy_action_csv_batched_adapter import \
+    FSPolarsLazyActionCSVBatched
 from boulder_statistics.file_storage_adapters.shutil_copy_adapter import \
     FSShutilCopyAdapter
 from boulder_statistics.file_storage_adapters.type_safe_pickle_adapter import \
@@ -44,8 +35,15 @@ from boulder_statistics.steps.Better_PAN_to_LOD import BetterPANToLOD
 from boulder_statistics.steps.better_PDS4_boulder_net_inference import \
     BetterPDS4BoulderNetInference
 from boulder_statistics.steps.export_boulder_net_inferences_as_df import \
-    ExportBoulderNetInferencesAsDF,
-ExportBoulderNetInferencesAsDFParts
+    ExportBoulderNetInferencesAsDF
+from boulder_statistics.steps.PAN_to_LOD import PANToLOD
+from boulder_statistics.steps.PAN_to_LOD_supersample import PANToLODSuperSample
+from boulder_statistics.steps.pds4_boulderNet_inference import \
+    PDS4BoulderNetInference
+from boulder_statistics.steps.setup_boulder_net_inferences_for_grading import \
+    SetupBoulderNetInferencesForGrading
+from boulder_statistics.steps.simple_request import SimpleRequest
+from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 detections_from_bennu_pan: Path = Path(
     r"C:\Users\Joshu\OneDrive - Nexus365\AO33\Testing\Extract detections")
@@ -103,12 +101,14 @@ grades = SetupBoulderNetInferencesForGrading(
 )
 
 export_as_parts = ExportBoulderNetInferencesAsDF(
-    task_name=f"Setup inferences for grading",
+    debug_mode=True,
+    task_name=f"Export grading to csv",
     run_after_task_names=(grades.task_name,),
     pipeline_data_path=detections_from_bennu_pan,
     input_adapter=FSTypeSafePickleAdapter(expected_type=ImageDetectionGrades),
     output_adapter=FSPolarsLazyActionCSVBatched(temp_folder_path=Path(
-        r"C:\Users\Joshu\Documents\AO33\temp\export_lazyframe").as_posix()),
+        r"C:\Users\Joshu\Documents\AO33\temp\export_lazyframe").as_posix(),
+        n_jobs=4),
     input_markers=(FSMarkerString(value="INFCOLL_lod"),),
     output_markers=(FSMarkerString(value="GRAD_lod_export"),),
 )
