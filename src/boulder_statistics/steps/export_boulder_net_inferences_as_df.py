@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
+import polars as pl
 from numpy.typing import NDArray
 from polars import LazyFrame
 
@@ -76,6 +77,31 @@ class ExportBoulderNetInferencesAsDF(
                 image_adapter=FSNumpyAdapter(),
                 detection_adapter=FSInferenceDetectionAdapter())
 
+            schema: Dict[str, Any] = {
+                # Position
+                "tile_face": pl.String,
+                "tile_reciprocal_length": pl.Float64,
+                "tile_reciprocal_area": pl.Float64,
+                "tile_x_min": pl.Float64,
+                "tile_x_max": pl.Float64,
+                "tile_y_min": pl.Float64,
+                "tile_y_max": pl.Float64,
+
+                # Detection data
+                "relative_bounding_box_x_min": pl.Float64,
+                "relative_bounding_box_y_min": pl.Float64,
+                "relative_bounding_box_x_max": pl.Float64,
+                "relative_bounding_box_y_max": pl.Float64,
+                "BoulderNet_confidence": pl.Float64,
+
+                # Array statistics
+                "mean": pl.Float64,
+                "sum": pl.Float64,
+                "median": pl.Float64,
+                "tile_x_shape": pl.Int32,
+                "tile_y_shape": pl.Int32,
+            }
+
             return LazyFrame({
                 # Position
                 "tile_face": [loaded_grade.position.face for loaded_grade in loaded_grades],
@@ -101,6 +127,6 @@ class ExportBoulderNetInferencesAsDF(
                 "tile_y_shape": [loaded_grade.image_array.shape[1] for loaded_grade in loaded_grades],
 
                 # LAS statistics needed here !!!
-            })
+            }, schema=schema)
 
         return action
