@@ -29,7 +29,7 @@ class FSPolarsLazyActionCSVBatched(
     lazy_frame_adapter: FSPolarsLazyCSVAdapter = field(
         default_factory=lambda: FSPolarsLazyCSVAdapter())
     temp_path_function: Callable[[LazyFrame, int], Tuple[str, ...]] = field(
-        default=lambda obj, obj_index: ("temp", f"export obj {obj_index}"))
+        default=lambda obj, obj_index: ("temp", f"export obj {str(obj_index).zfill(9)}"))
     lazy_merge_function: Callable[[List[LazyFrame]], LazyFrame] = field(
         default=lambda dfs: concat(dfs))
     n_jobs: int = field(default=4)
@@ -50,6 +50,7 @@ class FSPolarsLazyActionCSVBatched(
 
         merged_file: LazyFrame = self.lazy_merge_function(temp_files)
 
+        print("Merging and exporting data")
         FSEnvironment.save(merged_file, path, self.lazy_frame_adapter)
 
         self.clean_temp_folder()

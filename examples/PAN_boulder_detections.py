@@ -108,7 +108,7 @@ export_as_parts = ExportBoulderNetInferencesAsDF(
     input_adapter=FSTypeSafePickleAdapter(expected_type=ImageDetectionGrades),
     output_adapter=FSPolarsLazyActionCSVBatched(temp_folder_path=Path(
         r"C:\Users\Joshu\Documents\AO33\temp\export_lazyframe").as_posix(),
-        n_jobs=8),
+        n_jobs=4),
     input_markers=(FSMarkerString(value="INFCOLL_lod"),),
     output_markers=(FSMarkerString(value="GRAD_lod_export"),),
 )

@@ -22,8 +22,6 @@ from boulder_statistics.lods.utils.image_detection_grades import \
 from boulder_statistics.steps.base.one_to_many_step_base import \
     OneToManyStepBase
 from boulder_statistics.steps.base.one_to_one_step_base import OneToOneStepBase
-from boulder_statistics.steps.base.output_adapter_step_base import \
-    OutputAdapterStepBase
 from boulder_statistics.steps.export_image_detection_grades_as_df import \
     ExportImageDetectionGradesDataAsDF
 
@@ -33,7 +31,7 @@ LazyFrameActionBatch = List[LazyFrameAction]
 
 
 @dataclass(frozen=True, kw_only=True)
-class ExportBoulderNetInferencesAsDF(ExportImageDetectionGradesDataAsDF):
+class ExportPANImagesAsDF(ExportImageDetectionGradesDataAsDF):
 
     def get_lazy_frame_from_batch(
             self, batch: List[ImageDetectionGrade]) -> LazyFrameAction:
