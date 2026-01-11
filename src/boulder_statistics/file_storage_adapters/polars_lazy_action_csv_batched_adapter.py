@@ -26,7 +26,7 @@ LazyFrameActionBatch = List[LazyFrameAction]
 @dataclass(frozen=True, kw_only=True)
 class FSPolarsLazyActionBatched(
         FSAdapterBase[LazyFrameActionBatch, FSPathLocalDisk]):
-    standard_extension: str | None | bool = field(default="csv")
+    standard_extension: str | None | bool = field(default="parquet")
     temp_folder_path: str
     lazy_frame_adapter: FSAdapterBase[LazyFrame, FSPathLocalDisk] = field(
         default_factory=lambda: FSPolarsLazyParquetAdapter())

@@ -105,8 +105,7 @@ grades = SetupBoulderNetInferencesForGrading(
 )
 
 export_detections = ExportBoulderNetInferencesAsDF(
-    debug_mode=True,
-    task_name=f"Export grading to csv",
+    task_name=f"Export BoulderNet inferences to DF",
     run_after_task_names=(grades.task_name,),
     pipeline_data_path=detections_from_bennu_pan,
     input_adapter=FSTypeSafePickleAdapter(expected_type=ImageDetectionGrades),
@@ -118,8 +117,7 @@ export_detections = ExportBoulderNetInferencesAsDF(
 )
 
 export_pan = ExportPANImagesAsDF(
-    debug_mode=True,
-    task_name=f"Export grading to csv",
+    task_name=f"Export PAN images to DF",
     run_after_task_names=(grades.task_name,),
     pipeline_data_path=detections_from_bennu_pan,
     input_adapter=FSTypeSafePickleAdapter(expected_type=ImageDetectionGrades),
@@ -131,7 +129,13 @@ export_pan = ExportPANImagesAsDF(
     output_markers=(FSMarkerString(value="PAN_lod_export"),),
 )
 
-steps: List[Any] = [get_pan, divide_pan, detection, grades, export_as_parts]
+steps: List[Any] = [
+    get_pan,
+    divide_pan,
+    detection,
+    grades,
+    export_detections,
+    export_pan]
 
 if __name__ == "__main__":
     cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](
