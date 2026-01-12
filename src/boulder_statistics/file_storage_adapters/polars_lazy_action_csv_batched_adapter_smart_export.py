@@ -1,9 +1,11 @@
 from dataclasses import dataclass, field
 from functools import partial
+from math import floor
 from pathlib import Path
 from shutil import rmtree
 from typing import Callable, List, Tuple
 
+import polars as pl
 from joblib import delayed
 from polars import LazyFrame, concat
 from tqdm_joblib import ParallelPbar
@@ -26,14 +28,12 @@ LazyFrameActionBatch = List[LazyFrameAction]
 
 
 @dataclass(frozen=True, kw_only=True)
-class FSPolarsLazyActionBatched(
+class FSPolarsLazyActionBatchedSmartExport(
         FSAdapterBase[LazyFrameActionBatch, FSPathLocalDisk]):
     standard_extension: str | None | bool = field(default="parquet")
     temp_folder_path: str
     temp_lazy_frame_adapter: FSAdapterBase[LazyFrame, FSPathLocalDisk] = field(
         default_factory=lambda: FSPolarsLazyParquetAdapter())
-    export_lazy_frame_adapter: FSAdapterBase[LazyFrame, FSPathLocalDisk] = field(
-        default_factory=lambda: FSPolarsLazyParquetAdapterLargeExport())
     temp_path_function: Callable[[LazyFrame, int], Tuple[str, ...]] = field(
         default=lambda obj, obj_index: ("temp", f"export obj {str(obj_index).zfill(9)}"))
     lazy_merge_function: Callable[[List[LazyFrame]], LazyFrame] = field(
@@ -46,7 +46,7 @@ class FSPolarsLazyActionBatched(
     def write(self, obj: LazyFrameActionBatch, path: FSPathLocalDisk) -> None:
         self.clean_temp_folder()
 
-        temp_file_paths: List[FSPathLocalDisk] = self.export_temp_files(
+        temp_file_paths, row_count = self.export_temp_files(
             action_batch=obj,
             root_path=path
         )
@@ -56,10 +56,27 @@ class FSPolarsLazyActionBatched(
 
         merged_file: LazyFrame = self.lazy_merge_function(temp_files)
 
-        print("Merging and exporting data")
-        FSEnvironment.save(merged_file, path, self.export_lazy_frame_adapter)
+        # Aim for ~ 30 MB chunks
+        batches_to_export: float = self.get_df_parts_export_size_mb() / 30
+        rows_per_batch: int = floor(row_count / batches_to_export)
+
+        print(
+            f"""Merging and exporting data in ~ {
+                int(batches_to_export)} batches""")
+
+        FSEnvironment.save(
+            merged_file,
+            path,
+            FSPolarsLazyParquetAdapterLargeExport(
+                row_group_size=rows_per_batch
+            )
+        )
 
         self.clean_temp_folder()
+
+    def get_df_parts_export_size_mb(self) -> float:
+        return sum([f.stat().st_size for f in Path(
+            self.temp_folder_path).glob("*.parquet")]) / 1_048_576
 
     def clean_temp_folder(self) -> None:
         Path(self.temp_folder_path).mkdir(parents=True, exist_ok=True)
@@ -67,17 +84,17 @@ class FSPolarsLazyActionBatched(
         Path(self.temp_folder_path).mkdir(parents=True, exist_ok=True)
 
     def export_temp_files(
-            self, action_batch: LazyFrameActionBatch, root_path: FSPathLocalDisk) -> List[FSPathLocalDisk]:
+            self, action_batch: LazyFrameActionBatch, root_path: FSPathLocalDisk) -> Tuple[List[FSPathLocalDisk], int]:
 
         message: str = f"Saving LazyFrame action with {self.n_jobs} jobs"
         unit: str = "sub frame"
 
         parallel_results_raw = ParallelPbar(message, unit=unit)(n_jobs=self.n_jobs)(
-            delayed(FSPolarsLazyActionBatched.export_obj)(
+            delayed(FSPolarsLazyActionBatchedSmartExport.export_obj)(
                 action,
                 self.temp_lazy_frame_adapter,
                 partial(
-                    FSPolarsLazyActionBatched.get_temp_path,
+                    FSPolarsLazyActionBatchedSmartExport.get_temp_path,
                     self.temp_path_function,
                     self.temp_folder_path,
                     obj_index=action_index,
@@ -89,25 +106,28 @@ class FSPolarsLazyActionBatched(
         assert all(
             parallel_result_raw is not None for parallel_result_raw in parallel_results_raw)
 
-        parallel_results_cleaned: List[FSPathLocalDisk] = [
+        parallel_results_cleaned: List[Tuple[FSPathLocalDisk, int]] = [
             parallel_result_raw for parallel_result_raw in parallel_results_raw if parallel_result_raw is not None]
 
-        return parallel_results_cleaned
+        return [export_data[0] for export_data in parallel_results_cleaned], sum(
+            [export_data[1] for export_data in parallel_results_cleaned])
 
     @staticmethod
     def export_obj(
             obj_action: Callable[[], LazyFrame], adapter: FSAdapterBase[LazyFrame, FSPathLocalDisk],
-            temp_path_function_partial: Callable[[LazyFrame], FSPathLocalDisk]) -> FSPathLocalDisk:
+            temp_path_function_partial: Callable[[LazyFrame], FSPathLocalDisk]) -> Tuple[FSPathLocalDisk, int]:
 
         obj: LazyFrame = obj_action()
         temp_path: FSPathLocalDisk = temp_path_function_partial(obj)
+
+        row_count: int = obj.select(pl.len()).collect().item()
 
         FSEnvironment.save(
             obj=obj_action(),
             path=temp_path,
             adapter=adapter)
 
-        return temp_path
+        return temp_path, row_count
 
     @staticmethod
     def get_temp_path(temp_path_function: Callable[[LazyFrame, int], Tuple[str, ...]], temp_folder: str,
