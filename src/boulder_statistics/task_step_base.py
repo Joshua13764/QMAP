@@ -29,12 +29,11 @@ class TaskStepBase(StepBase):
             unit=unit,
         )
 
-    # @retry(stop=stop_after_attempt(3))
     def run_in_parallel[I, O](
-            self, function: Callable[[I], O], inputs: Iterable[I],
+            self, function: Callable[[I], O], inputs: List[I],
             message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:
 
-        if self.debug_mode:
+        if self.debug_mode or len(inputs) == 1:
             print(message)
             return [function(input) for input in inputs]
 

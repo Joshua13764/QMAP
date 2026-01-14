@@ -54,7 +54,7 @@ class SetupBoulderNetInferencesForGrading(
         grades: List[Tuple[ImageDetectionGrade, ...]] = self.run_in_parallel(
             function=SetupBoulderNetInferencesForGrading.compile_get_grades_from_inferred_image(
                 cubemap_images, cubemap_inferences),
-            inputs=cubemap_inferences.tiles,
+            inputs=list(cubemap_inferences.tiles),
             message="Collecting grades",
             unit="tiles",
             n_jobs=self.collect_grades_workers,
