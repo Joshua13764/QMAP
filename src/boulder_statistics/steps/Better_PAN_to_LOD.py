@@ -25,7 +25,7 @@ ArrayType = NDArray[np.float64]
 class BetterPANToLOD(
         OneToOneStepBase[ArrayType, PANToLODCubemapGenerator]):
 
-    lod_depth: int = field(default_factory=lambda: 5)
+    lod_depth: int = field(default_factory=lambda: 4)
     lod_res: int = field(default_factory=lambda: 512)
     super_sample_factor: int = field(default_factory=lambda: 4)
     skip_if_exists: bool = field(default_factory=lambda: True)
