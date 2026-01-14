@@ -65,8 +65,7 @@ class ManyToManyStepBase[ProcessJobInputObjectsType, ProcessJobOutputObjectsType
     def task_path(self) -> Path:
         return self.pipeline_data_path / \
             Path(
-                f"""Pipeline data for task {
-                    self.task_name} with input hash {
+                f"""{self.task_name} with input hash {
                     self.task_hash[:self.folder_name_hash_length]}""")
 
     def get_output_file_path[I, O](

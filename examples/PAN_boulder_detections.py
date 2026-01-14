@@ -55,7 +55,7 @@ from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 detections_from_bennu_pan: Path = Path(
-    r"C:\Users\Joshu\OneDrive - Nexus365\AO33\Testing\Extract detections")
+    r"G:\AO33\Tile_fixes")
 
 get_pan = SimpleRequest(
     task_name=f"Downloader for the bennu PAN",
@@ -73,6 +73,7 @@ divide_pan: BetterPANToLOD = BetterPANToLOD(
     run_after_task_names=(get_pan.task_name,),
     input_adapter=FSIIOAdapter(),
     output_adapter=lod_export_adapter,
+    lod_depth=2,
     input_markers=(FSMarkerString(value="PAN_texture"),),
     output_markers=(FSMarkerString(value="PAN_lod"),),
     pipeline_data_path=detections_from_bennu_pan,
@@ -128,9 +129,10 @@ export_detections = ExportFullDataPack(
 steps: List[Any] = [
     get_pan,
     divide_pan,
-    detection,
-    grades,
-    export_detections]
+    # detection,
+    # grades,
+    # export_detections,
+]
 
 if __name__ == "__main__":
     cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](

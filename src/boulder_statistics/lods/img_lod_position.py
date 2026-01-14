@@ -1,8 +1,5 @@
-import math
-import re
-from ast import List
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 from bidict import bidict
@@ -25,6 +22,13 @@ BYTEPAIR_DEBUG_REP: bidict[BytePair, str] = bidict({
     (True, False): "Bottom Left",
     (True, True): "Bottom Right",
 })
+
+SUBTILE_TOP_LEFT: Dict[str, NDArray[np.float64]] = {
+    "A": np.array([0, 0], dtype=np.float64),
+    "B": np.array([0.5, 0], dtype=np.float64),
+    "C": np.array([0, 0.5], dtype=np.float64),
+    "D": np.array([0.5, 0.5], dtype=np.float64),
+}
 
 
 @dataclass(frozen=True)
@@ -61,20 +65,26 @@ class ImgLODPosition():
         return len(self.pos_pairs)
 
     @property
-    def x_range(self) -> Tuple[float, float]:
-        left_x_value: float = math.fsum(int(pair[0]) * (2 ** (-i - 1))
-                                        for i, pair in enumerate(self.pos_pairs))
+    def tile_top_left(self) -> NDArray[np.float64]:
+        center: NDArray[np.float64] = np.array([0, 0], dtype=np.float64)
 
-        right_x_value: float = left_x_value + 1 / self.reciprocal_length
-        return (left_x_value, right_x_value)
+        for i, pair in enumerate(self.pos_pairs):
+            str_rep: str = BYTEPAIR_STR_REP[pair]
+            subtile_offset: NDArray[np.float64] = SUBTILE_TOP_LEFT[str_rep]
+            offset_scale: np.float64 = np.power(2, -i, dtype=np.float64)
+            center += subtile_offset * offset_scale
+
+        return center
+
+    @property
+    def x_range(self) -> Tuple[float, float]:
+        return (self.tile_top_left[0],
+                self.tile_top_left[0] + 1 / self.reciprocal_length)
 
     @property
     def y_range(self) -> Tuple[float, float]:
-        left_y_value: float = math.fsum(int(pair[1]) * (2 ** (-i - 1))
-                                        for i, pair in enumerate(self.pos_pairs))
-
-        right_y_value: float = left_y_value + 1 / self.reciprocal_length
-        return (left_y_value, right_y_value)
+        return (self.tile_top_left[1],
+                self.tile_top_left[1] + 1 / self.reciprocal_length)
 
     @classmethod
     def parent(cls) -> "ImgLODPosition":
@@ -100,3 +110,10 @@ class ImgLODPosition():
             BYTEPAIR_STR_REP.inverse[ch] for ch in str_rep)
 
         return cls(pos_pairs=pairs)
+
+
+if __name__ == "__main__":
+    test: ImgLODPosition = ImgLODPosition.from_string_rep("CC")
+    print(test.tile_top_left)
+    print(test.x_range)
+    print(test.y_range)
