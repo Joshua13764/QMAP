@@ -10,6 +10,9 @@ class ImageDetectionGrade():
     # Path of where the src image originally taken
     image_path: FSPathLocalDisk
 
+    # Path of the scaling factor map
+    LAS_factor_path: FSPathLocalDisk
+
     # Index of the path of the detection inferences (detections_path) as well
     # as the index of the detection in that inference set (detection_index)
     detections_path: FSPathLocalDisk

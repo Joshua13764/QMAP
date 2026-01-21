@@ -33,6 +33,7 @@ class SetupBoulderNetInferencesForGrading(
 
     lod_images_input: FSInput[FSArrayCubemapGenerator]
     lod_detections_input: FSInput[FSInferencesCubemapGenerator]
+    LAS_factor_input: FSInput[FSArrayCubemapGenerator]
     collect_grades_workers: int = field(default=-1)
 
     @property
@@ -50,10 +51,12 @@ class SetupBoulderNetInferencesForGrading(
             env)
         cubemap_inferences: FSInferencesCubemapGenerator = self.lod_detections_input.object(
             env)
+        LAS_factors: FSArrayCubemapGenerator = self.LAS_factor_input.object(
+            env)
 
         grades: List[Tuple[ImageDetectionGrade, ...]] = self.run_in_parallel(
             function=SetupBoulderNetInferencesForGrading.compile_get_grades_from_inferred_image(
-                cubemap_images, cubemap_inferences),
+                cubemap_images, cubemap_inferences, LAS_factors),
             inputs=list(cubemap_inferences.tiles),
             message="Collecting grades",
             unit="tiles",
@@ -67,15 +70,17 @@ class SetupBoulderNetInferencesForGrading(
 
     @staticmethod
     def compile_get_grades_from_inferred_image(
-            image_generator: FSArrayCubemapGenerator, inference_generator: FSInferencesCubemapGenerator) -> Callable[..., Tuple[ImageDetectionGrade, ...]]:
+            image_generator: FSArrayCubemapGenerator, inference_generator: FSInferencesCubemapGenerator, LAS_factor_generator: FSArrayCubemapGenerator) -> Callable[..., Tuple[ImageDetectionGrade, ...]]:
         return lambda tile: SetupBoulderNetInferencesForGrading.get_grades_from_inferred_image(
-            tile, image_generator, inference_generator)
+            tile, image_generator, inference_generator, LAS_factor_generator)
 
     @staticmethod
     def get_grades_from_inferred_image(tile: CubemapLodPosition, image_generator: FSArrayCubemapGenerator,
-                                       inference_generator: FSInferencesCubemapGenerator) -> Tuple[ImageDetectionGrade, ...]:
+                                       inference_generator: FSInferencesCubemapGenerator, LAS_factor_generator: FSArrayCubemapGenerator) -> Tuple[ImageDetectionGrade, ...]:
         img_path: FSPathLocalDisk = image_generator.get_tile_path(tile)
         inference_path: FSPathLocalDisk = inference_generator.get_tile_path(
+            tile)
+        LAS_factor_path: FSPathLocalDisk = LAS_factor_generator.get_tile_path(
             tile)
         inferences_data: List[InferenceDetectionData] = inference_generator.get_lod_tile(
             tile)
@@ -83,6 +88,7 @@ class SetupBoulderNetInferencesForGrading(
         return tuple(
             ImageDetectionGrade(
                 image_path=img_path,
+                LAS_factor_path=LAS_factor_path,
                 detections_path=inference_path,
                 detection_index=inference_data_index,
             )

@@ -68,6 +68,7 @@ class ExportFullDataPack(ExportImageDetectionGradesDataAsDF):
 
                 # Paths
                 "image_tile_path": pl.String,
+                "LAS_factor_path": pl.String,
                 "image_detections_path": pl.String,
             }
 
@@ -93,6 +94,7 @@ class ExportFullDataPack(ExportImageDetectionGradesDataAsDF):
 
                 # Paths
                 "image_tile_path": [first_grade.image_path.actual_path.as_posix() for loaded_grade in loaded_grades],
+                "LAS_factor_path": [first_grade.LAS_factor_path.actual_path.as_posix() for loaded_grade in loaded_grades],
                 "image_detections_path": [first_grade.detections_path.actual_path.as_posix() for loaded_grade in loaded_grades],
             }, schema=schema)
 

@@ -87,6 +87,7 @@ lod_export_adapter: FSPANToLODCubemapGeneratorAdapter = FSPANToLODCubemapGenerat
 
 divide_pan: BetterPANToLOD = BetterPANToLOD(
     task_name="divide pan into lods",
+    lod_depth=4,
     run_after_task_names=(get_pan.task_name,),
     input_adapter=FSIIOAdapter(),
     output_adapter=lod_export_adapter,
@@ -102,7 +103,7 @@ las_export_adapter: FSBennuObjToLODCubemapGeneratorAdapter = FSBennuObjToLODCube
 
 export_las = BetterOBJToLAS(
     task_name="divide las into lods",
-    lod_depth=1,
+    lod_depth=4,
     run_after_task_names=(get_bennu_obj.task_name,),
     input_adapter=FSPolarsObjAdapterFastPLOBJData(),
     output_adapter=las_export_adapter,
@@ -131,6 +132,11 @@ grades = SetupBoulderNetInferencesForGrading(
     output_adapter=FSPickleAdapter(),
     lod_images_input=FSInput(
         fs_marker=FSMarkerString(value="PAN_lod"),
+        fs_adapter=FSGenericCubemapGeneratorAdapter(
+            tiles_adapter=FSNumpyAdapter())
+    ),
+    LAS_factor_input=FSInput(
+        fs_marker=FSMarkerString(value="LAS_lod"),
         fs_adapter=FSGenericCubemapGeneratorAdapter(
             tiles_adapter=FSNumpyAdapter())
     ),
