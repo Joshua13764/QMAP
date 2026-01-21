@@ -7,6 +7,8 @@ from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
 from boulder_statistics.file_storage_adapters.actions_adapter import \
     FSActionsAdapter
+from boulder_statistics.file_storage_adapters.bennu_obj_to_las_cubemap_generator_adapter import \
+    FSBennuObjToLODCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.fs_copy_cubemap_generator_adapter import \
     FSCopyCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.fs_generic_cubemap_generator_adapter import \
@@ -30,6 +32,8 @@ from boulder_statistics.file_storage_adapters.polars_lazy_csv_adapter import \
     FSPolarsLazyCSVAdapter
 from boulder_statistics.file_storage_adapters.polars_lazy_parquet_adapter import \
     FSPolarsLazyParquetAdapter
+from boulder_statistics.file_storage_adapters.polars_obj_adapter_fast_PL_obj_data import \
+    FSPolarsObjAdapterFastPLOBJData
 from boulder_statistics.file_storage_adapters.shutil_copy_adapter import \
     FSShutilCopyAdapter
 from boulder_statistics.file_storage_adapters.type_safe_pickle_adapter import \
@@ -37,6 +41,7 @@ from boulder_statistics.file_storage_adapters.type_safe_pickle_adapter import \
 from boulder_statistics.lods.utils.image_detection_grades import \
     ImageDetectionGrades
 from boulder_statistics.result_cache import ResultCache
+from boulder_statistics.steps.Better_OBJ_to_LAS import BetterOBJToLAS
 from boulder_statistics.steps.Better_PAN_to_LOD import BetterPANToLOD
 from boulder_statistics.steps.better_PDS4_boulder_net_inference import \
     BetterPDS4BoulderNetInference
@@ -55,7 +60,7 @@ from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 detections_from_bennu_pan: Path = Path(
-    r"G:\AO33\Tile_fixes")
+    r"G:\AO33_pipeline_folders\LAS export")
 
 get_pan = SimpleRequest(
     task_name=f"Downloader for the bennu PAN",
@@ -65,8 +70,20 @@ get_pan = SimpleRequest(
     markers=(FSMarkerString(value="PAN_texture"),)
 )
 
+get_bennu_obj = SimpleRequest(
+    task_name=f"Downloader for the bennu OBJ (LQ) mesh",
+    url="https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005069/g_00880mm_alt_ptm_0000n00000_v020.obj",
+    fs_path=detections_from_bennu_pan.as_posix(),
+    sub_path=Path(
+        "OCAMS",
+        "Global Bennu 3D model - OLA v20 PTM.obj").as_posix(),
+    markers=(
+        FSMarkerString(
+            value="OCAMS_Model"),)
+)
+
 lod_export_adapter: FSPANToLODCubemapGeneratorAdapter = FSPANToLODCubemapGeneratorAdapter(
-    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export lod", colour_bar_title="colour value"), n_jobs=18)
+    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export lod", colour_bar_title="colour value"), n_jobs=4)
 
 divide_pan: BetterPANToLOD = BetterPANToLOD(
     task_name="divide pan into lods",
@@ -75,6 +92,20 @@ divide_pan: BetterPANToLOD = BetterPANToLOD(
     output_adapter=lod_export_adapter,
     input_markers=(FSMarkerString(value="PAN_texture"),),
     output_markers=(FSMarkerString(value="PAN_lod"),),
+    pipeline_data_path=detections_from_bennu_pan,
+    n_jobs=1,
+)
+
+las_export_adapter: FSBennuObjToLODCubemapGeneratorAdapter = FSBennuObjToLODCubemapGeneratorAdapter(
+    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export las", colour_bar_title="colour value"), n_jobs=4)
+
+export_las = BetterOBJToLAS(
+    task_name="divide pan into lods",
+    run_after_task_names=(get_bennu_obj.task_name,),
+    input_adapter=FSPolarsObjAdapterFastPLOBJData(),
+    output_adapter=las_export_adapter,
+    input_markers=(FSMarkerString(value="OCAMS_Model"),),
+    output_markers=(FSMarkerString(value="LAS_lod"),),
     pipeline_data_path=detections_from_bennu_pan,
     n_jobs=1,
 )
@@ -131,6 +162,7 @@ steps: List[Any] = [
     detection,
     grades,
     export_detections,
+    export_las
 ]
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ from boulder_statistics.lods.utils.image_detection_grade import \
 class ImageDetectionGradeLoaded():
     image_array: NDArray[Any]
     detection_data: InferenceDetectionData
+    detection_index: int
     position: CubemapLodPosition
 
     @classmethod
@@ -39,9 +40,10 @@ class ImageDetectionGradeLoaded():
             cls(
                 image_array=img_array,
                 detection_data=detection_data,
+                detection_index=detection_index,
                 position=CubemapLodPosition.from_fs_path(
                     image_path.actual_path),
             )
-            for detection_data in FSEnvironment.load(
-                detections_path, detection_adapter)
+            for detection_index, detection_data in enumerate(FSEnvironment.load(
+                detections_path, detection_adapter))
         ]

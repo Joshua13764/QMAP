@@ -64,6 +64,7 @@ class ExportFullDataPack(ExportImageDetectionGradesDataAsDF):
                 "relative_bounding_box_x_max": pl.Float64,
                 "relative_bounding_box_y_max": pl.Float64,
                 "BoulderNet_confidence": pl.Float64,
+                "detection_index": pl.Int64,
 
                 # Paths
                 "image_tile_path": pl.String,
@@ -88,6 +89,7 @@ class ExportFullDataPack(ExportImageDetectionGradesDataAsDF):
                 "relative_bounding_box_x_max": [loaded_grade.detection_data.box_xyxy[2] for loaded_grade in loaded_grades],
                 "relative_bounding_box_y_max": [loaded_grade.detection_data.box_xyxy[3] for loaded_grade in loaded_grades],
                 "BoulderNet_confidence": [loaded_grade.detection_data.score for loaded_grade in loaded_grades],
+                "detection_index": [loaded_grade.detection_index for loaded_grade in loaded_grades],
 
                 # Paths
                 "image_tile_path": [first_grade.image_path.actual_path.as_posix() for loaded_grade in loaded_grades],

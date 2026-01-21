@@ -30,7 +30,7 @@ class PANToLODCubemapGenerator(CubemapGeneratorBase[ArrayType, ArrayType]):
     def get_lod_tile(
             self, cubemaps_tile: CubemapLodPosition) -> ArrayType:
 
-        sample_image: ArrayType = PANToCubemap.sample_face_roi_simple_super_sample(
+        sample_array: ArrayType = PANToCubemap.sample_face_roi_simple_super_sample(
             pan_img=self.generator_input,
             face=cubemaps_tile.face,
             x_range=cubemaps_tile.x_range,
@@ -38,4 +38,4 @@ class PANToLODCubemapGenerator(CubemapGeneratorBase[ArrayType, ArrayType]):
             sample_resolution=(self.tile_resolution, self.tile_resolution),
             super_sample_factor=self.tile_super_sample_factor)
 
-        return sample_image
+        return sample_array
