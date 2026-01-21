@@ -96,11 +96,13 @@ divide_pan: BetterPANToLOD = BetterPANToLOD(
     n_jobs=1,
 )
 
+
 las_export_adapter: FSBennuObjToLODCubemapGeneratorAdapter = FSBennuObjToLODCubemapGeneratorAdapter(
-    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export las", colour_bar_title="colour value"), n_jobs=4)
+    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export LAS", colour_bar_title="1 / LAS factor", transform=lambda x: 1 / x), n_jobs=1)
 
 export_las = BetterOBJToLAS(
-    task_name="divide pan into lods",
+    task_name="divide las into lods",
+    lod_depth=1,
     run_after_task_names=(get_bennu_obj.task_name,),
     input_adapter=FSPolarsObjAdapterFastPLOBJData(),
     output_adapter=las_export_adapter,
@@ -162,7 +164,8 @@ steps: List[Any] = [
     detection,
     grades,
     export_detections,
-    export_las
+    export_las,
+    get_bennu_obj
 ]
 
 if __name__ == "__main__":

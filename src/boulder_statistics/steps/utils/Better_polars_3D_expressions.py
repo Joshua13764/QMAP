@@ -45,9 +45,16 @@ class BetterPolars3DExpressions:
         """Add cubemap projection columns to points."""
         # NOTE: read() already did .with_row_index("vid"), so we assume "vid"
         # exists.
-        return points.with_columns(
+
+        points_mapped: pl.LazyFrame = points.with_columns(
             BetterPolars3DExpressions.get_project_points_expression()
         )
+
+        points_mapped_calibrated: pl.LazyFrame = points_mapped.with_columns(
+            BetterPolars3DExpressions.get_project_points_calibration()
+        )
+
+        return points_mapped_calibrated
 
     @staticmethod
     def _attach_points_to_tris(
@@ -181,7 +188,7 @@ class BetterPolars3DExpressions:
     @staticmethod
     def get_project_points_expression() -> List[pl.Expr]:
         """Projects directions (x, y, z) onto a cubemap (faces posx/negx/...) with
-        UV in [0, 1] matching sample_face_roi."""
+        UV in [0, 1] matching sample_face_roi. Calibration has been applied"""
         x, y, z = pl.col("x"), pl.col("y"), pl.col("z")
         sx, sy, sz = x.abs(), y.abs(), z.abs()
 
@@ -209,6 +216,45 @@ class BetterPolars3DExpressions:
             (0.5 * ((-x / sz) + 1.0)).alias("negz_u"),
             (0.5 * ((-y / sz) + 1.0)).alias("negz_v"),
             (-z).alias("negz_N"),
+        ]
+
+    @staticmethod
+    def get_project_points_calibration() -> List[pl.Expr]:
+        "Ensures that consistent with other LOD export conventions"
+
+        # Calibration
+        # LAS negy(Vflip) = LOD posx
+        # LAS negz(90 ccw, Vflip) = LOD negy ->
+        # LAS posx(90 ccw, Hflip) = LOD negz ->
+        # LAS posz(90cw, FlipH) = LOD posy ->
+        # LAS posy(FlipH) = LOD negx
+        # LAS negx(90cw, FlipH) = LOD posz -> (flipH + flipV)
+
+        return [
+
+            pl.col("negy_u").alias("posx_u"),
+            (1.0 - pl.col("negy_v")).alias("posx_v"),
+            pl.col("negy_N").alias("posx_N"),
+
+            pl.col("negz_v").alias("negy_u"),
+            pl.col("negz_u").alias("negy_v"),
+            pl.col("negz_N").alias("negy_N"),
+
+            (1 - pl.col("posx_v")).alias("negz_u"),
+            (1 - pl.col("posx_u")).alias("negz_v"),
+            pl.col("posx_N").alias("negz_N"),
+
+            pl.col("posz_v").alias("posy_u"),
+            pl.col("posz_u").alias("posy_v"),
+            pl.col("posz_N").alias("posy_N"),
+
+            (1.0 - pl.col("posy_u")).alias("negx_u"),
+            pl.col("posy_v").alias("negx_v"),
+            pl.col("posy_N").alias("negx_N"),
+
+            (pl.col("negx_v")).alias("posz_u"),
+            (pl.col("negx_u")).alias("posz_v"),
+            pl.col("negx_N").alias("posz_N"),
         ]
 
     @staticmethod
