@@ -146,7 +146,7 @@ def main() -> None:
         print("Usage: python bouldernet_infer_overlay.py /path/to/image.png")
         sys.exit(2)
 
-    predictor = build_predictor(cfg_path, weights_path)
+    predictor = build_predictor(cfg_path, weights_path, score_thresh=0.2)
     in_paths: list[Path] = [Path(p) for p in sys.argv[1:]]
 
     for in_path in in_paths:

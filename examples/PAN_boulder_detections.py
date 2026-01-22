@@ -5,8 +5,6 @@ from boulder_statistics.environment_tools.fs_environment import FSEnvironment
 from boulder_statistics.environment_tools.fs_input import FSInput
 from boulder_statistics.environment_tools.fs_markers.fs_marker_string import \
     FSMarkerString
-from boulder_statistics.file_storage_adapters.actions_adapter import \
-    FSActionsAdapter
 from boulder_statistics.file_storage_adapters.bennu_obj_to_las_cubemap_generator_adapter import \
     FSBennuObjToLODCubemapGeneratorAdapter
 from boulder_statistics.file_storage_adapters.fs_copy_cubemap_generator_adapter import \
@@ -16,8 +14,6 @@ from boulder_statistics.file_storage_adapters.fs_generic_cubemap_generator_adapt
 from boulder_statistics.file_storage_adapters.iio_adapter import FSIIOAdapter
 from boulder_statistics.file_storage_adapters.inference_detection_adapter import \
     FSInferenceDetectionAdapter
-from boulder_statistics.file_storage_adapters.npz_detection_adapter import \
-    FSNpzDetectionAdapter
 from boulder_statistics.file_storage_adapters.numpy_adapter import \
     FSNumpyAdapter
 from boulder_statistics.file_storage_adapters.pan_to_lod_cubemap_generator_adapter import \
@@ -26,16 +22,10 @@ from boulder_statistics.file_storage_adapters.pickle_adapter import \
     FSPickleAdapter
 from boulder_statistics.file_storage_adapters.polars_lazy_action_csv_batched_adapter import \
     FSPolarsLazyActionBatched
-from boulder_statistics.file_storage_adapters.polars_lazy_action_csv_batched_adapter_smart_export import \
-    FSPolarsLazyActionBatchedSmartExport
 from boulder_statistics.file_storage_adapters.polars_lazy_csv_adapter import \
     FSPolarsLazyCSVAdapter
-from boulder_statistics.file_storage_adapters.polars_lazy_parquet_adapter import \
-    FSPolarsLazyParquetAdapter
 from boulder_statistics.file_storage_adapters.polars_obj_adapter_fast_PL_obj_data import \
     FSPolarsObjAdapterFastPLOBJData
-from boulder_statistics.file_storage_adapters.shutil_copy_adapter import \
-    FSShutilCopyAdapter
 from boulder_statistics.file_storage_adapters.type_safe_pickle_adapter import \
     FSTypeSafePickleAdapter
 from boulder_statistics.lods.utils.image_detection_grades import \
@@ -45,22 +35,14 @@ from boulder_statistics.steps.Better_OBJ_to_LAS import BetterOBJToLAS
 from boulder_statistics.steps.Better_PAN_to_LOD import BetterPANToLOD
 from boulder_statistics.steps.better_PDS4_boulder_net_inference import \
     BetterPDS4BoulderNetInference
-from boulder_statistics.steps.export_boulder_net_inferences_as_df import \
-    ExportBoulderNetInferencesAsDF
 from boulder_statistics.steps.export_full_data_pack import ExportFullDataPack
-from boulder_statistics.steps.export_pan_images_as_df import \
-    ExportPANImagesAsDF
-from boulder_statistics.steps.PAN_to_LOD import PANToLOD
-from boulder_statistics.steps.PAN_to_LOD_supersample import PANToLODSuperSample
-from boulder_statistics.steps.pds4_boulderNet_inference import \
-    PDS4BoulderNetInference
 from boulder_statistics.steps.setup_boulder_net_inferences_for_grading import \
     SetupBoulderNetInferencesForGrading
 from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 detections_from_bennu_pan: Path = Path(
-    r"G:\AO33_pipeline_folders\LAS export")
+    r"G:\AO33_pipeline_folders\LAS export + 30 detect threshold")
 
 get_pan = SimpleRequest(
     task_name=f"Downloader for the bennu PAN",
@@ -97,7 +79,6 @@ divide_pan: BetterPANToLOD = BetterPANToLOD(
     n_jobs=1,
 )
 
-
 las_export_adapter: FSBennuObjToLODCubemapGeneratorAdapter = FSBennuObjToLODCubemapGeneratorAdapter(
     tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export LAS", colour_bar_title="1 / LAS factor", transform=lambda x: 1 / x), n_jobs=1)
 
@@ -126,7 +107,10 @@ detection = BetterPDS4BoulderNetInference(
 grades = SetupBoulderNetInferencesForGrading(
     # debug_mode=True,
     task_name=f"Setup inferences for grading",
-    run_after_task_names=(detection.task_name, divide_pan.task_name),
+    run_after_task_names=(
+        detection.task_name,
+        divide_pan.task_name,
+        export_las.task_name),
     pipeline_data_path=detections_from_bennu_pan,
     output_markers=(FSMarkerString(value="INFCOLL_lod"),),
     output_adapter=FSPickleAdapter(),
@@ -150,7 +134,7 @@ grades = SetupBoulderNetInferencesForGrading(
 
 export_detections = ExportFullDataPack(
     task_name=f"Export full data pack to DF",
-    run_after_task_names=(grades.task_name,),
+    run_after_task_names=(grades.task_name, ),
     pipeline_data_path=detections_from_bennu_pan,
     input_adapter=FSTypeSafePickleAdapter(expected_type=ImageDetectionGrades),
     output_adapter=FSPolarsLazyActionBatched(

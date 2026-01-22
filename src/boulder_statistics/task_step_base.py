@@ -33,7 +33,7 @@ class TaskStepBase(StepBase):
             self, function: Callable[[I], O], inputs: List[I],
             message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:
 
-        if self.debug_mode:
+        if self.debug_mode or n_jobs == 1:
             print(message)
             return [function(input) for input in inputs]
 
