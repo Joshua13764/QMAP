@@ -5,6 +5,7 @@ from typing import Callable, Iterable, List
 from attr import field
 from joblib import delayed
 from tenacity import retry, stop_after_attempt
+from tqdm import tqdm
 from tqdm_joblib import ParallelPbar
 
 from boulder_statistics.environment_tools.fs_environment import FSEnvironment
@@ -34,8 +35,8 @@ class TaskStepBase(StepBase):
             message: str = "", n_jobs: int = -1, unit: str = "") -> List[O]:
 
         if self.debug_mode or n_jobs == 1:
-            print(message)
-            return [function(input) for input in inputs]
+            return [function(input)
+                    for input in tqdm(inputs, desc=message, unit=unit)]
 
         parallel_results_raw = ParallelPbar(message, unit=unit)(n_jobs=n_jobs)(
             delayed(function)(input)

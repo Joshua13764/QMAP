@@ -102,6 +102,7 @@ detection = BetterPDS4BoulderNetInference(
     input_markers=(FSMarkerString(value="PAN_lod"),),
     output_markers=(FSMarkerString(value="INF_lod"),),
     pipeline_data_path=detections_from_bennu_pan,
+    n_jobs=1,
 )
 
 grades = SetupBoulderNetInferencesForGrading(

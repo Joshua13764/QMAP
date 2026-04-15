@@ -50,7 +50,7 @@ class BetterPDS4BoulderNetInference(
         default_factory=lambda: None)
 
     detection_export_custom_name_tag: str = field(default_factory=lambda: "")
-    batch_size: int = 4096
+    batch_size: int = 64
 
     @property
     def hashable(self) -> tuple[Any, ...]:
@@ -213,8 +213,14 @@ class BetterPDS4BoulderNetInference(
             self, cubemap_structure: FSCopyCubemapGenerator) -> None:
 
         for tile in cubemap_structure.tiles:
+            export_fs_path: FSPathLocalDisk = self.get_flatted_cubemap_tile_path(
+                tile)
+
+            if export_fs_path.actual_path.exists():
+                continue
+
             FSEnvironment.save(
                 obj=cubemap_structure.get_lod_tile(tile),
-                path=self.get_flatted_cubemap_tile_path(tile),
+                path=export_fs_path,
                 adapter=FSShutilCopyAdapter()
             )

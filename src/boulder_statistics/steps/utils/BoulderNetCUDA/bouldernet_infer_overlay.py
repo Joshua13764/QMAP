@@ -13,27 +13,26 @@ from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.utils.visualizer import ColorMode, Visualizer
 
-transforms = [
+TRANSFORMS = [
     lambda x: x,  # Identity
     lambda x: np.rot90(x, k=1),  # 90 clockwise
     lambda x: np.rot90(x, k=2),  # 180 clockwise
     lambda x: np.rot90(x, k=3),  # 270 clockwise
     lambda x: np.flip(x, axis=0),  # Mirror across horizontal axis
     lambda x: np.flip(x, axis=1),  # Mirror across vertical axis
-    lambda x: x.T,  # Flip across diagonal
-    lambda x: np.rot90(x, k=2).T,  # Rotate 180 clockwise then transpose
+    lambda x: x.swapaxes(0, 1),                 # fixed diagonal transpose
+    lambda x: np.rot90(x, k=2).swapaxes(0, 1),  # fixed version of last one
 ]
 
-transforms_inv = [
+TRANSFORMS_INV = [
     lambda x: x,  # Identity inverse
     lambda x: np.rot90(x, k=-1),  # 90 clockwise inverse
     lambda x: np.rot90(x, k=-2),  # 180 clockwise inverse
     lambda x: np.rot90(x, k=-3),  # 270 clockwise inverse
     lambda x: np.flip(x, axis=0),  # Mirror across horizontal axis inverse
     lambda x: np.flip(x, axis=1),  # Mirror across vertical axis inverse
-    lambda x: x.T,  # Flip across diagonal inverse
-    # Rotate 180 clockwise then transpose inverse
-    lambda x: np.rot90(x.T, k=-2)
+    lambda x: x.swapaxes(0, 1),
+    lambda x: np.rot90(x.swapaxes(0, 1), k=2),
 ]
 
 
@@ -93,17 +92,17 @@ def load_image_bgr(in_path: Path):
 def infer_image(in_path: Path, overlay_export_path: Path,
                 inference_export_path: Path, predictor):
 
-    bgr = load_image_bgr(in_path)
+    bgr: np.ndarray = load_image_bgr(in_path)
 
     transform_boxes: List[np.ndarray] = []
     transform_scores: List[np.ndarray] = []
     transform_classes: List[np.ndarray] = []
     transform_masks: List[np.ndarray] = []
 
-    for transform, transform_inv in zip(transforms, transforms_inv):
+    for transform, transform_inv in zip(TRANSFORMS, TRANSFORMS_INV):
 
         outputs = predictor(
-            transform(bgr)
+            transform(bgr.astype(np.uint8))
         )
 
         instances = outputs["instances"].to("cpu")
