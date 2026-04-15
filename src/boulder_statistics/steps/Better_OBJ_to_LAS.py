@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Tuple
+from typing import Any, Callable, Tuple
 
 from numpy import float64
 from numpy.typing import NDArray
@@ -23,6 +23,8 @@ class BetterOBJToLAS(
     lod_depth: int = field(default_factory=lambda: 4)
     lod_res: int = field(default_factory=lambda: 512)
     skip_if_exists: bool = field(default_factory=lambda: True)
+    colour_column_name: Callable[[str], str] = field(
+        default_factory=lambda: lambda face: f'{face}_ratio')
 
     @property
     def hashable(self) -> tuple[Any, ...]:
@@ -48,5 +50,6 @@ class BetterOBJToLAS(
             tiles=LODCubemapUtils.get_all_cubemap_tiles_for_depths(
                 max_depth=self.lod_depth),
             tile_resolution=self.lod_res,
-            generator_input=object_data
+            generator_input=object_data,
+            colour_column_name=self.colour_column_name
         )

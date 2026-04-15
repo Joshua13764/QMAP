@@ -110,35 +110,48 @@ class BetterPolars3DExpressions:
 
         tris: pl.LazyFrame = shape.tris.with_columns(
             BetterPolars3DExpressions.get_mean_radius(),
+            BetterPolars3DExpressions.get_mean_x().alias("x_tri_mean"),
+            BetterPolars3DExpressions.get_mean_y().alias("y_tri_mean"),
+            BetterPolars3DExpressions.get_mean_z().alias("z_tri_mean")
         )
 
         return PLOBJData(verts=shape.verts, tris=tris)
 
     @staticmethod
-    def get_mean_radius() -> pl.Expr:
+    def get_mean_x() -> pl.Expr:
         x_tri_mean: Expr = (pl.col("x0") + pl.col("x1") +
                             pl.col("x2")) * (1 / 3)
+        return x_tri_mean
+
+    @staticmethod
+    def get_mean_y() -> pl.Expr:
         y_tri_mean: Expr = (pl.col("y0") + pl.col("y1") +
                             pl.col("y2")) * (1 / 3)
+        return y_tri_mean
+
+    @staticmethod
+    def get_mean_z() -> pl.Expr:
         z_tri_mean: Expr = (pl.col("z0") + pl.col("z1") +
                             pl.col("z2")) * (1 / 3)
+        return z_tri_mean
 
+    @staticmethod
+    def get_mean_radius() -> pl.Expr:
         r_tri_mean: Expr = (
-            x_tri_mean ** 2 +
-            y_tri_mean ** 2 +
-            z_tri_mean ** 2) ** 0.5
+            BetterPolars3DExpressions.get_mean_x() ** 2 +
+            BetterPolars3DExpressions.get_mean_y() ** 2 +
+            BetterPolars3DExpressions.get_mean_z() ** 2) ** 0.5
 
         return r_tri_mean.alias("r_tri_mean")
 
     @staticmethod
     def get_mean_projected_radius() -> pl.Expr:
 
-        x_mean: Expr = (pl.col("x0") + pl.col("x1") + pl.col("x2")) * (1 / 3)
-        y_mean: Expr = (pl.col("y0") + pl.col("y1") + pl.col("y2")) * (1 / 3)
-        z_mean: Expr = (pl.col("z0") + pl.col("z1") + pl.col("z2")) * (1 / 3)
-
         r_mean_projected: Expr = BetterPolars3DExpressions.get_mean_radius() / \
-            pl.max_horizontal(x_mean.abs(), y_mean.abs(), z_mean.abs())
+            pl.max_horizontal(
+            BetterPolars3DExpressions.get_mean_x().abs(),
+            BetterPolars3DExpressions.get_mean_y().abs(),
+            BetterPolars3DExpressions.get_mean_z().abs())
 
         return r_mean_projected
 

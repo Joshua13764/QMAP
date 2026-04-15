@@ -36,12 +36,18 @@ class FSBennuObjToLODCubemapGeneratorAdapter(
     def write(
             self, obj: CubemapGeneratorBase[Any, ArrayType], path: FSPathLocalDisk) -> None:
 
-        ParallelPbar("Exporting tiles from cubemap generator", unit="tile")(n_jobs=self.n_jobs)(
-            delayed(
-                FSBennuObjToLODCubemapGeneratorAdapter.export_tile)(
+        [
+            FSBennuObjToLODCubemapGeneratorAdapter.export_tile(
                 obj, path, tile, self.tiles_adapter)
             for tile in obj.tiles
-        )
+        ]
+
+        # ParallelPbar("Exporting tiles from cubemap generator", unit="tile")(n_jobs=self.n_jobs)(
+        #     delayed(
+        #         FSBennuObjToLODCubemapGeneratorAdapter.export_tile)(
+        #         obj, path, tile, self.tiles_adapter)
+        #     for tile in obj.tiles
+        # )
 
     @staticmethod
     def export_tile(

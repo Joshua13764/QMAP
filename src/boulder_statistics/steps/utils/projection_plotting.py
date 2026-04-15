@@ -200,14 +200,17 @@ class ProjectionPlotting:
                                  ])
                                  .collect().to_pandas())
 
-        mesh = du.mesh(pd_verts, pd_tris)
-
         W, H = res
         cvs = ds.Canvas(
             plot_width=W, plot_height=H,
             x_range=x_range,
             y_range=y_range,
         )
+
+        if pd_tris.shape[0] == 0:
+            return np.zeros((W, H), dtype=np.float64)
+
+        mesh = du.mesh(pd_verts, pd_tris)
 
         agg = cvs.trimesh(
             pd_verts,
