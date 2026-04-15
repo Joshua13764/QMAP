@@ -80,7 +80,7 @@ divide_pan: BetterPANToLOD = BetterPANToLOD(
 )
 
 las_export_adapter: FSBennuObjToLODCubemapGeneratorAdapter = FSBennuObjToLODCubemapGeneratorAdapter(
-    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export LAS", colour_bar_title="1 / LAS factor", transform=lambda x: 1 / x), n_jobs=1)
+    tiles_adapter=FSNumpyAdapter(export_debug_plots=True, title="Export LAS", colour_bar_title="1 / LAS factor", transform=lambda x: 1 / x))
 
 export_las = BetterOBJToLAS(
     task_name="divide las into lods",

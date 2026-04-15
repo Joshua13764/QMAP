@@ -4,6 +4,7 @@ from typing import Any
 from joblib import delayed
 from numpy import float64
 from numpy.typing import NDArray
+from tqdm import tqdm
 from tqdm_joblib import ParallelPbar
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
@@ -26,7 +27,6 @@ class FSBennuObjToLODCubemapGeneratorAdapter(
         FSAdapterBase[BennuOBJToLASCubemapGenerator, FSPathLocalDisk]):
 
     tiles_adapter: FSAdapterBase[ArrayType, FSPathLocalDisk]
-    n_jobs: int = field(default=4)
     standard_extension: str | None | bool = field(default=False)
 
     def read(
@@ -39,7 +39,7 @@ class FSBennuObjToLODCubemapGeneratorAdapter(
         [
             FSBennuObjToLODCubemapGeneratorAdapter.export_tile(
                 obj, path, tile, self.tiles_adapter)
-            for tile in obj.tiles
+            for tile in tqdm(obj.tiles, desc="Exporting tiles from cubemap generator", unit="tile")
         ]
 
         # ParallelPbar("Exporting tiles from cubemap generator", unit="tile")(n_jobs=self.n_jobs)(
