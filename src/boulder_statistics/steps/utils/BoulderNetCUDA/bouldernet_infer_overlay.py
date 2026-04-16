@@ -6,7 +6,6 @@ from typing import List
 
 import cv2
 import numpy as np
-import torch
 from cv2.gapi import mask
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
@@ -118,10 +117,10 @@ def infer_image(in_path: Path, overlay_export_path: Path,
         transform_classes.append(classes)
         transform_masks.append(masks_actual)
 
-    total_boxes = np.concat(transform_boxes)
-    total_scores = np.concat(transform_scores)
-    total_classes = np.concat(transform_classes)
-    total_masks = np.concat(transform_masks)
+    total_boxes = np.concatenate(transform_boxes)
+    total_scores = np.concatenate(transform_scores)
+    total_classes = np.concatenate(transform_classes)
+    total_masks = np.concatenate(transform_masks)
 
     export_inference_data(
         total_boxes,
@@ -146,23 +145,24 @@ def main() -> None:
     detection_export_custom_name_tag: str = os.environ.get(
         "detection_export_custom_name_tag", "")
 
-    # require an input image path
-    if len(sys.argv) < 2:
-        print("Usage: python bouldernet_infer_overlay.py /path/to/image.png")
-        sys.exit(2)
+    # # require an input image path
+    # if len(sys.argv) < 2:
+    #     print("Usage: python bouldernet_infer_overlay.py /path/to/image.png")
+    #     sys.exit(2)
+
+    print("LIST /in:", os.listdir("/in"))
 
     predictor = build_predictor(cfg_path, weights_path, score_thresh=0.2)
     in_paths: list[Path] = [Path(p) for p in sys.argv[1:]]
 
     for in_path in in_paths:
-        src_path: Path = out_dir / in_path.name
-        overlay_export_path: Path = src_path.with_name(
-            f"{src_path.stem}{detection_export_custom_name_tag}_overlay.png")
-        inference_export_path: Path = src_path.with_name(
-            f"{src_path.stem}{detection_export_custom_name_tag}_detections.npz")
+        out_base_path: Path = out_dir / in_path.name
+        overlay_export_path: Path = out_base_path.with_name(
+            f"{out_base_path.stem}{detection_export_custom_name_tag}_overlay.png")
+        inference_export_path: Path = out_base_path.with_name(
+            f"{out_base_path.stem}{detection_export_custom_name_tag}_detections.npz")
 
-        if (not os.path.exists(overlay_export_path) or
-                not os.path.exists(inference_export_path)):
+        if not os.path.exists(inference_export_path):
             infer_image(
                 in_path,
                 overlay_export_path,

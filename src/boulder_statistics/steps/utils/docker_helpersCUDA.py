@@ -35,6 +35,9 @@ class DockerHelpers:
 
         env["detection_export_custom_name_tag"] = detection_export_custom_name_tag
 
+        print("env :", env)
+        print("mounts :", mounts)
+
         code, logs = DockerHelpers.run_script(
             DOCKER_IMAGE_TAG,
             overlay_script.as_posix(),
@@ -94,19 +97,26 @@ class DockerHelpers:
         mounts: List[Mount] = []
         env: Dict[str, str] = {}
 
-        for image_path, inference_output_path in zip(
-            image_paths, inference_output_paths
-        ):
-            host_in_dir: Path = image_path.actual_path.parent
-            host_out_dir: Path = inference_output_path.actual_path.parent
+        # Use asserts to confirm assumptions
 
-            if Path(host_out_dir).resolve() == Path(host_in_dir).resolve():
-                env["OUT_DIR"] = "/in"
-                mounts.append((host_in_dir, "/in", "rw"))
-            else:
-                env["OUT_DIR"] = "/out"
-                mounts.append((host_in_dir, "/in", "ro"))
-                mounts.append((host_out_dir, "/out", "rw"))
+        assert len(image_paths) == len(inference_output_paths), \
+            "image_paths and inference_output_paths length mismatch"
+
+        input_dirs = {p.actual_path.parent.resolve() for p in image_paths}
+        assert len(input_dirs) == 1, \
+            f"Multiple input directories detected: {input_dirs}"
+
+        output_dirs = {p.actual_path.parent.resolve()
+                       for p in inference_output_paths}
+        assert len(output_dirs) == 1, \
+            f"Multiple output directories detected: {output_dirs}"
+
+        in_dir: Path = image_paths[0].actual_path.parent.resolve()
+        out_dir: Path = inference_output_paths[0].actual_path.parent.resolve()
+        mounts.append((in_dir, "/in", "ro"))
+        mounts.append((out_dir, "/out", "rw"))
+
+        env["OUT_DIR"] = "/out"
 
         return mounts, env
 
