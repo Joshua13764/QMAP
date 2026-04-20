@@ -52,7 +52,7 @@ def export_inference_data(
         class_ids=classes,
         masks_uint8=masks,
     )
-    print(f"Exported infer data to {save_path}")
+    # print(f"Exported infer data to {save_path}")
 
 
 def build_predictor(cfg_path: str, weights_path: str,
@@ -72,7 +72,7 @@ def build_predictor(cfg_path: str, weights_path: str,
 
 def load_image_bgr(in_path: Path):
 
-    print(f"Loading file {in_path.as_posix()}")
+    # print(f"Loading file {in_path.as_posix()}")
     match in_path.suffix.lower():
         case ".png" | ".jpg" | ".jpeg" | ".tif" | ".tiff" | ".bmp":
             bgr = cv2.imread(str(in_path), cv2.IMREAD_COLOR)
@@ -129,7 +129,7 @@ def infer_image(in_path: Path, overlay_export_path: Path,
         total_masks,
         inference_export_path)
 
-    print(f"[Result] detections: {len(total_masks)}")
+    # print(f"[Result] detections: {len(total_masks)}")
 
 
 def main() -> None:
