@@ -6,6 +6,7 @@ import docker
 from docker.errors import APIError, ImageNotFound
 from docker.models.containers import Container
 from docker.types import DeviceRequest
+from docker.types import Mount as DockerMount
 
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
@@ -150,6 +151,42 @@ class DockerHelpers:
         print(f"\nBuilt image: {image.id} (tags={image.tags})")
         return image.id
 
+    # @staticmethod
+    # @contextmanager
+    # def _container_for_script(
+    #     image: str,
+    #     command: List[str],
+    #     *,
+    #     container_workdir: str,
+    #     volumes: Dict[str, Dict[str, str]],
+    #     env: Optional[Dict[str, str]] = None,
+    #     name: Optional[str] = None,
+    # ):
+    #     client: docker.DockerClient = docker.from_env()
+    #     device_requests = [
+    #         DeviceRequest(count=-1, capabilities=[["gpu"]])
+    #     ]
+
+    #     container: Optional[Container] = None
+    #     try:
+    #         container = client.containers.run(
+    #             image=image,
+    #             command=command,
+    #             name=name,
+    #             working_dir=container_workdir,
+    #             volumes=volumes,
+    #             environment=env or {},
+    #             detach=True,
+    #             device_requests=device_requests,
+    #         )
+    #         yield container
+    #     finally:
+    #         if container is not None:
+    #             try:
+    #                 container.remove(force=True)
+    #             except APIError:
+    #                 pass
+
     @staticmethod
     @contextmanager
     def _container_for_script(
@@ -157,28 +194,32 @@ class DockerHelpers:
         command: List[str],
         *,
         container_workdir: str,
-        volumes: Dict[str, Dict[str, str]],
+        mounts: List[DockerMount],  # <-- switched from volumes dict
         env: Optional[Dict[str, str]] = None,
         name: Optional[str] = None,
     ):
         client: docker.DockerClient = docker.from_env()
+
         device_requests = [
             DeviceRequest(count=-1, capabilities=[["gpu"]])
         ]
 
         container: Optional[Container] = None
+
         try:
             container = client.containers.run(
                 image=image,
                 command=command,
                 name=name,
                 working_dir=container_workdir,
-                volumes=volumes,
+                mounts=mounts,                # <-- key change
                 environment=env or {},
                 detach=True,
                 device_requests=device_requests,
             )
+
             yield container
+
         finally:
             if container is not None:
                 try:
@@ -217,11 +258,31 @@ class DockerHelpers:
             list(extra_args) if extra_args else []
         )
 
+        mounts: List[DockerMount] = [
+            DockerMount(
+                target=mount_into,
+                source=host_dir,
+                type="bind",
+                read_only=False)
+        ]
+
+        if extra_mounts:
+            for host_d, bind_to, mode in extra_mounts:
+                mounts.append(
+                    DockerMount(
+                        target=bind_to,
+                        source=str(Path(host_d).resolve()),
+                        type="bind",
+                        read_only=(mode == "ro"),
+                    )
+                )
+
         with DockerHelpers._container_for_script(
             image=image,
             command=command,
             container_workdir=container_workdir,
-            volumes=volumes,
+            mounts=mounts,
+            # volumes=volumes,
             env=env,
             name=name,
         ) as container:

@@ -63,6 +63,7 @@ class FSCopyCubemapGeneratorAdapter(
             generator_input=position_paths_lookup,
         )
 
+
     def write(
             self, obj: FSCopyCubemapGenerator, path: FSPathLocalDisk) -> None:
 

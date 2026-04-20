@@ -123,13 +123,8 @@ class BetterPDS4BoulderNetInference(
             if not (exits_overlay[overlay] and exists_detections[detections] and self.skip_if_exists)
         ]
 
-        if self.cuda:
-            from boulder_statistics.steps.utils.docker_helpersCUDA import \
-                DockerHelpers
-        else:
-            from boulder_statistics.steps.utils.docker_helpers import \
-                DockerHelpers
-
+        from boulder_statistics.steps.utils.docker_helpersCUDA import \
+            DockerHelpers
         DockerHelpers.ensure_image_exists()
 
         in_folder_data: Dict[str, FSPathLocalDiskChunk] = self.sort_data_by_folders(
