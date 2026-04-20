@@ -50,7 +50,7 @@ class BetterPDS4BoulderNetInference(
         default_factory=lambda: None)
 
     detection_export_custom_name_tag: str = field(default_factory=lambda: "")
-    batch_size: int = 4096
+    batch_size: int = 64
 
     @property
     def hashable(self) -> tuple[Any, ...]:

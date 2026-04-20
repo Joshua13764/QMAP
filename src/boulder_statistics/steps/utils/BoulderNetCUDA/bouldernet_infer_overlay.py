@@ -6,7 +6,7 @@ from typing import List
 
 import cv2
 import numpy as np
-from cv2.gapi import mask
+import torch
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.engine import DefaultPredictor
@@ -100,11 +100,8 @@ def infer_image(in_path: Path, overlay_export_path: Path,
 
     for transform, transform_inv in zip(TRANSFORMS, TRANSFORMS_INV):
 
-        outputs = predictor(
-            transform(bgr.astype(np.uint8))
-        )
-
-        instances = outputs["instances"].to("cpu")
+        instances = predictor(transform(bgr.astype(np.uint8)))[
+            "instances"].to("cpu")
         boxes = instances.pred_boxes.tensor.numpy().astype(np.float32)  # (N,4)
         scores = instances.scores.numpy().astype(np.float32)            # (N,)
         classes = instances.pred_classes.numpy().astype(np.int64)       # (N,)
@@ -121,6 +118,9 @@ def infer_image(in_path: Path, overlay_export_path: Path,
     total_scores = np.concatenate(transform_scores)
     total_classes = np.concatenate(transform_classes)
     total_masks = np.concatenate(transform_masks)
+
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
 
     export_inference_data(
         total_boxes,
@@ -150,7 +150,7 @@ def main() -> None:
     #     print("Usage: python bouldernet_infer_overlay.py /path/to/image.png")
     #     sys.exit(2)
 
-    print("LIST /in:", os.listdir("/in"))
+    # print("LIST /in:", os.listdir("/in"))
 
     predictor = build_predictor(cfg_path, weights_path, score_thresh=0.2)
     in_paths: list[Path] = [Path(p) for p in sys.argv[1:]]
@@ -168,8 +168,6 @@ def main() -> None:
                 overlay_export_path,
                 inference_export_path,
                 predictor)
-
-    time.sleep(2)
 
 
 if __name__ == "__main__":

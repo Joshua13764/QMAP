@@ -36,8 +36,8 @@ class DockerHelpers:
 
         env["detection_export_custom_name_tag"] = detection_export_custom_name_tag
 
-        print("env :", env)
-        print("mounts :", mounts)
+        # print("env :", env)
+        # print("mounts :", mounts)
 
         code, logs = DockerHelpers.run_script(
             DOCKER_IMAGE_TAG,
