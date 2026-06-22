@@ -43,10 +43,10 @@ from boulder_statistics.steps.simple_request import SimpleRequest
 from boulder_statistics.steps_orchestrator import StepsOrchestrator
 
 
-class StandardRun():
+class StandardInferRun():
     @staticmethod
-    def get_standard_steps(pipeline_cache_path: Path,
-                           data_pack_export_folder: Path) -> List[StepBase]:
+    def get_infer_steps(pipeline_cache_path: Path,
+                        data_pack_export_folder: Path) -> List[StepBase]:
 
         detections_from_bennu_pan: Path = pipeline_cache_path / Path(
             r"G:\AO33_pipeline_folders\LAS export + 30 detect threshold + D4_transforms")
