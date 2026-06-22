@@ -212,5 +212,8 @@ models*
 venvs*
 *.run_dir_storage
 *temp
-.cache*
+.cache/*
+.data_products*
+external_data*
+.refinement_cache*
 analysis/PSFD/results_jacobian*
