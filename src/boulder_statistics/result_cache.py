@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from pickle import dump, load
-from typing import Any, Callable, Type
-
-from stablehash import stablehash
+from typing import Any, Type
 
 from boulder_statistics.step_base import StepBase
 
@@ -13,21 +11,15 @@ class ResultCache[V]():
     cache_folder: Path
     result_type: Type[V]
     verbose: bool = field(default=False)
-    hash_method: Callable[[Any], str] = field(
-        default=lambda obj: stablehash(obj).hexdigest())
 
     def get_result_cache_path(self, obj: StepBase, save_prefix: str) -> Path:
 
-        hashable_obj: tuple[Any, ...] = obj.cleaned_hashable
-
         if self.verbose:
-            for i in hashable_obj:
-                print(f"{self.hash_method(i)}\t -> {type(i)}\t -> {i}")
-
-        hashed_obj = stablehash(hashable_obj)
+            for i in obj.cleaned_hashable:
+                print(f"{obj.hash_method(i)}\t -> {type(i)}\t -> {i}")
 
         return Path(*self.cache_folder.parts,
-                    f"{save_prefix}-hash-{self.hash_method(hashed_obj)}.pkl")
+                    f"{save_prefix}-hash-{obj.task_hash}.pkl")
 
     def does_result_cache_exist(self, obj: StepBase, save_prefix: str) -> bool:
         return self.get_result_cache_path(obj, save_prefix).exists()

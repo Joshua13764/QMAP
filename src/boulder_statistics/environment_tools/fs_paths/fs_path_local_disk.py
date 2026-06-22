@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+from os import listdir
 from pathlib import Path
+from typing import Set, Tuple
 
 from boulder_statistics.environment_tools.base_classes.fs_marker_base import \
     FSMarkerBase
@@ -17,10 +19,34 @@ class FSPathLocalDisk(FSPathBase):
 
     @property
     def exists(self) -> bool:
-        return self.actual_path.exists()
+
+        if self.actual_path.stem != self.actual_path.name:  # Has an extension
+            return self.actual_path.exists()
+
+        else:
+            if self.actual_path.parent.exists() == False:
+                return False
+
+            files_in_path: Set[str] = {
+                Path(name).stem for name in listdir(
+                    self.actual_path.parent)}
+
+            return self.actual_path.stem in files_in_path
 
     def make_directory(self) -> None:
         self.actual_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def transfer_root(self, src_root: "FSPathLocalDisk",
+                      dst_root: "FSPathLocalDisk", markers: Tuple[FSMarkerBase, ...]) -> "FSPathLocalDisk":
+
+        relative_path: Path = self.actual_path.relative_to(
+            src_root.actual_path)
+        new_sub_path: Path = Path(*dst_root.path).parent / relative_path
+
+        return dst_root.copy_from_folder(
+            new_sub_path=new_sub_path,
+            markers=markers
+        )
 
     def copy_as_new(self, new_root_path: Path,
                     new_extension: str, markers: tuple[FSMarkerBase, ...] = ()) -> 'FSPathLocalDisk':
@@ -28,6 +54,14 @@ class FSPathLocalDisk(FSPathBase):
             path=Path(*self.path).with_suffix(new_extension).parts,
             markers=tuple(markers),
             root_path=new_root_path.as_posix(),
+        )
+
+    def copy_with_extension(self, extension_no_dot: str) -> "FSPathLocalDisk":
+        return FSPathLocalDisk(
+            path=Path(
+                *self.path).with_stem(f"{self.actual_path.stem}.{extension_no_dot}").parts,
+            markers=self.markers,
+            root_path=self.root_path,
         )
 
     def copy_as_new_name(self, new_root_path: Path,

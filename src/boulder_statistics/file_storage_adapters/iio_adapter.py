@@ -15,16 +15,12 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
 class FSIIOAdapter(
         FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
 
-    add_file_extension: str | None = field(default=None)
+    add_file_extension: str | None | bool = field(default=None)
 
     def read(self, path: FSPathLocalDisk) -> NDArray[Any]:
         return iio.imread(path.actual_path.as_posix())
 
     def write(self, obj: NDArray[Any], path: FSPathLocalDisk) -> None:
         save_path: Path = path.actual_path
-
-        if self.add_file_extension is not None:
-            save_path = save_path.with_suffix(
-                self.add_file_extension)
 
         return iio.imwrite(save_path, obj)

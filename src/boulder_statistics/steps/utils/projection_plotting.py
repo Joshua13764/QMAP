@@ -1,5 +1,8 @@
+import operator
+from functools import reduce
+from math import e
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, List, Tuple
 
 import datashader as ds
 import datashader.transfer_functions as tf
@@ -11,6 +14,9 @@ import pandas as pd
 import polars as pl
 import scienceplots
 from numpy.typing import NDArray
+
+from boulder_statistics.steps.utils.polars_3D_expressions import (
+    PROJECTED_POINT_ATTRS, VERT_ID_COLS)
 
 # Plot settings
 matplotlib.use("Agg")
@@ -102,14 +108,88 @@ class ProjectionPlotting:
         plt.close(fig)
 
     @staticmethod
+    def get_verts_filter(
+            face: str, x_range: Tuple[float, float], y_range: Tuple[float, float]) -> pl.Expr:
+        verts_in_x_range: pl.Expr = (
+            (pl.col(f"{face}_u") > x_range[0]) &
+            (pl.col(f"{face}_u") < x_range[1])
+        )
+
+        verts_in_y_range: pl.Expr = (
+            (pl.col(f"{face}_v") > y_range[0]) &
+            (pl.col(f"{face}_v") < y_range[1])
+        )
+
+        return verts_in_x_range & verts_in_y_range
+
+    @staticmethod
+    def get_tris_filter(
+            face, x_range: Tuple[float, float], y_range: Tuple[float, float]) -> pl.Expr:
+
+        conditions: List[pl.Expr] = [
+            (
+                (pl.col(f"{face}_u{vertex_index}") >= x_range[0]) &
+                (pl.col(f"{face}_u{vertex_index}") <= x_range[1]) &
+
+                (pl.col(f"{face}_v{vertex_index}") >= y_range[0]) &
+                (pl.col(f"{face}_v{vertex_index}") <= y_range[1])
+            )
+            for vertex_index in VERT_ID_COLS
+        ]
+
+        return reduce(operator.or_, conditions)
+
+    @staticmethod
+    def get_lazy_filter_faces_for_rasterization_by_face(
+            face: str, eps_uv=1e-12) -> pl.Expr:
+        ensure_not_behind_plane: pl.Expr = (
+            (pl.col(f"{face}_N0") > 0) &
+            (pl.col(f"{face}_N1") > 0) &
+            (pl.col(f"{face}_N2") > 0)
+        )
+
+        ensure_non_degenerate: pl.Expr = pl.col(f"{face}_area_uv") > eps_uv
+
+        return ensure_not_behind_plane & ensure_non_degenerate
+
+    @staticmethod
+    def get_lazy_filter_tris_not_in_view(
+            face, x_range: Tuple[float, float], y_range: Tuple[float, float]) -> pl.Expr:
+
+        x_min, x_max = min(x_range), max(x_range)
+        y_min, y_max = min(y_range), max(y_range)
+
+        tri_min_x: pl.Expr = pl.min_horizontal(
+            [f"{face}_u0", f"{face}_u1", f"{face}_u2"])
+        tri_max_x: pl.Expr = pl.max_horizontal(
+            [f"{face}_u0", f"{face}_u1", f"{face}_u2"])
+        tri_min_y: pl.Expr = pl.min_horizontal(
+            [f"{face}_v0", f"{face}_v1", f"{face}_v2"])
+        tri_max_y: pl.Expr = pl.max_horizontal(
+            [f"{face}_v0", f"{face}_v1", f"{face}_v2"])
+
+        triangle_render_condition: pl.Expr = (
+            (tri_min_x >= pl.lit(x_min)) |
+            (tri_max_x <= pl.lit(x_max)) |
+            (tri_min_y >= pl.lit(y_min)) |
+            (tri_max_y <= pl.lit(y_max))
+        )
+
+        return triangle_render_condition
+
+    @staticmethod
     def rasterize_tris(points: pl.LazyFrame,
                        tris: pl.LazyFrame, face: str, x_range=(0, 1), y_range=(0, 1), res=(1024, 1024), colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio') -> NDArray[np.float64]:
 
-        pd_verts: pd.DataFrame = (points.select([f'{face}_u', f'{face}_v'])
+        pd_verts: pd.DataFrame = (points
+                                  .select([f'{face}_u', f'{face}_v'])
                                   .rename({f'{face}_u': 'x', f'{face}_v': 'y'})
                                   .collect().to_pandas())
 
-        pd_tris: pd.DataFrame = (tris.select(['0', '1', '2', colour_column_name(face)])
+        pd_tris: pd.DataFrame = (tris
+                                 .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(face, x_range, y_range)
+                                         & ProjectionPlotting.get_lazy_filter_faces_for_rasterization_by_face(face))
+                                 .select(['0', '1', '2', colour_column_name(face)])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
                                      pl.col('1').cast(pl.Int32),
@@ -120,14 +200,17 @@ class ProjectionPlotting:
                                  ])
                                  .collect().to_pandas())
 
-        mesh = du.mesh(pd_verts, pd_tris)
-
         W, H = res
         cvs = ds.Canvas(
             plot_width=W, plot_height=H,
             x_range=x_range,
             y_range=y_range,
         )
+
+        if pd_tris.shape[0] == 0:
+            return np.zeros((W, H), dtype=np.float64)
+
+        mesh = du.mesh(pd_verts, pd_tris)
 
         agg = cvs.trimesh(
             pd_verts,

@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from functools import reduce
+from itertools import chain
 from os import scandir
-from typing import Callable, Counter, Dict, List, Set
+from typing import Callable, Counter, Dict, List, Set, cast
 
-from jinja2 import Environment
 from joblib import delayed
 from tqdm_joblib import ParallelPbar
 
@@ -30,10 +30,10 @@ class FSEnvironment():
         return [f for f in self.paths if isinstance(f, cls) and condition(f)]
 
     def get_paths_from_markers[T: FSPathBase](
-            self, cls: type[T], markers: tuple[FSMarkerBase, ...]) -> List[T]:
+            self, cls: type[T], markers: tuple[FSMarkerBase, ...] | None) -> List[T]:
         return [f
                 for f in self.paths
-                if isinstance(f, cls) and set(markers).isdisjoint(f.markers) == False
+                if isinstance(f, cls) and (markers is None or set(markers).isdisjoint(f.markers) == False)
                 ]
 
     @staticmethod
@@ -80,6 +80,8 @@ class FSEnvironment():
     def save[ObjType, PathType: FSPathBase](
             obj: ObjType, path: PathType, adapter: FSAdapterBase[ObjType, PathType], skip_if_exists=False) -> FSPathBase:
 
+        path = FSEnvironment.correct_path_if_no_extension(path, adapter)
+
         if path.exists and skip_if_exists:
             return path
 
@@ -91,6 +93,9 @@ class FSEnvironment():
     @staticmethod
     def load[ObjType, PathType: FSPathBase](
             path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> ObjType:
+
+        path = FSEnvironment.correct_path_if_no_extension(path, adapter)
+
         return adapter.read(path)
 
     @staticmethod
@@ -99,3 +104,27 @@ class FSEnvironment():
             p for e in envs for p in e.paths)
 
         return FSEnvironment(paths=merged_paths)
+
+    @staticmethod
+    def correct_path_if_no_extension[ObjType, PathType: FSPathBase](
+            path: PathType, adapter: FSAdapterBase[ObjType, PathType]) -> PathType:
+
+        # If has no extension
+        if isinstance(
+                path, FSPathLocalDisk) and path.actual_path.stem == path.actual_path.name:
+
+            if adapter.standard_extension is False:
+                return path
+
+            if adapter.standard_extension is not None:
+                path_with_extension: FSPathLocalDisk = path.copy_with_extension(
+                    adapter.standard_extension)
+
+            else:
+                raise Exception(
+                    f"Trying to write using a extension less path where the adapter ({adapter.__class__.__name__}) has not specified a standard_extension")
+
+            return cast(PathType, path_with_extension)
+
+        else:
+            return path

@@ -1,5 +1,5 @@
 import pickle
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
@@ -8,8 +8,9 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FSPickleAdapter(FSAdapterBase[Any, FSPathLocalDisk]):
+    standard_extension: str | None | bool = field(default="pkl")
 
     def read(self, path: FSPathLocalDisk) -> Any:
         with path.actual_path.open("rb") as f:

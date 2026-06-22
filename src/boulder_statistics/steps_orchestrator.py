@@ -17,13 +17,13 @@ class StepsOrchestrator:
         return StepsOrchestrator.compile_steps(step_order, result_cache)
 
     @staticmethod
-    def run_tasks_with_dependencies(tasks: List[StepBase], dependency_pool: List[StepBase],
+    def run_tasks_with_dependencies(tasks_to_run: List[StepBase], dependency_pool: List[StepBase],
                                     result_cache: ResultCache[FSEnvironment]) -> dict[str, FSEnvironment]:
 
         dependency_pool_dict: dict[str, StepBase] = {
             dependency.task_name: dependency for dependency in dependency_pool}
 
-        dependencies: Set[StepBase] = {dependency for task in tasks for dependency in task.get_dependencies(
+        dependencies: Set[StepBase] = {dependency for task in tasks_to_run for dependency in task.get_dependencies(
             dependency_pool_dict)}
 
         print(

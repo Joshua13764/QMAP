@@ -6,6 +6,7 @@ import docker
 from docker.errors import APIError, ImageNotFound
 from docker.models.containers import Container
 from docker.types import DeviceRequest
+from docker.types import Mount as DockerMount
 
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
@@ -34,6 +35,9 @@ class DockerHelpers:
         )
 
         env["detection_export_custom_name_tag"] = detection_export_custom_name_tag
+
+        # print("env :", env)
+        # print("mounts :", mounts)
 
         code, logs = DockerHelpers.run_script(
             DOCKER_IMAGE_TAG,
@@ -94,19 +98,26 @@ class DockerHelpers:
         mounts: List[Mount] = []
         env: Dict[str, str] = {}
 
-        for image_path, inference_output_path in zip(
-            image_paths, inference_output_paths
-        ):
-            host_in_dir: Path = image_path.actual_path.parent
-            host_out_dir: Path = inference_output_path.actual_path.parent
+        # Use asserts to confirm assumptions
 
-            if Path(host_out_dir).resolve() == Path(host_in_dir).resolve():
-                env["OUT_DIR"] = "/in"
-                mounts.append((host_in_dir, "/in", "rw"))
-            else:
-                env["OUT_DIR"] = "/out"
-                mounts.append((host_in_dir, "/in", "ro"))
-                mounts.append((host_out_dir, "/out", "rw"))
+        assert len(image_paths) == len(inference_output_paths), \
+            "image_paths and inference_output_paths length mismatch"
+
+        input_dirs = {p.actual_path.parent.resolve() for p in image_paths}
+        assert len(input_dirs) == 1, \
+            f"Multiple input directories detected: {input_dirs}"
+
+        output_dirs = {p.actual_path.parent.resolve()
+                       for p in inference_output_paths}
+        assert len(output_dirs) == 1, \
+            f"Multiple output directories detected: {output_dirs}"
+
+        in_dir: Path = image_paths[0].actual_path.parent.resolve()
+        out_dir: Path = inference_output_paths[0].actual_path.parent.resolve()
+        mounts.append((in_dir, "/in", "ro"))
+        mounts.append((out_dir, "/out", "rw"))
+
+        env["OUT_DIR"] = "/out"
 
         return mounts, env
 
@@ -140,6 +151,42 @@ class DockerHelpers:
         print(f"\nBuilt image: {image.id} (tags={image.tags})")
         return image.id
 
+    # @staticmethod
+    # @contextmanager
+    # def _container_for_script(
+    #     image: str,
+    #     command: List[str],
+    #     *,
+    #     container_workdir: str,
+    #     volumes: Dict[str, Dict[str, str]],
+    #     env: Optional[Dict[str, str]] = None,
+    #     name: Optional[str] = None,
+    # ):
+    #     client: docker.DockerClient = docker.from_env()
+    #     device_requests = [
+    #         DeviceRequest(count=-1, capabilities=[["gpu"]])
+    #     ]
+
+    #     container: Optional[Container] = None
+    #     try:
+    #         container = client.containers.run(
+    #             image=image,
+    #             command=command,
+    #             name=name,
+    #             working_dir=container_workdir,
+    #             volumes=volumes,
+    #             environment=env or {},
+    #             detach=True,
+    #             device_requests=device_requests,
+    #         )
+    #         yield container
+    #     finally:
+    #         if container is not None:
+    #             try:
+    #                 container.remove(force=True)
+    #             except APIError:
+    #                 pass
+
     @staticmethod
     @contextmanager
     def _container_for_script(
@@ -147,28 +194,32 @@ class DockerHelpers:
         command: List[str],
         *,
         container_workdir: str,
-        volumes: Dict[str, Dict[str, str]],
+        mounts: List[DockerMount],  # <-- switched from volumes dict
         env: Optional[Dict[str, str]] = None,
         name: Optional[str] = None,
     ):
         client: docker.DockerClient = docker.from_env()
+
         device_requests = [
             DeviceRequest(count=-1, capabilities=[["gpu"]])
         ]
 
         container: Optional[Container] = None
+
         try:
             container = client.containers.run(
                 image=image,
                 command=command,
                 name=name,
                 working_dir=container_workdir,
-                volumes=volumes,
+                mounts=mounts,                # <-- key change
                 environment=env or {},
                 detach=True,
                 device_requests=device_requests,
             )
+
             yield container
+
         finally:
             if container is not None:
                 try:
@@ -207,11 +258,31 @@ class DockerHelpers:
             list(extra_args) if extra_args else []
         )
 
+        mounts: List[DockerMount] = [
+            DockerMount(
+                target=mount_into,
+                source=host_dir,
+                type="bind",
+                read_only=False)
+        ]
+
+        if extra_mounts:
+            for host_d, bind_to, mode in extra_mounts:
+                mounts.append(
+                    DockerMount(
+                        target=bind_to,
+                        source=str(Path(host_d).resolve()),
+                        type="bind",
+                        read_only=(mode == "ro"),
+                    )
+                )
+
         with DockerHelpers._container_for_script(
             image=image,
             command=command,
             container_workdir=container_workdir,
-            volumes=volumes,
+            mounts=mounts,
+            # volumes=volumes,
             env=env,
             name=name,
         ) as container:

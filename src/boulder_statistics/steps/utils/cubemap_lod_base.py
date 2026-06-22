@@ -31,11 +31,6 @@ class CubeMapLodBase(ABC):
         roi = (int(posX), int(posY), int(target_width), int(target_width))
         return roi, total
 
-    @abstractmethod
-    def render_region(self, face: str,
-                      target_width: int) -> FSPathLocalDisk:
-        ...
-
     def render_on_all_faces(self, target_width: int) -> List[FSPathLocalDisk]:
         faces = ["posx", "negx", "posy", "negy", "posz", "negz"]
         export_files: List[FSPathLocalDisk] = []
@@ -44,3 +39,8 @@ class CubeMapLodBase(ABC):
             export_files.append(self.render_region(face, target_width))
 
         return export_files
+
+    @abstractmethod
+    def render_region(self, face: str,
+                      target_width: int) -> FSPathLocalDisk:
+        ...

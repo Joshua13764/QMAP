@@ -22,5 +22,15 @@
   "autopep8.args": [
     "--max-line-length", "79",
     "--aggressive"
+  ],
+  "cSpell.words": [
+    "Lods"
+  ],
+  "python-envs.pythonProjects": [
+    {
+      "path": ".",
+      "envManager": "ms-python.python:poetry",
+      "packageManager": "ms-python.python:poetry"
+    }
   ]
 }

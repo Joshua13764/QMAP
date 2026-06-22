@@ -1,7 +1,10 @@
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Callable, ClassVar
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
+import scienceplots
 from numpy.typing import NDArray
 
 from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
@@ -9,13 +12,65 @@ from boulder_statistics.environment_tools.base_classes.fs_adapter_base import \
 from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 
+matplotlib.use("Agg")
+plt.style.use('science')
+plt.rcParams["figure.figsize"] = (7, 7 * ((5**0.5 - 1) / 2))
+DPI = 600
+plt.rcParams["figure.dpi"] = 600
+plt.ioff()
 
-@dataclass(frozen=True)
+# Temp issue ifx
+plt.rcParams.update({
+    "text.usetex": False,
+})
+
+
+@dataclass(frozen=True, kw_only=True)
 class FSNumpyAdapter(FSAdapterBase[NDArray[Any], FSPathLocalDisk]):
-    """Uses the np module to read / write arrays"""
+    export_debug_plots: bool = field(default=False)
+    standard_extension: str | None | bool = field(default="npy")
+
+    # --- Plot settings ---
+    title: str = field(default="Default title")
+    colour_bar_title: str = field(default="Default colour bar title")
+    transform: Callable[[NDArray[Any]],
+                        NDArray[Any]] = field(default=lambda x: x)
+    plot_standard_extension: ClassVar[str] = "png"
+    plot_name_suffix: str = field(default="debug view")
 
     def read(self, path: FSPathLocalDisk) -> NDArray[Any]:
         return np.load(path.actual_path.as_posix())
 
     def write(self, obj: NDArray[Any], path: FSPathLocalDisk) -> None:
+
+        assert obj.dtype != object, obj.dtype
+
+        if self.export_debug_plots:
+            self.export_debug_plot(obj, path)
+
         return np.save(path.actual_path.as_posix(), obj)
+
+    def export_debug_plot(
+            self, obj: NDArray[Any], path: FSPathLocalDisk) -> None:
+
+        transformed_obj: NDArray[Any] = self.transform(obj)
+
+        fig, ax = plt.subplots(figsize=(5, 5))
+        im = ax.imshow(transformed_obj, origin="upper",
+                       extent=(0, 1, 0, 1), aspect="equal")
+
+        ax.set_xlabel("u")
+        ax.set_ylabel("v")
+        ax.set_title(self.title)
+        fig.colorbar(im, ax=ax, label=self.colour_bar_title)
+        fig.tight_layout()
+
+        fig.savefig(
+            path.actual_path.with_name(
+                f"{path.actual_path.stem} {self.plot_name_suffix}.{self.plot_standard_extension}"),
+            dpi=DPI,
+            bbox_inches="tight",
+            facecolor="white"
+        )
+
+        plt.close(fig)

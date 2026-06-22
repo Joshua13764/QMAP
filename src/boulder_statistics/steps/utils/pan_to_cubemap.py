@@ -1,57 +1,94 @@
+from typing import Tuple
+
 import cv2
 import numpy as np
+from numpy.typing import NDArray
 
 
-class PANToCubemap():
+class PANToCubemap:
     @staticmethod
-    def sample_face_roi(e_img, face: str, face_w: int,
-                        x0: int, y0: int, w: int, h: int):
-        H, W = e_img.shape[:2]
+    def sample_face_roi_simple_super_sample(
+        pan_img: NDArray,
+        face: str,
+        x_range: Tuple[float, float],  # [0,1] left → right
+        y_range: Tuple[float, float],  # [0,1] top → bottom
+        sample_resolution: Tuple[int, int],
+        super_sample_factor: int = 1
+    ) -> NDArray:
+        """
+        Returns cubemap face with attempt to have:
+        - top-left pixel ≈ corner A
+        - anticlockwise winding (A→B→C→D) when viewed top-left origin, y down
+        """
+        out_w, out_h = sample_resolution
+        ss = max(1, super_sample_factor)
+        ss_w, ss_h = out_w * ss, out_h * ss
 
-        # pixel centers for ROI in face space → [-1, 1]
-        xs = (np.arange(x0, x0 + w, dtype=np.float32) + 0.5) / face_w * 2.0 - 1.0
-        ys = (np.arange(y0, y0 + h, dtype=np.float32) + 0.5) / face_w * 2.0 - 1.0
-        ys = ys[::-1]  # make top row +V
+        # Reference size - use larger dimension to preserve aspect
+        ref_size = max(out_w, out_h) * ss
+
+        # Super-sampled normalized coordinates [-1,1] across full face
+        xs = (np.arange(ss_w, dtype=np.float32) + 0.5) / ref_size * 2 - 1
+        ys = (np.arange(ss_h, dtype=np.float32) + 0.5) / ref_size * 2 - 1
+
+        # Crop to requested region in [-1,1] space
+        x_min, x_max = x_range
+        y_min, y_max = y_range
+        x_min_n = 2 * x_min - 1
+        x_max_n = 2 * x_max - 1
+        y_min_n = 2 * y_min - 1
+        y_max_n = 2 * y_max - 1
+
+        xs = xs * ((x_max_n - x_min_n) / 2) + ((x_min_n + x_max_n) / 2)
+        ys = ys * ((y_max_n - y_min_n) / 2) + ((y_min_n + y_max_n) / 2)
+
+        # **Important**: we do NOT flip ys here — we handle orientation later
         U, V = np.meshgrid(xs, ys)
 
-        # cube directions
+        # ── Direction vectors (standard OpenGL convention) ────────────────
         if face == "posx":
-            x, y, z = np.ones_like(U), V, -U
+            dir_x, dir_y, dir_z = 1, V, -U
         elif face == "negx":
-            x, y, z = -np.ones_like(U), V, U
+            dir_x, dir_y, dir_z = -1, V, U
         elif face == "posy":
-            x, y, z = U, np.ones_like(U), -V
+            dir_x, dir_y, dir_z = U, 1, -V
         elif face == "negy":
-            x, y, z = U, -np.ones_like(U), V
+            dir_x, dir_y, dir_z = U, -1, V
         elif face == "posz":
-            x, y, z = U, V, np.ones_like(U)
+            dir_x, dir_y, dir_z = U, V, 1
         elif face == "negz":
-            x, y, z = -U, V, -np.ones_like(U)
+            dir_x, dir_y, dir_z = -U, V, -1
         else:
-            raise ValueError("face must be posx/negx/posy/negy/posz/negz")
+            raise ValueError("Unsupported face")
 
-        # normalize & map to equirect (lon/lat → pixels)
-        L = np.maximum(np.sqrt(x * x + y * y + z * z), 1e-8)
-        x, y, z = x / L, y / L, z / L
-        lon = np.arctan2(x, z)
-        lat = np.arcsin(np.clip(y, -1.0, 1.0))
+        # Normalize
+        norm = np.sqrt(dir_x**2 + dir_y**2 + dir_z**2)
+        norm = np.maximum(norm, 1e-8)
+        dir_x /= norm
+        dir_y /= norm
+        dir_z /= norm
 
-        mapx = (lon / (2 * np.pi) + 0.5) * W
-        mapy = (0.5 - (lat / np.pi)) * H
-        mapx = (mapx % W).astype(np.float32)         # wrap horizontally
-        mapy = np.clip(mapy, 0, H - 1).astype(np.float32)  # clamp vertically
+        # ── Equirectangular mapping ────────────────────────────────────────
+        H, W = pan_img.shape[:2]
+        lon = np.arctan2(dir_x, dir_z)
+        lat = np.arcsin(dir_y)
 
-        # sample just the ROI
-        tile = cv2.remap(
-            e_img,
-            mapx,
-            mapy,
+        mapx = ((lon / (2 * np.pi)) + 0.5) * (W - 1)
+        mapy = (0.5 - (lat / np.pi)) * (H - 1)
+
+        mapx = (mapx % W).astype(np.float32)
+        mapy = np.clip(mapy, 0, H - 1).astype(np.float32)
+
+        # Sample at super-resolution
+        result = cv2.remap(
+            pan_img,
+            mapx, mapy,
             interpolation=cv2.INTER_LINEAR,
-            borderMode=cv2.BORDER_WRAP)
-        return tile  # shape (h, w, C)
+            borderMode=cv2.BORDER_WRAP
+        )
 
-# # --- example: render a 512x512 patch from the +Z face ---
-# os.makedirs("simple_extract", exist_ok=True)
-# roi = (1024, 768, 512, 512)  # (x0, y0, w, h) in that face's pixel space
-# patch = sample_face_roi(img, "posz", face_w, *roi)
-# iio.imwrite(f"simple_extract/posz_{roi[0]}_{roi[1]}_{roi[2]}x{roi[3]}.png", patch)
+        if ss > 1:
+            result = cv2.resize(
+                result, (out_w, out_h), interpolation=cv2.INTER_AREA)
+
+        return result.astype(np.float64, copy=False)
