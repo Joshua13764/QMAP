@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
 from time import time
@@ -17,31 +18,16 @@ relative_alpha: Expr = pl.col(
 
 
 @dataclass(frozen=True)
-class FittingFunction():
+class GeneralPSFDFittingFunction[T](ABC):
     dp: DataProductEncyclopedia
     LAD_min: float = 2
     max_fitting_alpha: float = 1e8  # 1e4
     min_fitting_alpha: float = 1e1
 
-    @property
-    def a_min(self) -> np.float32:
-        return np.pi * (self.LAD_min) ** 2
-
-    @property
-    def a_max(self) -> np.float32:
-        # return np.float32(self.cleaned_data.collect()["surface_area"].max())
-        # * 1e6
-        return np.float32(self.cleaned_data.collect()[
-                          "surface_area"].max()) * 1e6
-
-    def sigma_sum(self, alphas, phis, phi_weights, q) -> np.ndarray:
-        return np.sum(np.where(
-            (self.a_min < alphas[:, None] /
-             phis[None, :]) & (alphas[:, None] /
-                               phis[None, :] < self.a_max),
-            phi_weights[None, :] * phis[None, :] ** (q - 1),
-            0
-        ), axis=1)
+    @abstractmethod
+    def flat_PSFD_func(self, alphas: np.ndarray,
+                       phis: np.ndarray, phi_weights: np.ndarray, fit_params: T) -> np.ndarray:
+        ...
 
     @cached_property
     def no_merge_sample(self) -> np.ndarray:
@@ -81,16 +67,19 @@ class FittingFunction():
             fill_value=0.0
         )
 
-    def F(self, alphas, effectiveness, g, q) -> np.ndarray:
-        def S_estimate(x): return self.S_fast_un_norm(x) / (x ** (-q))
+    def F(self, alphas: np.ndarray, effectiveness: np.float32,
+          fit_params: T) -> np.ndarray:
+        def S_estimate(x): return self.S_fast_un_norm(
+            x) / (x ** (-q))  # TODO: think about q estimate
 
-        total_p_alpha = (alphas ** (- q - 1)) * self.sigma_sum(
+        total_p_alpha = self.flat_PSFD_func(
             alphas=alphas,
-            phis=0.1 * g * 0.5 *
+            phis=0.5 *
             (self.dp.Phi_counts_smoothed_bins[1:] +
              self.dp.Phi_counts_smoothed_bins[:-1]),
             phi_weights=self.dp.Phi_counts_smoothed_counts,
-            q=q)
+            fit_params=fit_params
+        )
 
         total_s = 1 - np.prod([
             1 - effectiveness * 0.5 * S_estimate(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
@@ -104,19 +93,24 @@ class FittingFunction():
 
         return p_estimate
 
-    def int_F(self, effectiveness, g, q, int_samples=40_000) -> np.floating:
+    def int_F(self, effectiveness: np.float32, fit_params: T) -> np.floating:
+        int_samples = 40_000
 
         int_alphas = np.geomspace(1, 1e6, int_samples)
-        int_probs = self.F(int_alphas, effectiveness=effectiveness, g=g, q=q)
+        int_probs = self.F(
+            int_alphas,
+            effectiveness=effectiveness,
+            fit_params=fit_params)
         finite_alphas = int_alphas[int_probs > 0]
         finite_probs = int_probs[int_probs > 0]
 
         return np.abs(trapezoid(finite_alphas, finite_probs))
 
-    def F_norm(self, alphas, effectiveness, g, q):
+    def F_norm(self, alphas: np.ndarray, effectiveness: np.float32,
+               fit_params: T) -> np.ndarray:
 
-        int_F = self.int_F(effectiveness, g, q)
-        return self.F(alphas, effectiveness, g=g, q=q) / int_F
+        int_F: np.float32 = self.int_F(effectiveness, fit_params)
+        return self.F(alphas, effectiveness, fit_params) / int_F
 
     @property
     def plot_range(self):

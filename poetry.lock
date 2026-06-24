@@ -762,6 +762,53 @@ test = ["Pillow", "contourpy[test-no-images]", "matplotlib"]
 test-no-images = ["pytest", "pytest-cov", "pytest-rerunfailures", "pytest-xdist", "wurlitzer"]
 
 [[package]]
+name = "cuda-pathfinder"
+version = "1.5.5"
+description = "Pathfinder for CUDA components"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "cuda_pathfinder-1.5.5-py3-none-any.whl", hash = "sha256:0228c023f95d1480f143ef5c8922d27a2ab052087a942e81dc289c9eb8f91689"},
+]
+
+[[package]]
+name = "cupy-cuda13x"
+version = "14.1.1"
+description = "CuPy: NumPy & SciPy for GPU"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "cupy_cuda13x-14.1.1-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:ae3a75a7e9510fb03251420d85b4efa48187ee5fd48b08c88b7a0f0620bd779a"},
+    {file = "cupy_cuda13x-14.1.1-cp310-cp310-manylinux2014_x86_64.whl", hash = "sha256:223a9e1e6db911002ca5b94c348a3ed5c1d7869ba4dd6524ab3d0263123b2248"},
+    {file = "cupy_cuda13x-14.1.1-cp310-cp310-win_amd64.whl", hash = "sha256:2a656fbcdc1ca1c09b039f9ec6540e8d18e77ed66e92ae275a82b4d849bcc185"},
+    {file = "cupy_cuda13x-14.1.1-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:3d12e1020066a699f5e27f4c5597167dca042704c0ed1db74066c32c0c2dbfb1"},
+    {file = "cupy_cuda13x-14.1.1-cp311-cp311-manylinux2014_x86_64.whl", hash = "sha256:424caa906c16f31328558151dd5e0596891eda7644f40ca9348c3eb14af084d1"},
+    {file = "cupy_cuda13x-14.1.1-cp311-cp311-win_amd64.whl", hash = "sha256:0b9e6f6110cbf039dd75159f8adc99c4fb84cbcabf3025c6607e3864b09ba469"},
+    {file = "cupy_cuda13x-14.1.1-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:9226f3279c64aa6f07a79ba0081f3275a99a36c2db3f836f4b687dd8d77fa8bc"},
+    {file = "cupy_cuda13x-14.1.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:a57c3eda202ffd70e34b9031a88f17c810a75e816398b4028360027cb3a4cd4d"},
+    {file = "cupy_cuda13x-14.1.1-cp312-cp312-win_amd64.whl", hash = "sha256:c0ce59e54da561eeaebef0460242cfd159518d63b388d9d566d198d1d7614634"},
+    {file = "cupy_cuda13x-14.1.1-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:cc671cb766f1c42cb6eed3bf27e9da6092721bcb3d77e09aef28e2f5b089ea38"},
+    {file = "cupy_cuda13x-14.1.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:ff4526725c1398ea19d578044737aa24859b08e1f469aba0ca45dfd6f9aa505d"},
+    {file = "cupy_cuda13x-14.1.1-cp313-cp313-win_amd64.whl", hash = "sha256:54949b4e4f90e3588eeef25b55037f156578364e4835eb9ae1b93e236f2e58d5"},
+    {file = "cupy_cuda13x-14.1.1-cp314-cp314-manylinux2014_aarch64.whl", hash = "sha256:8b068f6958811bc50d81bd0a83267ec4cffc3d7e842120b9646ec547f5a69298"},
+    {file = "cupy_cuda13x-14.1.1-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:39f8aeeb5bad16603956f8ec00094e058a9dd5db92ab514975686750363c3692"},
+    {file = "cupy_cuda13x-14.1.1-cp314-cp314-win_amd64.whl", hash = "sha256:dae6f77edfe96ab8e014d3e589dca33906d212fdf8f72e66850d4612bc031783"},
+    {file = "cupy_cuda13x-14.1.1-cp314-cp314t-manylinux2014_aarch64.whl", hash = "sha256:509f378c865c0b6bc9ed1dfe9e94b08b4511e9865363fdac55f9d66fe341e91d"},
+    {file = "cupy_cuda13x-14.1.1-cp314-cp314t-manylinux2014_x86_64.whl", hash = "sha256:6c0d19789e9f9515988d51dffaff70af8b3dcdddcdf2fbafa9eff08df7be0a51"},
+]
+
+[package.dependencies]
+cuda-pathfinder = ">=1.3.4,<2.dev0"
+numpy = ">=2.0,<2.6"
+
+[package.extras]
+all = ["Cython (>=3)", "optuna (>=2.0)", "scipy (>=1.14,<1.17)"]
+ctk = ["cuda-toolkit[cublas,cudart,cufft,curand,cusolver,cusparse,nvrtc] (==13.*)"]
+test = ["hypothesis (>=6.37.2,<6.55.0)", "mpmath", "packaging", "pytest (>=7.2)"]
+
+[[package]]
 name = "cycler"
 version = "0.12.1"
 description = "Composable style cycles"
@@ -5141,4 +5188,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.15"
-content-hash = "260c1a5f901d8be3f6a38c39e526a57d5a2a4386132986534e155cadcb6f8417"
+content-hash = "bc22fd119c0657a0fffed7de1ea64c9ee7294359de6b5b32ec0b740e774dc4fe"
