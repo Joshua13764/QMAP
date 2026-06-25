@@ -23,15 +23,16 @@ data_pack_export_folder: Path = cache_folder / Path("data_pack")
 # )
 
 if __name__ == "__main__":
+    pass
     # ~ 100 GB of data so you will need to account for that!
 
     # May take several hours (needs dedicated GPU for AI inference)
-    steps: List[StepBase] = StandardInferRun.get_infer_steps(
-        pipeline_cache_path, data_pack_export_folder)
-    cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](
-        cache_folder=Path(".cache"), result_type=FSEnvironment)
-    futures: dict[str, FSEnvironment] = StepsOrchestrator.run_steps(
-        steps, cache)
+    # steps: List[StepBase] = StandardInferRun.get_infer_steps(
+    #     pipeline_cache_path, data_pack_export_folder)
+    # cache: ResultCache[FSEnvironment] = ResultCache[FSEnvironment](
+    #     cache_folder=Path(".cache"), result_type=FSEnvironment)
+    # futures: dict[str, FSEnvironment] = StepsOrchestrator.run_steps(
+    #     steps, cache)
 
     # # Will take an hour and ~ 50 GB to run refinement
     # df, df_meta = StandardRefineRun.step_0(refinement_settings)
@@ -41,3 +42,5 @@ if __name__ == "__main__":
     # df = StandardRefineRun.step_3_2(refinement_settings, df)
     # StandardRefineRun.step_3_3(refinement_settings, df_meta)
     # StandardRefineRun.step_3_4(refinement_settings)
+
+    # TODO add the manual analysis

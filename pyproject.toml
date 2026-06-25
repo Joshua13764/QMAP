@@ -43,7 +43,14 @@ scikit-image = "^0.25.2"
 bidict = "^0.23.1"
 tenacity = "^9.1.2"
 imagecodecs = "^2026.1.14"
+statsmodels = "^0.14.6"
+scikit-learn = "^1.9.0"
+cupy-cuda13x = "^14.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "ipykernel (>=7.3.0,<8.0.0)"
+]

@@ -217,3 +217,5 @@ venvs*
 external_data*
 .refinement_cache*
 analysis/PSFD/results_jacobian*
+manual_detection_overlaid.png
+.plots
