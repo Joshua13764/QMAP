@@ -42,3 +42,5 @@ if __name__ == "__main__":
     # df = StandardRefineRun.step_3_2(refinement_settings, df)
     # StandardRefineRun.step_3_3(refinement_settings, df_meta)
     # StandardRefineRun.step_3_4(refinement_settings)
+
+    # TODO add the manual analysis

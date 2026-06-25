@@ -23,6 +23,8 @@ class GeneralPSFDFittingFunction[T](ABC):
     LAD_min: float = 2
     max_fitting_alpha: float = 1e8  # 1e4
     min_fitting_alpha: float = 1e1
+    # Does have to be in the database first
+    S_manual_interp_Jaccard_threshold: float = 0.5
 
     @abstractmethod
     def flat_PSFD_func(self, alphas: np.ndarray,
@@ -45,32 +47,20 @@ class GeneralPSFDFittingFunction[T](ABC):
         )["relative_alpha"].to_numpy()
 
     @cached_property
-    def S_fast_un_norm(self) -> interp1d:
+    def S_fast(self) -> interp1d:
 
-        log_sample = np.log(self.no_merge_sample[self.no_merge_sample > 5.5])
-        kde = gaussian_kde(log_sample)
-
-        def S_un_norm(x): return kde(np.log(x)) / x
-
-        xs_grid = np.geomspace(
-            self.no_merge_sample[self.no_merge_sample > 5.5].min(),
-            self.no_merge_sample.max(),
-            1000)
-
-        ys_grid = S_un_norm(xs_grid)
+        S_interp = self.dp.S_manual_interp.filter(
+            pl.col("J_threshold") == self.S_manual_interp_Jaccard_threshold).collect()
 
         return interp1d(
-            xs_grid,
-            ys_grid,
+            S_interp["view_port_alpha"].to_numpy(),
+            S_interp["p_detection"].to_numpy(),
             kind="linear",
             bounds_error=False,
             fill_value=0.0
         )
 
-    def F(self, alphas: np.ndarray, effectiveness: np.float32,
-          fit_params: T) -> np.ndarray:
-        def S_estimate(x): return self.S_fast_un_norm(
-            x) / (x ** (-q))  # TODO: think about q estimate
+    def F(self, alphas: np.ndarray, fit_params: T) -> np.ndarray:
 
         total_p_alpha = self.flat_PSFD_func(
             alphas=alphas,
@@ -81,8 +71,11 @@ class GeneralPSFDFittingFunction[T](ABC):
             fit_params=fit_params
         )
 
+        # Ok here as multiple same detections are required for intra-tile calculations, but all
+        # the collected data is based of inter-tile calculations for which this
+        # model works for
         total_s = 1 - np.prod([
-            1 - effectiveness * 0.5 * S_estimate(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
+            1 - self.S_fast(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
         ], axis=0)
 
         p_estimate = total_p_alpha * total_s
@@ -93,24 +86,22 @@ class GeneralPSFDFittingFunction[T](ABC):
 
         return p_estimate
 
-    def int_F(self, effectiveness: np.float32, fit_params: T) -> np.floating:
+    def int_F(self, fit_params: T) -> np.floating:
         int_samples = 40_000
 
         int_alphas = np.geomspace(1, 1e6, int_samples)
         int_probs = self.F(
             int_alphas,
-            effectiveness=effectiveness,
             fit_params=fit_params)
         finite_alphas = int_alphas[int_probs > 0]
         finite_probs = int_probs[int_probs > 0]
 
         return np.abs(trapezoid(finite_alphas, finite_probs))
 
-    def F_norm(self, alphas: np.ndarray, effectiveness: np.float32,
-               fit_params: T) -> np.ndarray:
+    def F_norm(self, alphas: np.ndarray, fit_params: T) -> np.ndarray:
 
-        int_F: np.float32 = self.int_F(effectiveness, fit_params)
-        return self.F(alphas, effectiveness, fit_params) / int_F
+        int_F: np.float32 = self.int_F(fit_params)
+        return self.F(alphas, fit_params) / int_F
 
     @property
     def plot_range(self):
