@@ -30,10 +30,41 @@ class PowerLawFittingFunction(GeneralPSFDFittingFunction[PowerLawFitParams]):
             q=fit_params.q)
 
     def sigma_sum(self, alphas, phis, phi_weights, q) -> np.ndarray:
-        return np.sum(np.where(
-            (self.a_min < alphas[:, None] /
-             phis[None, :]) & (alphas[:, None] /
-                               phis[None, :] < self.a_max),
-            phi_weights[None, :] * phis[None, :] ** (q - 1),
-            0
-        ), axis=1)
+        # Reconstruct bin edges from geometric centres
+        log_phis = np.log(phis)
+
+        log_edges = np.empty(len(phis) + 1)
+        log_edges[1:-1] = 0.5 * (log_phis[:-1] + log_phis[1:])
+        log_edges[0] = 2 * log_phis[0] - log_edges[1]
+        log_edges[-1] = 2 * log_phis[-1] - log_edges[-2]
+
+        log_left = log_edges[:-1]
+        log_right = log_edges[1:]
+        log_width = log_right - log_left
+
+        # Window in log(phi)
+        log_min = np.log(alphas[:, None] / self.a_max)
+        log_max = np.log(alphas[:, None] / self.a_min)
+
+        overlap = (
+            np.minimum(log_max, log_right[None, :])
+            - np.maximum(log_min, log_left[None, :])
+        )
+
+        fraction = np.clip(overlap / log_width[None, :], 0.0, 1.0)
+
+        return np.sum(
+            fraction
+            * phi_weights[None, :]
+            * phis[None, :] ** (q - 1),
+            axis=1,
+        )
+
+    # def sigma_sum(self, alphas, phis, phi_weights, q) -> np.ndarray:
+    #     return np.sum(np.where(
+    #         (self.a_min < alphas[:, None] /
+    #          phis[None, :]) & (alphas[:, None] /
+    #                            phis[None, :] < self.a_max),
+    #         phi_weights[None, :] * phis[None, :] ** (q - 1),
+    #         0
+    #     ), axis=1)

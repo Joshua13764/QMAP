@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
 from time import time
+from typing import Tuple
 
 import numpy as np
 import polars as pl
@@ -60,14 +61,26 @@ class GeneralPSFDFittingFunction[T](ABC):
             fill_value=0.0
         )
 
+    @cached_property
+    def Cleaned_Phi(self) -> Tuple[np.ndarray, np.ndarray]:
+        bin_centers = 0.5 * \
+            (self.dp.Phi_counts_smoothed_bins[:-1] +
+             self.dp.Phi_counts_smoothed_bins[1:])
+
+        bin_widths = np.abs(
+            self.dp.Phi_counts_smoothed_bins[:-1] - self.dp.Phi_counts_smoothed_bins[1:])
+
+        mask = (self.dp.Phi_counts_smoothed_counts / bin_widths > 10**3
+                ) & (self.dp.Phi_counts_smoothed_counts * bin_widths > 10**3)
+
+        return bin_centers[mask], self.dp.Phi_counts_smoothed_counts[mask]
+
     def F(self, alphas: np.ndarray, fit_params: T) -> np.ndarray:
 
         total_p_alpha = self.flat_PSFD_func(
             alphas=alphas,
-            phis=0.5 *
-            (self.dp.Phi_counts_smoothed_bins[1:] +
-             self.dp.Phi_counts_smoothed_bins[:-1]),
-            phi_weights=self.dp.Phi_counts_smoothed_counts,
+            phis=self.Cleaned_Phi[0],
+            phi_weights=self.Cleaned_Phi[1],
             fit_params=fit_params
         )
 
