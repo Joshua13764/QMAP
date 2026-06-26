@@ -26,9 +26,8 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
     dp: DataProductEncyclopedia
     LAD_min: float = 2
     max_fitting_alpha: float = 1e8  # 1e4
-    min_fitting_alpha: float = 1e1
     # Does have to be in the database first
-    S_manual_interp_Jaccard_threshold: float = 0.5
+    S_manual_interp_Jaccard_threshold: float = 0.7
     clean_Phi: bool = True
 
     @abstractmethod
@@ -66,6 +65,23 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
         )
 
     @cached_property
+    # Do not fit smaller as detector doesn't work
+    def min_fitting_alpha(self) -> float:
+
+        S_interp = self.dp.S_manual_interp.filter(
+            pl.col("J_threshold") == self.S_manual_interp_Jaccard_threshold).collect()
+
+        alpha_at_max_p = S_interp.top_k(
+            1, by="p_detection").row(  # Find max
+            0, named=True)["view_port_alpha"]
+
+        largest_alpha_at_p_zero_left = S_interp.filter(pl.col("view_port_alpha") < alpha_at_max_p, pl.col("p_detection") == 0).top_k(
+            1, by="view_port_alpha").row(  # Find max
+            0, named=True)["view_port_alpha"]
+
+        return largest_alpha_at_p_zero_left
+
+    @cached_property
     def Cleaned_Phi(self) -> Tuple[np.ndarray, np.ndarray]:
         bin_centers = 0.5 * \
             (self.dp.Phi_counts_smoothed_bins[:-1] +
@@ -95,11 +111,9 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
             1 - self.S_fast(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
         ], axis=0)
 
-        p_estimate = total_s
+        p_estimate = total_s * total_p_alpha
         # We don't fit larger than this as unreliable
         p_estimate[alphas > self.max_fitting_alpha] = 0
-        # We don't fit smaller than this as unreliable
-        p_estimate[alphas < self.min_fitting_alpha] = 0
 
         return p_estimate
 
