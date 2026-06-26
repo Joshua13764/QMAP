@@ -24,7 +24,7 @@ relative_alpha: Expr = pl.col(
 @dataclass(frozen=True)
 class GeneralPSFDFittingFunction[T: FitParams](ABC):
     dp: DataProductEncyclopedia
-    LAD_min: float = 2
+    LAD_min: float
     max_fitting_alpha: float = 1e8  # 1e4
     # Does have to be in the database first
     S_manual_interp_Jaccard_threshold: float = 0.7

@@ -12,8 +12,6 @@ from boulder_statistics.analysis.quick_calculate_general import \
 
 @dataclass(frozen=True)
 class WeibullFittingFunction(GeneralPSFDFittingFunction[WeibullFitParams]):
-    LAD_min = 0
-
     def flat_PSFD_func(self, alphas, phis, phi_weights,
                        fit_params) -> np.ndarray:
         return (alphas ** (fit_params.k - 1)) * self.CFS_sum(
