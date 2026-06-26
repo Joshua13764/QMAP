@@ -2,30 +2,34 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
 from time import time
-from typing import Tuple
+from typing import Any, Callable, List, Tuple
 
 import numpy as np
 import polars as pl
 from polars import Expr, LazyFrame
 from scipy.integrate import trapezoid
 from scipy.interpolate import interp1d
-from scipy.stats import gaussian_kde
+from statsmodels.base.model import (GenericLikelihoodModel,
+                                    GenericLikelihoodModelResults,
+                                    LikelihoodModelResults)
 
 from boulder_statistics.analysis.data_product_encyclopedia import \
     DataProductEncyclopedia
+from boulder_statistics.analysis.fit_params.general_fit_params import FitParams
 
 relative_alpha: Expr = pl.col(
     "alpha") / (2 ** (2 * 4 - 2 * pl.col("tile_lod_number")))
 
 
 @dataclass(frozen=True)
-class GeneralPSFDFittingFunction[T](ABC):
+class GeneralPSFDFittingFunction[T: FitParams](ABC):
     dp: DataProductEncyclopedia
     LAD_min: float = 2
     max_fitting_alpha: float = 1e8  # 1e4
     min_fitting_alpha: float = 1e1
     # Does have to be in the database first
     S_manual_interp_Jaccard_threshold: float = 0.5
+    clean_Phi: bool = True
 
     @abstractmethod
     def flat_PSFD_func(self, alphas: np.ndarray,
@@ -70,8 +74,8 @@ class GeneralPSFDFittingFunction[T](ABC):
         bin_widths = np.abs(
             self.dp.Phi_counts_smoothed_bins[:-1] - self.dp.Phi_counts_smoothed_bins[1:])
 
-        mask = (self.dp.Phi_counts_smoothed_counts / bin_widths > 10**3
-                ) & (self.dp.Phi_counts_smoothed_counts * bin_widths > 10**3)
+        mask: np.ndarray = (self.dp.Phi_counts_smoothed_counts / bin_widths > 10**3
+                            ) & (self.dp.Phi_counts_smoothed_counts * bin_widths > 10**3) if self.clean_Phi else np.ones_like(bin_centers, dtype=np.bool)
 
         return bin_centers[mask], self.dp.Phi_counts_smoothed_counts[mask]
 
@@ -91,7 +95,7 @@ class GeneralPSFDFittingFunction[T](ABC):
             1 - self.S_fast(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
         ], axis=0)
 
-        p_estimate = total_p_alpha * total_s
+        p_estimate = total_s
         # We don't fit larger than this as unreliable
         p_estimate[alphas > self.max_fitting_alpha] = 0
         # We don't fit smaller than this as unreliable
@@ -115,6 +119,39 @@ class GeneralPSFDFittingFunction[T](ABC):
 
         int_F: np.float32 = self.int_F(fit_params)
         return self.F(alphas, fit_params) / int_F
+
+    def MLE_fit(self, optimize_params: T,
+                verbose=True) -> GenericLikelihoodModelResults:
+
+        F_norm: Callable[[np.ndarray, T], np.ndarray] = self.F_norm
+
+        class TheoryFit(GenericLikelihoodModel):
+            param_names: List[str] = optimize_params.get_labels()
+
+            def __init__(self, x):
+                super().__init__(x)
+
+            def loglikeobs(self, params) -> np.ndarray:
+                alphas = self.endog
+
+                optimize_params.modify_from_numpy(params)
+
+                if verbose:
+                    print(f"Running iteration with params {params}")
+
+                return np.log(F_norm(alphas, optimize_params))
+
+            @property
+            def start_params(self):
+                return optimize_params.to_numpy()
+
+        mle_model: GenericLikelihoodModelResults = TheoryFit(
+            self.cleaned_data.collect()["alpha"].to_numpy()).fit()
+
+        if verbose:
+            print(mle_model.summary())
+
+        return mle_model
 
     @property
     def plot_range(self):

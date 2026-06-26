@@ -3,7 +3,8 @@ from time import time
 
 import numpy as np
 
-from boulder_statistics.analysis.power_law_fit_params import PowerLawFitParams
+from boulder_statistics.analysis.fit_params.power_law_fit_params import \
+    PowerLawFitParams
 from boulder_statistics.analysis.quick_calculate_general import \
     GeneralPSFDFittingFunction
 
