@@ -36,6 +36,7 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
     # Does have to be in the database first
     S_manual_interp_Jaccard_threshold: float = 0.7
     clean_Phi: bool = True
+    interp_samples: int = 10_000
 
     @abstractmethod
     def flat_PSFD_func(self, alphas: np.ndarray,
@@ -74,12 +75,24 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
     def F(self, alphas: np.ndarray, fit_params: T,
           s_model: SModelType) -> np.ndarray:
 
-        total_p_alpha = self.flat_PSFD_func(
-            alphas=alphas,
+        alphas_sample = np.geomspace(
+            alphas.min(),
+            alphas.max(),
+            self.interp_samples
+        )
+
+        total_p_alpha_sample = self.flat_PSFD_func(
+            alphas=alphas_sample,
             phis=self.Cleaned_Phi[0],
             phi_weights=self.Cleaned_Phi[1],
             fit_params=fit_params
         )
+
+        total_p_alpha_log = interp1d(
+            np.log(alphas_sample),
+            np.log(total_p_alpha_sample),
+            assume_sorted=True
+        )(np.log(alphas))  # Power-law interpolation
 
         # Ok here as multiple same detections are required for intra-tile calculations, but all
         # the collected data is based of inter-tile calculations for which this
@@ -88,7 +101,7 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
             1 - s_model(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
         ], axis=0)
 
-        p_estimate = total_s * total_p_alpha
+        p_estimate = total_s * np.exp(total_p_alpha_log)
         # We don't fit larger than this as unreliable
 
         return p_estimate
