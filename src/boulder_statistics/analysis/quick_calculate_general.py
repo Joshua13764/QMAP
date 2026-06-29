@@ -150,7 +150,7 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
         return mle_model
 
     def MultiMLEFit(self, optimize_params: T, numb_runs: int = 10,
-                    verbose=False, summary=True) -> DataFrame:
+                    verbose=False, summary=False) -> DataFrame:
 
         original_params = optimize_params.to_numpy()
 
@@ -162,9 +162,9 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
         params_error_dict: Dict[str, List[float]] = {
             f"{param_name}_err": [] for param_name in optimize_params.get_labels()}
 
-        for i in tqdm(range(numb_runs), desc="MultiMLE fit running"):
+        for _ in tqdm(range(numb_runs), desc="MultiMLE fit running"):
 
-            rng: Generator = np.random.default_rng(i)
+            rng: Generator = np.random.default_rng()
             s_model: SModelType = self.sensitivity_model.random_p_function(rng)
             optimize_params.modify_from_numpy(original_params)
 
