@@ -123,10 +123,23 @@ class SensitivityModel():
 
         tests = np.geomspace(
             valid_bins_lefts[0],
-            valid_bins_rights[1],
-            10000
+            valid_bins_rights[-1],
+            10_000
         )
 
         return tests[np.flatnonzero(
             self.best_p_function(tests)
         )[0]]
+
+    @cached_property
+    def max_fitting_alpha(self) -> float:
+        valid_bins_lefts, valid_bins_rights, *_ = self.valid_sample_data
+
+        tests = np.geomspace(
+            valid_bins_lefts[0],
+            valid_bins_rights[-1],
+            10_000
+        )
+        return tests[np.flatnonzero(
+            self.best_p_function(tests)
+        )[-1]]

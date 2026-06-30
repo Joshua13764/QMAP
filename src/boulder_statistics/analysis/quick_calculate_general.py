@@ -32,7 +32,6 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
     dp: DataProductEncyclopedia
     LAD_min: float
     sensitivity_model: SensitivityModel
-    max_fitting_alpha: float = 1e8  # 1e4
     # Does have to be in the database first
     S_manual_interp_Jaccard_threshold: float = 0.7
     clean_Phi: bool = True
@@ -102,7 +101,6 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
         ], axis=0)
 
         p_estimate = total_s * np.exp(total_p_alpha_log)
-        # We don't fit larger than this as unreliable
 
         return p_estimate
 
@@ -220,7 +218,8 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
             pl.col("longest_axis_diameter") * 1000 > self.LAD_min,
             (pl.col("longest_axis_diameter") /
              pl.col("surface_area")) < mean_p2std,
-            pl.col("alpha") < self.max_fitting_alpha,
+            pl.col("alpha") < self.sensitivity_model.max_fitting_alpha *
+            (2 ** (4 * 2)),  # As we want to consider the last LOD
             # We don't fit larger than this as unreliable
             pl.col("alpha") > self.sensitivity_model.min_fitting_alpha,
             # We don't fit smaller than this as unreliable
