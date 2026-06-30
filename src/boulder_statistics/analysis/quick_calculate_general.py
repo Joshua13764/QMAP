@@ -187,6 +187,7 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
 
             for param_name, param_value, param_error in zip(
                     optimize_params.get_labels(), mle_model.params, mle_model.bse):
+
                 params_dict[param_name].append(param_value)
                 params_error_dict[f"{param_name}_err"].append(param_error)
 
