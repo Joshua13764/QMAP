@@ -1,11 +1,14 @@
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Callable, Tuple
+from typing import Callable, Literal, Tuple
 
 import numpy as np
 import polars as pl
+import scipy
+import scipy.interpolate
 from polars import DataFrame
 from scipy.stats import gaussian_kde
+from sklearn.neighbors import KernelDensity
 
 from boulder_statistics.analysis.sensitivity_model_base import \
     SensitivityModelBase
@@ -14,9 +17,16 @@ from boulder_statistics.analysis.sensitivity_model_base import \
 @dataclass(frozen=True)
 class KDEBootstrappedSensitivityModel(SensitivityModelBase):
     df: DataFrame
-    J_threshold: float = field(default=0.7)
-    min_alpha_s_min: float = 0.01
-    max_alpha_s_min: float = 0.01
+    J_threshold: float = field(default=0.75)
+    min_alpha_s_min: float = field(default=0.0)
+    max_alpha_s_min: float = field(default=0.0)
+    bandwidth: float | Literal['scott', 'silverman'] = field(default="scott")
+    kernel: Literal['gaussian',
+                    'tophat',
+                    'epanechnikov',
+                    'exponential',
+                    'linear',
+                    'cosine'] = field(default="epanechnikov")
 
     @cached_property
     def log_totals_passed(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -33,39 +43,72 @@ class KDEBootstrappedSensitivityModel(SensitivityModelBase):
 
         return log_alphas, log_alphas_pass
 
-    def get_s_KDE(self, input_alphas: np.ndarray,
-                  bootstrap_rng: np.random.Generator | None = None) -> np.ndarray:
+    def get_s_KDE(self, bootstrap_rng: np.random.Generator |
+                  None = None) -> Callable[[np.ndarray], np.ndarray]:
         log_alphas, log_alphas_pass = self.log_totals_passed
 
         if bootstrap_rng is not None:
-            log_alphas_pass: np.ndarray = bootstrap_rng.choice(
-                log_alphas_pass,
-                size=len(log_alphas_pass),
-                replace=True
-            )
-
             log_alphas: np.ndarray = bootstrap_rng.choice(
                 log_alphas,
                 size=len(log_alphas),
                 replace=True
             )
 
-        def log_alphas_kde(alpha) -> np.ndarray: return len(
-            log_alphas) * gaussian_kde(log_alphas)(np.log(alpha)) / alpha
-        def log_alphas_pass_kde(alpha) -> np.ndarray: return len(
-            log_alphas_pass) * gaussian_kde(log_alphas_pass)(np.log(alpha)) / alpha
+            log_alphas_pass: np.ndarray = bootstrap_rng.choice(
+                log_alphas_pass,
+                size=len(log_alphas_pass),
+                replace=True
+            )
 
-        return log_alphas_pass_kde(
-            input_alphas) / log_alphas_kde(input_alphas)
+        kde_log_alphas = KernelDensity(
+            kernel=self.kernel,
+            bandwidth="scott"
+        ).fit(log_alphas[:, None])
+
+        kde_log_alphas_pass = KernelDensity(
+            kernel=self.kernel,
+            bandwidth="scott"
+        ).fit(log_alphas_pass[:, None])
+
+        def log_alphas_kde(alpha) -> np.ndarray:
+            return (
+                len(log_alphas)
+                * np.exp(kde_log_alphas.score_samples(np.log(alpha).reshape(-1, 1)))
+                / alpha
+            )
+
+        def log_alphas_pass_kde(alpha) -> np.ndarray:
+            return (
+                len(log_alphas_pass)
+                * np.exp(kde_log_alphas_pass.score_samples(np.log(alpha).reshape(-1, 1)))
+                / alpha
+            )
+
+        sample_alphas = np.geomspace(1, 512 ** 2, 10_000)
+        sample_res = np.divide(
+            log_alphas_pass_kde(sample_alphas),
+            log_alphas_kde(sample_alphas),
+            out=np.zeros_like(sample_alphas, dtype=float),
+            where=log_alphas_kde(sample_alphas) != 0
+        )
+
+        interp_func = scipy.interpolate.interp1d(
+            np.log(sample_alphas),
+            sample_res,
+            kind="linear",
+            bounds_error=False,
+            fill_value=0.0
+        )
+
+        return lambda input_alphas: interp_func(np.log(input_alphas))
 
     @cached_property
     def best_p_function(self) -> Callable[[np.ndarray], np.ndarray]:
-        return lambda input_alphas: self.get_s_KDE(input_alphas)
+        return self.get_s_KDE()
 
     def random_p_function(
             self, rng: np.random.Generator) -> Callable[[np.ndarray], np.ndarray]:
-        return lambda input_alphas: self.get_s_KDE(
-            input_alphas, bootstrap_rng=rng)
+        return self.get_s_KDE(bootstrap_rng=rng)
 
     @cached_property
     def min_fitting_alpha(self) -> float:

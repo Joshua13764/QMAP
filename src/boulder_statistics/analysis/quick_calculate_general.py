@@ -103,6 +103,12 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
 
         p_estimate = total_s * np.exp(total_p_alpha_log)
 
+        # If we cut alphas at this point the function will need to reflect this
+        p_estimate[alphas > self.sensitivity_model.max_fitting_alpha *
+                   (2 ** (4 * 2))] = 0
+
+        p_estimate[alphas < self.sensitivity_model.min_fitting_alpha] = 0
+
         return p_estimate
 
     def int_F(self, fit_params: T, s_model: Callable[[
