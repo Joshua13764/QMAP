@@ -7,9 +7,12 @@ import polars as pl
 from polars import DataFrame
 from scipy.interpolate import interp1d
 
+from boulder_statistics.analysis.sensitivity_model_base import \
+    SensitivityModelBase
+
 
 @dataclass(frozen=True)
-class SensitivityModel():
+class BinnedSensitivityModel(SensitivityModelBase):
     df: DataFrame
     J_threshold: float = field(default=0.7)
     number_of_bins: int = field(default=16)

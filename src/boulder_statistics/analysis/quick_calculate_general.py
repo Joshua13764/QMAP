@@ -19,7 +19,8 @@ from tqdm import tqdm
 from boulder_statistics.analysis.data_product_encyclopedia import \
     DataProductEncyclopedia
 from boulder_statistics.analysis.fit_params.general_fit_params import FitParams
-from boulder_statistics.analysis.sensitivity_model import SensitivityModel
+from boulder_statistics.analysis.sensitivity_model_base import \
+    SensitivityModelBase
 
 relative_alpha: Expr = pl.col(
     "alpha") / (2 ** (2 * 4 - 2 * pl.col("tile_lod_number")))
@@ -31,7 +32,7 @@ SModelType = Callable[[np.ndarray], np.ndarray]
 class GeneralPSFDFittingFunction[T: FitParams](ABC):
     dp: DataProductEncyclopedia
     LAD_min: float
-    sensitivity_model: SensitivityModel
+    sensitivity_model: SensitivityModelBase
     # Does have to be in the database first
     S_manual_interp_Jaccard_threshold: float = 0.7
     clean_Phi: bool = True
