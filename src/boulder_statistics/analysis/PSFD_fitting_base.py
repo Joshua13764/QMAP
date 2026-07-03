@@ -36,6 +36,7 @@ class PSFDFittingBase[T: FitParams](ABC):
     S_manual_interp_Jaccard_threshold: float = field(default=0.7)
     clean_Phi: bool = field(default=True)
     interp_samples: int = field(default=10_000)
+    integration_samples: int = field(default=10_000)
 
     # The true min can be higher than this if the S model requests it
     min_alpha_to_consider: int = field(default=0)
@@ -116,15 +117,26 @@ class PSFDFittingBase[T: FitParams](ABC):
         return p_estimate
 
     def int_F(self, fit_params: T, s_function: SFunction) -> np.floating:
-        int_samples = 40_000
+        # int_alphas = np.geomspace(
+        # s_function.min_fitting_alpha, s_function.all_lods_max_fitting_alpha,
+        # self.integration_samples)
 
-        int_alphas = np.geomspace(1, 1e6, int_samples)
-        int_probs = self.F(
-            int_alphas, fit_params, s_function)
-        finite_alphas = int_alphas[int_probs > 0]
-        finite_probs = int_probs[int_probs > 0]
+        # int_probs = self.F(
+        #     int_alphas, fit_params, s_function)
 
-        return np.abs(trapezoid(finite_alphas, finite_probs))
+        # finite_alphas = int_alphas[int_probs > 0]
+        # finite_probs = int_probs[int_probs > 0]
+
+        u = np.linspace(
+            np.log(s_function.min_fitting_alpha),
+            np.log(s_function.all_lods_max_fitting_alpha),
+            self.integration_samples,
+        )
+
+        alpha = np.exp(u)
+        integral = trapezoid(self.F(alpha, fit_params, s_function) * alpha, u)
+
+        return np.abs(integral)
 
     def F_norm(self, alphas: np.ndarray, fit_params: T,
                s_function: SFunction) -> np.ndarray:
@@ -256,9 +268,8 @@ class PSFDFittingBase[T: FitParams](ABC):
             # (pl.col("longest_axis_diameter") /
             #  pl.col("surface_area")) < mean_p2std,
 
-            pl.col("alpha") < s_function.max_fitting_alpha *
-            (2 ** (4 * 2)),  # As we want to consider the last LOD
-
+            # As we want to consider the last LOD
+            pl.col("alpha") < s_function.all_lods_max_fitting_alpha,
             pl.col("alpha") > s_function.min_fitting_alpha,
             pl.col("alpha") > self.min_alpha_to_consider,
 

@@ -63,12 +63,12 @@ class KDEBootstrappedSensitivityModel(SensitivityModelBase):
 
         kde_log_alphas = KernelDensity(
             kernel=self.kernel,
-            bandwidth="scott"
+            bandwidth=self.bandwidth
         ).fit(log_alphas[:, None])
 
         kde_log_alphas_pass = KernelDensity(
             kernel=self.kernel,
-            bandwidth="scott"
+            bandwidth=self.bandwidth
         ).fit(log_alphas_pass[:, None])
 
         def log_alphas_kde(alpha) -> np.ndarray:
