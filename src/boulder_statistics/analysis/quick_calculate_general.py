@@ -1,31 +1,42 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cached_property
 from time import time
-from typing import Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 import polars as pl
-from polars import Expr, LazyFrame
+from dask.utils import F
+from numpy.random import Generator
+from polars import DataFrame, Expr, LazyFrame
 from scipy.integrate import trapezoid
 from scipy.interpolate import interp1d
-from scipy.stats import gaussian_kde
+from statsmodels.base.model import (GenericLikelihoodModel,
+                                    GenericLikelihoodModelResults,
+                                    LikelihoodModelResults)
+from tqdm import tqdm
 
 from boulder_statistics.analysis.data_product_encyclopedia import \
     DataProductEncyclopedia
+from boulder_statistics.analysis.fit_params.general_fit_params import FitParams
+from boulder_statistics.analysis.sensitivity_model_base import \
+    SensitivityModelBase
 
 relative_alpha: Expr = pl.col(
     "alpha") / (2 ** (2 * 4 - 2 * pl.col("tile_lod_number")))
 
+SModelType = Callable[[np.ndarray], np.ndarray]
+
 
 @dataclass(frozen=True)
-class GeneralPSFDFittingFunction[T](ABC):
+class GeneralPSFDFittingFunction[T: FitParams](ABC):
     dp: DataProductEncyclopedia
-    LAD_min: float = 2
-    max_fitting_alpha: float = 1e8  # 1e4
-    min_fitting_alpha: float = 1e1
+    LAD_min: float
+    sensitivity_model: SensitivityModelBase
     # Does have to be in the database first
-    S_manual_interp_Jaccard_threshold: float = 0.5
+    S_manual_interp_Jaccard_threshold: float = 0.7
+    clean_Phi: bool = True
+    interp_samples: int = 10_000
 
     @abstractmethod
     def flat_PSFD_func(self, alphas: np.ndarray,
@@ -48,20 +59,6 @@ class GeneralPSFDFittingFunction[T](ABC):
         )["relative_alpha"].to_numpy()
 
     @cached_property
-    def S_fast(self) -> interp1d:
-
-        S_interp = self.dp.S_manual_interp.filter(
-            pl.col("J_threshold") == self.S_manual_interp_Jaccard_threshold).collect()
-
-        return interp1d(
-            S_interp["view_port_alpha"].to_numpy(),
-            S_interp["p_detection"].to_numpy(),
-            kind="linear",
-            bounds_error=False,
-            fill_value=0.0
-        )
-
-    @cached_property
     def Cleaned_Phi(self) -> Tuple[np.ndarray, np.ndarray]:
         bin_centers = 0.5 * \
             (self.dp.Phi_counts_smoothed_bins[:-1] +
@@ -70,56 +67,146 @@ class GeneralPSFDFittingFunction[T](ABC):
         bin_widths = np.abs(
             self.dp.Phi_counts_smoothed_bins[:-1] - self.dp.Phi_counts_smoothed_bins[1:])
 
-        mask = (self.dp.Phi_counts_smoothed_counts / bin_widths > 10**3
-                ) & (self.dp.Phi_counts_smoothed_counts * bin_widths > 10**3)
+        mask: np.ndarray = (self.dp.Phi_counts_smoothed_counts / bin_widths > 10**3
+                            ) & (self.dp.Phi_counts_smoothed_counts * bin_widths > 10**3) if self.clean_Phi else np.ones_like(bin_centers, dtype=np.bool)
 
         return bin_centers[mask], self.dp.Phi_counts_smoothed_counts[mask]
 
-    def F(self, alphas: np.ndarray, fit_params: T) -> np.ndarray:
+    def F(self, alphas: np.ndarray, fit_params: T,
+          s_model: SModelType) -> np.ndarray:
 
-        total_p_alpha = self.flat_PSFD_func(
-            alphas=alphas,
+        alphas_sample = np.geomspace(
+            alphas.min(),
+            alphas.max(),
+            self.interp_samples
+        )
+
+        total_p_alpha_sample = self.flat_PSFD_func(
+            alphas=alphas_sample,
             phis=self.Cleaned_Phi[0],
             phi_weights=self.Cleaned_Phi[1],
             fit_params=fit_params
         )
 
+        total_p_alpha_log = interp1d(
+            np.log(alphas_sample),
+            np.log(total_p_alpha_sample),
+            assume_sorted=True
+        )(np.log(alphas))  # Power-law interpolation
+
         # Ok here as multiple same detections are required for intra-tile calculations, but all
         # the collected data is based of inter-tile calculations for which this
         # model works for
         total_s = 1 - np.prod([
-            1 - self.S_fast(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
+            1 - s_model(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
         ], axis=0)
 
-        p_estimate = total_p_alpha * total_s
-        # We don't fit larger than this as unreliable
-        p_estimate[alphas > self.max_fitting_alpha] = 0
-        # We don't fit smaller than this as unreliable
-        p_estimate[alphas < self.min_fitting_alpha] = 0
+        p_estimate = total_s * np.exp(total_p_alpha_log)
+
+        # If we cut alphas at this point the function will need to reflect this
+        p_estimate[alphas > self.sensitivity_model.max_fitting_alpha *
+                   (2 ** (4 * 2))] = 0
+
+        p_estimate[alphas < self.sensitivity_model.min_fitting_alpha] = 0
 
         return p_estimate
 
-    def int_F(self, fit_params: T) -> np.floating:
+    def int_F(self, fit_params: T, s_model: Callable[[
+              np.ndarray], np.ndarray]) -> np.floating:
         int_samples = 40_000
 
         int_alphas = np.geomspace(1, 1e6, int_samples)
         int_probs = self.F(
-            int_alphas,
-            fit_params=fit_params)
+            int_alphas, fit_params, s_model)
         finite_alphas = int_alphas[int_probs > 0]
         finite_probs = int_probs[int_probs > 0]
 
         return np.abs(trapezoid(finite_alphas, finite_probs))
 
-    def F_norm(self, alphas: np.ndarray, fit_params: T) -> np.ndarray:
+    def F_norm(self, alphas: np.ndarray, fit_params: T,
+               s_model: SModelType) -> np.ndarray:
 
-        int_F: np.float32 = self.int_F(fit_params)
-        return self.F(alphas, fit_params) / int_F
+        int_F: np.float32 = self.int_F(fit_params, s_model)
+        return self.F(alphas, fit_params, s_model) / int_F
+
+    def MLE_fit(self, optimize_params: T, verbose=False,
+                summary=True) -> GenericLikelihoodModelResults:
+        return self.MLE_fit_general(optimize_params, self.sensitivity_model.best_p_function,
+                                    verbose, summary)
+
+    def MLE_fit_general(self, optimize_params: T, s_model: SModelType,
+                        verbose=False, summary=True) -> GenericLikelihoodModelResults:
+
+        F_norm: Callable[[np.ndarray, T, SModelType], np.ndarray] = self.F_norm
+
+        class TheoryFit(GenericLikelihoodModel):
+            param_names: List[str] = optimize_params.get_labels()
+
+            def __init__(self, x):
+                super().__init__(x)
+
+            def loglikeobs(self, params) -> np.ndarray:
+                alphas = self.endog
+
+                optimize_params.modify_from_numpy(params)
+
+                if verbose:
+                    print(f"Running iteration with params {params}")
+
+                return np.log(F_norm(alphas, optimize_params, s_model))
+
+            @property
+            def start_params(self):
+                return optimize_params.to_numpy()
+
+        mle_model: GenericLikelihoodModelResults = TheoryFit(
+            self.cleaned_data.collect()["alpha"].to_numpy()).fit()
+
+        if summary:
+            print(mle_model.summary())
+
+        return mle_model
+
+    def MultiMLEFit(self, optimize_params: T, numb_runs: int = 10,
+                    verbose=False, summary=False) -> DataFrame:
+
+        original_params = optimize_params.to_numpy()
+
+        aic_vals: List[float] = []
+        bic_vals: List[float] = []
+        params_dict: Dict[str, List[float]] = {
+            param_name: [] for param_name in optimize_params.get_labels()}
+
+        params_error_dict: Dict[str, List[float]] = {
+            f"{param_name}_err": [] for param_name in optimize_params.get_labels()}
+
+        for _ in tqdm(range(numb_runs), desc="MultiMLE fit running"):
+
+            rng: Generator = np.random.default_rng()
+            s_model: SModelType = self.sensitivity_model.random_p_function(rng)
+            optimize_params.modify_from_numpy(original_params)
+
+            mle_model: GenericLikelihoodModelResults = self.MLE_fit_general(
+                optimize_params, s_model, verbose, summary)
+
+            aic_vals.append(mle_model.aic)
+            bic_vals.append(mle_model.bic)
+
+            for param_name, param_value, param_error in zip(
+                    optimize_params.get_labels(), mle_model.params, mle_model.bse):
+
+                params_dict[param_name].append(param_value)
+                params_error_dict[f"{param_name}_err"].append(param_error)
+
+        return DataFrame(
+            {"aic": aic_vals, "bic": bic_vals} |
+            params_dict | params_error_dict
+        )
 
     @property
-    def plot_range(self):
-        min = self.cleaned_data.collect()["alpha"].min()
-        max = self.cleaned_data.collect()["alpha"].max()
+    def plot_range(self) -> Tuple[float, float]:
+        min: float = self.cleaned_data.collect()["alpha"].to_numpy().min()
+        max: float = self.cleaned_data.collect()["alpha"].to_numpy().max()
 
         return min, max
 
@@ -139,8 +226,9 @@ class GeneralPSFDFittingFunction[T](ABC):
             pl.col("longest_axis_diameter") * 1000 > self.LAD_min,
             (pl.col("longest_axis_diameter") /
              pl.col("surface_area")) < mean_p2std,
-            pl.col("alpha") < self.max_fitting_alpha,
+            pl.col("alpha") < self.sensitivity_model.max_fitting_alpha *
+            (2 ** (4 * 2)),  # As we want to consider the last LOD
             # We don't fit larger than this as unreliable
-            pl.col("alpha") > self.min_fitting_alpha,
+            pl.col("alpha") > self.sensitivity_model.min_fitting_alpha,
             # We don't fit smaller than this as unreliable
         )
