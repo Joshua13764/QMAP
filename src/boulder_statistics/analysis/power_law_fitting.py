@@ -24,13 +24,14 @@ class PowerLawFitting(PSFDFittingBase[PowerLawFitParams]):
                        fit_params) -> np.ndarray:
         return (alphas ** (- fit_params.q - 1)) * self.sigma_sum(
             alphas=alphas,
-            phis=0.1 * fit_params.g * phis,
+            phis=phis,
+            g=fit_params.g,
             phi_weights=phi_weights,
             q=fit_params.q)
 
-    def sigma_sum(self, alphas, phis, phi_weights, q) -> np.ndarray:
+    def sigma_sum(self, alphas, phis, g, phi_weights, q) -> np.ndarray:
         # Reconstruct bin edges from geometric centres
-        log_phis = np.log(phis)
+        log_phis = np.log(phis * g * 0.1)
 
         log_edges = np.empty(len(phis) + 1)
         log_edges[1:-1] = 0.5 * (log_phis[:-1] + log_phis[1:])

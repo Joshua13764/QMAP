@@ -106,6 +106,7 @@ class PSFDFittingBase[T: FitParams](ABC):
         p_estimate[alphas > s_function.max_fitting_alpha *
                    (2 ** (4 * 2))] = 0
 
+        # print(s_function.min_fitting_alpha)
         p_estimate[alphas < s_function.min_fitting_alpha] = 0
 
         return p_estimate
@@ -237,8 +238,8 @@ class PSFDFittingBase[T: FitParams](ABC):
 
         return self.dp.boulder_agg_data.filter(
             pl.col("longest_axis_diameter") * 1000 > self.LAD_min,
-            (pl.col("longest_axis_diameter") /
-             pl.col("surface_area")) < mean_p2std,
+            # (pl.col("longest_axis_diameter") /
+            #  pl.col("surface_area")) < mean_p2std,
             pl.col("alpha") < s_function.max_fitting_alpha *
             (2 ** (4 * 2)),  # As we want to consider the last LOD
             # We don't fit larger than this as unreliable
