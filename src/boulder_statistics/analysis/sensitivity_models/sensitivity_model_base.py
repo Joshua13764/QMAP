@@ -6,6 +6,8 @@ from typing import Callable
 import numpy as np
 from polars import DataFrame
 
+from boulder_statistics.analysis.sensitivity_models.s_function import SFunction
+
 
 @dataclass(frozen=True)
 class SensitivityModelBase(ABC):
@@ -13,17 +15,9 @@ class SensitivityModelBase(ABC):
     J_threshold: float = field(default=0.7)
 
     @cached_property
-    def best_p_function(self) -> Callable[[np.ndarray], np.ndarray]:
+    def best_S_function(self) -> SFunction:
         ...
 
-    def random_p_function(
-            self, rng: np.random.Generator) -> Callable[[np.ndarray], np.ndarray]:
-        ...
-
-    @cached_property
-    def min_fitting_alpha(self) -> float:
-        ...
-
-    @cached_property
-    def max_fitting_alpha(self) -> float:
+    def random_S_function(
+            self, rng: np.random.Generator) -> SFunction:
         ...

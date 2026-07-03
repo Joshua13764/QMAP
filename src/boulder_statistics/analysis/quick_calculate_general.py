@@ -19,13 +19,12 @@ from tqdm import tqdm
 from boulder_statistics.analysis.data_product_encyclopedia import \
     DataProductEncyclopedia
 from boulder_statistics.analysis.fit_params.general_fit_params import FitParams
-from boulder_statistics.analysis.sensitivity_model_base import \
+from boulder_statistics.analysis.sensitivity_models.s_function import SFunction
+from boulder_statistics.analysis.sensitivity_models.sensitivity_model_base import \
     SensitivityModelBase
 
 relative_alpha: Expr = pl.col(
     "alpha") / (2 ** (2 * 4 - 2 * pl.col("tile_lod_number")))
-
-SModelType = Callable[[np.ndarray], np.ndarray]
 
 
 @dataclass(frozen=True)
@@ -73,7 +72,7 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
         return bin_centers[mask], self.dp.Phi_counts_smoothed_counts[mask]
 
     def F(self, alphas: np.ndarray, fit_params: T,
-          s_model: SModelType) -> np.ndarray:
+          s_function: SFunction) -> np.ndarray:
 
         alphas_sample = np.geomspace(
             alphas.min(),
@@ -98,46 +97,45 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
         # the collected data is based of inter-tile calculations for which this
         # model works for
         total_s = 1 - np.prod([
-            1 - s_model(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
+            1 - s_function.function(alphas / (2 ** (2 * 4 - 2 * i))) for i in range(5)
         ], axis=0)
 
         p_estimate = total_s * np.exp(total_p_alpha_log)
 
         # If we cut alphas at this point the function will need to reflect this
-        p_estimate[alphas > self.sensitivity_model.max_fitting_alpha *
+        p_estimate[alphas > s_function.max_fitting_alpha *
                    (2 ** (4 * 2))] = 0
 
-        p_estimate[alphas < self.sensitivity_model.min_fitting_alpha] = 0
+        p_estimate[alphas < s_function.min_fitting_alpha] = 0
 
         return p_estimate
 
-    def int_F(self, fit_params: T, s_model: Callable[[
-              np.ndarray], np.ndarray]) -> np.floating:
+    def int_F(self, fit_params: T, s_function: SFunction) -> np.floating:
         int_samples = 40_000
 
         int_alphas = np.geomspace(1, 1e6, int_samples)
         int_probs = self.F(
-            int_alphas, fit_params, s_model)
+            int_alphas, fit_params, s_function)
         finite_alphas = int_alphas[int_probs > 0]
         finite_probs = int_probs[int_probs > 0]
 
         return np.abs(trapezoid(finite_alphas, finite_probs))
 
     def F_norm(self, alphas: np.ndarray, fit_params: T,
-               s_model: SModelType) -> np.ndarray:
+               s_function: SFunction) -> np.ndarray:
 
-        int_F: np.float32 = self.int_F(fit_params, s_model)
-        return self.F(alphas, fit_params, s_model) / int_F
+        int_F: np.float32 = self.int_F(fit_params, s_function)
+        return self.F(alphas, fit_params, s_function) / int_F
 
     def MLE_fit(self, optimize_params: T, verbose=False,
                 summary=True) -> GenericLikelihoodModelResults:
-        return self.MLE_fit_general(optimize_params, self.sensitivity_model.best_p_function,
+        return self.MLE_fit_general(optimize_params, self.sensitivity_model.best_S_function,
                                     verbose, summary)
 
-    def MLE_fit_general(self, optimize_params: T, s_model: SModelType,
+    def MLE_fit_general(self, optimize_params: T, s_function: SFunction,
                         verbose=False, summary=True) -> GenericLikelihoodModelResults:
 
-        F_norm: Callable[[np.ndarray, T, SModelType], np.ndarray] = self.F_norm
+        F_norm: Callable[[np.ndarray, T, SFunction], np.ndarray] = self.F_norm
 
         class TheoryFit(GenericLikelihoodModel):
             param_names: List[str] = optimize_params.get_labels()
@@ -153,14 +151,14 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
                 if verbose:
                     print(f"Running iteration with params {params}")
 
-                return np.log(F_norm(alphas, optimize_params, s_model))
+                return np.log(F_norm(alphas, optimize_params, s_function))
 
             @property
             def start_params(self):
                 return optimize_params.to_numpy()
 
         mle_model: GenericLikelihoodModelResults = TheoryFit(
-            self.cleaned_data.collect()["alpha"].to_numpy()).fit()
+            self.cleaned_data(s_function).collect()["alpha"].to_numpy()).fit()
 
         if summary:
             print(mle_model.summary())
@@ -183,11 +181,12 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
         for _ in tqdm(range(numb_runs), desc="MultiMLE fit running"):
 
             rng: Generator = np.random.default_rng()
-            s_model: SModelType = self.sensitivity_model.random_p_function(rng)
+            s_function: SFunction = self.sensitivity_model.random_S_function(
+                rng)
             optimize_params.modify_from_numpy(original_params)
 
             mle_model: GenericLikelihoodModelResults = self.MLE_fit_general(
-                optimize_params, s_model, verbose, summary)
+                optimize_params, s_function, verbose, summary)
 
             aic_vals.append(mle_model.aic)
             bic_vals.append(mle_model.bic)
@@ -205,13 +204,22 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
 
     @property
     def plot_range(self) -> Tuple[float, float]:
-        min: float = self.cleaned_data.collect()["alpha"].to_numpy().min()
-        max: float = self.cleaned_data.collect()["alpha"].to_numpy().max()
+        """Uses the sensitivity_model best_S_function to find the range
+
+        Returns:
+            Tuple[float, float]: _description_
+        """
+        min: float = self.cleaned_alphas(
+            self.sensitivity_model.best_S_function).min()
+        max: float = self.cleaned_alphas(
+            self.sensitivity_model.best_S_function).max()
 
         return min, max
 
-    @property
-    def cleaned_data(self) -> LazyFrame:
+    def cleaned_alphas(self, s_function: SFunction) -> np.ndarray:
+        return self.cleaned_data(s_function).collect()["alpha"].to_numpy()
+
+    def cleaned_data(self, s_function: SFunction) -> LazyFrame:
         most = self.dp.boulder_agg_data.filter(
             pl.col("longest_axis_diameter") *
             1000 > self.LAD_min).collect()
@@ -226,9 +234,9 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
             pl.col("longest_axis_diameter") * 1000 > self.LAD_min,
             (pl.col("longest_axis_diameter") /
              pl.col("surface_area")) < mean_p2std,
-            pl.col("alpha") < self.sensitivity_model.max_fitting_alpha *
+            pl.col("alpha") < s_function.max_fitting_alpha *
             (2 ** (4 * 2)),  # As we want to consider the last LOD
             # We don't fit larger than this as unreliable
-            pl.col("alpha") > self.sensitivity_model.min_fitting_alpha,
+            pl.col("alpha") > s_function.min_fitting_alpha,
             # We don't fit smaller than this as unreliable
         )

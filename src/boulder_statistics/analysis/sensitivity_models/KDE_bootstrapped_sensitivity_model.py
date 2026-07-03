@@ -10,7 +10,8 @@ from polars import DataFrame
 from scipy.stats import gaussian_kde
 from sklearn.neighbors import KernelDensity
 
-from boulder_statistics.analysis.sensitivity_model_base import \
+from boulder_statistics.analysis.sensitivity_models.s_function import SFunction
+from boulder_statistics.analysis.sensitivity_models.sensitivity_model_base import \
     SensitivityModelBase
 
 
@@ -103,25 +104,31 @@ class KDEBootstrappedSensitivityModel(SensitivityModelBase):
         return lambda input_alphas: interp_func(np.log(input_alphas))
 
     @cached_property
-    def best_p_function(self) -> Callable[[np.ndarray], np.ndarray]:
-        return self.get_s_KDE()
+    def best_S_function(self) -> SFunction:
+        function = self.get_s_KDE()
+
+        return SFunction(
+            function=function,
+            min_fitting_alpha=self.get_min_fitting_alpha(function),
+            max_fitting_alpha=self.get_max_fitting_alpha(function)
+        )
 
     def random_p_function(
             self, rng: np.random.Generator) -> Callable[[np.ndarray], np.ndarray]:
         return self.get_s_KDE(bootstrap_rng=rng)
 
-    @cached_property
-    def min_fitting_alpha(self) -> float:
+    def get_min_fitting_alpha(
+            self, p_function: Callable[[np.ndarray], np.ndarray]) -> float:
         alpha_samples: np.ndarray = np.geomspace(1, 512 ** 2, 10_000)
-        S_samples: np.ndarray = self.best_p_function(alpha_samples)
+        S_samples: np.ndarray = p_function(alpha_samples)
 
         return alpha_samples[np.flatnonzero(
             S_samples > self.max_alpha_s_min)[0]].item()
 
-    @cached_property
-    def max_fitting_alpha(self) -> float:
+    def get_max_fitting_alpha(
+            self, p_function: Callable[[np.ndarray], np.ndarray]) -> float:
         alpha_samples: np.ndarray = np.geomspace(1, 512 ** 2, 10_000)
-        S_samples: np.ndarray = self.best_p_function(alpha_samples)
+        S_samples: np.ndarray = p_function(alpha_samples)
 
         return alpha_samples[np.flatnonzero(
             S_samples > self.min_alpha_s_min)[-1]].item()
