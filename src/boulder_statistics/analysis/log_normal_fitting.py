@@ -4,17 +4,12 @@ import numpy as np
 
 from boulder_statistics.analysis.fit_params.log_normal_fit_params import \
     LogNormalFitParams
-from boulder_statistics.analysis.fit_params.power_law_fit_params import \
-    PowerLawFitParams
-from boulder_statistics.analysis.fit_params.weibull_fit_params import \
-    WeibullFitParams
-from boulder_statistics.analysis.quick_calculate_general import \
-    GeneralPSFDFittingFunction
+from boulder_statistics.analysis.PSFD_fitting_base import PSFDFittingBase
 
 
 @dataclass(frozen=True)
-class LogNormalFittingFunction(
-    GeneralPSFDFittingFunction[LogNormalFitParams]
+class LogNormalFitting(
+    PSFDFittingBase[LogNormalFitParams]
 ):
     def flat_PSFD_func(
         self,

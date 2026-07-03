@@ -19,8 +19,8 @@ from tqdm import tqdm
 from boulder_statistics.analysis.data_product_encyclopedia import \
     DataProductEncyclopedia
 from boulder_statistics.analysis.fit_params.general_fit_params import FitParams
-from boulder_statistics.analysis.sensitivity_models.s_function import SFunction
-from boulder_statistics.analysis.sensitivity_models.sensitivity_model_base import \
+from boulder_statistics.analysis.sensitivity_model.s_function import SFunction
+from boulder_statistics.analysis.sensitivity_model.sensitivity_model_base import \
     SensitivityModelBase
 
 relative_alpha: Expr = pl.col(
@@ -28,7 +28,7 @@ relative_alpha: Expr = pl.col(
 
 
 @dataclass(frozen=True)
-class GeneralPSFDFittingFunction[T: FitParams](ABC):
+class PSFDFittingBase[T: FitParams](ABC):
     dp: DataProductEncyclopedia
     LAD_min: float
     sensitivity_model: SensitivityModelBase
@@ -158,7 +158,7 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
                 return optimize_params.to_numpy()
 
         mle_model: GenericLikelihoodModelResults = TheoryFit(
-            self.cleaned_data(s_function).collect()["alpha"].to_numpy()).fit()
+            self.cleaned_alphas(s_function)).fit(disp=verbose)
 
         if summary:
             print(mle_model.summary())
@@ -183,6 +183,7 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
             rng: Generator = np.random.default_rng()
             s_function: SFunction = self.sensitivity_model.random_S_function(
                 rng)
+
             optimize_params.modify_from_numpy(original_params)
 
             mle_model: GenericLikelihoodModelResults = self.MLE_fit_general(
@@ -215,6 +216,10 @@ class GeneralPSFDFittingFunction[T: FitParams](ABC):
             self.sensitivity_model.best_S_function).max()
 
         return min, max
+
+    @property
+    def cleaned_alphas_best_S(self) -> np.ndarray:
+        return self.cleaned_alphas(self.sensitivity_model.best_S_function)
 
     def cleaned_alphas(self, s_function: SFunction) -> np.ndarray:
         return self.cleaned_data(s_function).collect()["alpha"].to_numpy()

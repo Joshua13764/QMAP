@@ -10,8 +10,8 @@ from polars import DataFrame
 from scipy.stats import gaussian_kde
 from sklearn.neighbors import KernelDensity
 
-from boulder_statistics.analysis.sensitivity_models.s_function import SFunction
-from boulder_statistics.analysis.sensitivity_models.sensitivity_model_base import \
+from boulder_statistics.analysis.sensitivity_model.s_function import SFunction
+from boulder_statistics.analysis.sensitivity_model.sensitivity_model_base import \
     SensitivityModelBase
 
 
@@ -113,9 +113,15 @@ class KDEBootstrappedSensitivityModel(SensitivityModelBase):
             max_fitting_alpha=self.get_max_fitting_alpha(function)
         )
 
-    def random_p_function(
-            self, rng: np.random.Generator) -> Callable[[np.ndarray], np.ndarray]:
-        return self.get_s_KDE(bootstrap_rng=rng)
+    def random_S_function(
+            self, rng: np.random.Generator) -> SFunction:
+        function = self.get_s_KDE(bootstrap_rng=rng)
+
+        return SFunction(
+            function=function,
+            min_fitting_alpha=self.get_min_fitting_alpha(function),
+            max_fitting_alpha=self.get_max_fitting_alpha(function)
+        )
 
     def get_min_fitting_alpha(
             self, p_function: Callable[[np.ndarray], np.ndarray]) -> float:

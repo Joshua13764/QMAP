@@ -5,12 +5,11 @@ import numpy as np
 
 from boulder_statistics.analysis.fit_params.power_law_fit_params import \
     PowerLawFitParams
-from boulder_statistics.analysis.quick_calculate_general import \
-    GeneralPSFDFittingFunction
+from boulder_statistics.analysis.PSFD_fitting_base import PSFDFittingBase
 
 
 @dataclass(frozen=True)
-class PowerLawFittingFunction(GeneralPSFDFittingFunction[PowerLawFitParams]):
+class PowerLawFitting(PSFDFittingBase[PowerLawFitParams]):
     @property
     def a_min(self) -> np.float32:
         return np.pi * (self.LAD_min) ** 2
@@ -19,8 +18,7 @@ class PowerLawFittingFunction(GeneralPSFDFittingFunction[PowerLawFitParams]):
     def a_max(self) -> np.float32:
         # return np.float32(self.cleaned_data.collect()["surface_area"].max())
         # * 1e6
-        return np.float32(self.cleaned_data.collect()[
-                          "surface_area"].max()) * 1e6
+        return self.cleaned_alphas_best_S.max() * 1e6
 
     def flat_PSFD_func(self, alphas, phis, phi_weights,
                        fit_params) -> np.ndarray:

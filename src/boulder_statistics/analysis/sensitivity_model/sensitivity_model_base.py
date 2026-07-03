@@ -6,7 +6,7 @@ from typing import Callable
 import numpy as np
 from polars import DataFrame
 
-from boulder_statistics.analysis.sensitivity_models.s_function import SFunction
+from boulder_statistics.analysis.sensitivity_model.s_function import SFunction
 
 
 @dataclass(frozen=True)
