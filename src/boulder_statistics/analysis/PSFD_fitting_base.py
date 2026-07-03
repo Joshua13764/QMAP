@@ -33,9 +33,12 @@ class PSFDFittingBase[T: FitParams](ABC):
     LAD_min: float
     sensitivity_model: SensitivityModelBase
     # Does have to be in the database first
-    S_manual_interp_Jaccard_threshold: float = 0.7
-    clean_Phi: bool = True
-    interp_samples: int = 10_000
+    S_manual_interp_Jaccard_threshold: float = field(default=0.7)
+    clean_Phi: bool = field(default=True)
+    interp_samples: int = field(default=10_000)
+
+    # The true min can be higher than this if the S model requests it
+    min_alpha_to_consider: int = field(default=0)
 
     @abstractmethod
     def flat_PSFD_func(self, alphas: np.ndarray,
@@ -108,6 +111,7 @@ class PSFDFittingBase[T: FitParams](ABC):
 
         # print(s_function.min_fitting_alpha)
         p_estimate[alphas < s_function.min_fitting_alpha] = 0
+        p_estimate[alphas < self.min_alpha_to_consider] = 0
 
         return p_estimate
 
@@ -171,17 +175,18 @@ class PSFDFittingBase[T: FitParams](ABC):
 
         original_params = optimize_params.to_numpy()
 
-        aic_vals: List[float] = []
-        bic_vals: List[float] = []
-        params_dict: Dict[str, List[float]] = {
-            param_name: [] for param_name in optimize_params.get_labels()}
+        seed_vals_to_run: np.ndarray = np.random.random_integers(
+            0, 100_000, size=numb_runs)
 
-        params_error_dict: Dict[str, List[float]] = {
-            f"{param_name}_err": [] for param_name in optimize_params.get_labels()}
+        params_dict: Dict[str, List[float]] = (
+            {"aic": [], "bic": [], "numb_alphas": [], "s_max_fitting_alpha": [], "s_min_fitting_alpha": []} |
+            {param_name: [] for param_name in optimize_params.get_labels()} |
+            {f"{param_name}_err": []
+                for param_name in optimize_params.get_labels()}
+        )
 
-        for _ in tqdm(range(numb_runs), desc="MultiMLE fit running"):
-
-            rng: Generator = np.random.default_rng()
+        for seed in tqdm(seed_vals_to_run, desc="MultiMLE fit running"):
+            rng: Generator = np.random.default_rng(seed)
             s_function: SFunction = self.sensitivity_model.random_S_function(
                 rng)
 
@@ -190,18 +195,28 @@ class PSFDFittingBase[T: FitParams](ABC):
             mle_model: GenericLikelihoodModelResults = self.MLE_fit_general(
                 optimize_params, s_function, verbose, summary)
 
-            aic_vals.append(mle_model.aic)
-            bic_vals.append(mle_model.bic)
+            params_dict["aic"].append(mle_model.aic)
+            params_dict["bic"].append(mle_model.bic)
+            params_dict["numb_alphas"].append(
+                self.cleaned_alphas(s_function).size)
+            params_dict["s_max_fitting_alpha"].append(
+                s_function.max_fitting_alpha)
+            params_dict["s_min_fitting_alpha"].append(
+                s_function.min_fitting_alpha)
 
             for param_name, param_value, param_error in zip(
                     optimize_params.get_labels(), mle_model.params, mle_model.bse):
 
                 params_dict[param_name].append(param_value)
-                params_error_dict[f"{param_name}_err"].append(param_error)
+                params_dict[f"{param_name}_err"].append(param_error)
 
         return DataFrame(
-            {"aic": aic_vals, "bic": bic_vals} |
-            params_dict | params_error_dict
+            {"seed": seed_vals_to_run} |
+            params_dict
+        ).with_columns(  # Extra metadata
+            pl.lit(self.LAD_min).alias("LAD_min"),
+            pl.lit(self.S_manual_interp_Jaccard_threshold).alias("J_min"),
+            pl.lit(self.min_alpha_to_consider).alias("min_alpha_to_consider")
         )
 
     @property
@@ -240,9 +255,11 @@ class PSFDFittingBase[T: FitParams](ABC):
             pl.col("longest_axis_diameter") * 1000 > self.LAD_min,
             # (pl.col("longest_axis_diameter") /
             #  pl.col("surface_area")) < mean_p2std,
+
             pl.col("alpha") < s_function.max_fitting_alpha *
             (2 ** (4 * 2)),  # As we want to consider the last LOD
-            # We don't fit larger than this as unreliable
+
             pl.col("alpha") > s_function.min_fitting_alpha,
-            # We don't fit smaller than this as unreliable
+            pl.col("alpha") > self.min_alpha_to_consider,
+
         )
