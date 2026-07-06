@@ -224,11 +224,12 @@ class PSFDFittingBase[T: FitParams](ABC):
 
         return DataFrame(
             {"seed": seed_vals_to_run} |
-            params_dict
+            params_dict,
         ).with_columns(  # Extra metadata
             pl.lit(self.LAD_min).alias("LAD_min"),
             pl.lit(self.S_manual_interp_Jaccard_threshold).alias("J_min"),
-            pl.lit(self.min_alpha_to_consider).alias("min_alpha_to_consider")
+            pl.lit(np.float64(self.min_alpha_to_consider)).alias(
+                "min_alpha_to_consider")
         )
 
     @property
