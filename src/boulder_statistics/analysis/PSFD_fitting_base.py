@@ -27,7 +27,7 @@ relative_alpha: Expr = pl.col(
     "alpha") / (2 ** (2 * 4 - 2 * pl.col("tile_lod_number")))
 
 
-@dataclass(frozen=True)
+@dataclass
 class PSFDFittingBase[T: FitParams](ABC):
     dp: DataProductEncyclopedia
     LAD_min: float

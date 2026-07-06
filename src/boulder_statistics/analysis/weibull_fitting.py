@@ -7,7 +7,7 @@ from boulder_statistics.analysis.fit_params.weibull_fit_params import \
 from boulder_statistics.analysis.PSFD_fitting_base import PSFDFittingBase
 
 
-@dataclass(frozen=True)
+@dataclass()
 class WeibullFitting(PSFDFittingBase[WeibullFitParams]):
     def flat_PSFD_func(self, alphas, phis, phi_weights,
                        fit_params) -> np.ndarray:

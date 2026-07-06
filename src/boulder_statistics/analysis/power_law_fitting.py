@@ -8,7 +8,7 @@ from boulder_statistics.analysis.fit_params.power_law_fit_params import \
 from boulder_statistics.analysis.PSFD_fitting_base import PSFDFittingBase
 
 
-@dataclass(frozen=True)
+@dataclass
 class PowerLawFitting(PSFDFittingBase[PowerLawFitParams]):
     @property
     def a_min(self) -> np.float32:

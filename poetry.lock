@@ -3728,6 +3728,22 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pymannkendall"
+version = "1.4.3"
+description = "A python package for non-parametric Mann-Kendall family of trend tests."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "pymannkendall-1.4.3-py3-none-any.whl", hash = "sha256:7d988efffae26c12c04b95f77042b946c8581da7526d94b2bbfb7416fb55681f"},
+    {file = "pymannkendall-1.4.3.tar.gz", hash = "sha256:f9e3bbbb583b5285d15082aa0007825e5bea4dde9858d2e7ca81ee6f1e378e82"},
+]
+
+[package.dependencies]
+numpy = "*"
+scipy = "*"
+
+[[package]]
 name = "pyparsing"
 version = "3.2.5"
 description = "pyparsing - Classes and methods to define and execute parsing grammars"
@@ -5188,4 +5204,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.15"
-content-hash = "bc22fd119c0657a0fffed7de1ea64c9ee7294359de6b5b32ec0b740e774dc4fe"
+content-hash = "b98f7e30394001750fff2b1109e4e28feadf18017c5505f1ba4ddac6c7aa8897"

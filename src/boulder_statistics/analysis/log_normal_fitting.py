@@ -7,7 +7,7 @@ from boulder_statistics.analysis.fit_params.log_normal_fit_params import \
 from boulder_statistics.analysis.PSFD_fitting_base import PSFDFittingBase
 
 
-@dataclass(frozen=True)
+@dataclass
 class LogNormalFitting(
     PSFDFittingBase[LogNormalFitParams]
 ):
