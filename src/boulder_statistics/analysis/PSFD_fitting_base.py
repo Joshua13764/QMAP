@@ -26,6 +26,21 @@ from boulder_statistics.analysis.sensitivity_model.sensitivity_model_base import
 relative_alpha: Expr = pl.col(
     "alpha") / (2 ** (2 * 4 - 2 * pl.col("tile_lod_number")))
 
+STANDARD_MULTI_MLE_SCHEMA = {
+    "seed": pl.Int32,
+
+    "aic": pl.Float64,
+    "bic": pl.Float64,
+    "numb_alphas": pl.Int64,
+
+    "s_max_fitting_alpha": pl.Float64,
+    "s_min_fitting_alpha": pl.Float64,
+
+    "LAD_min": pl.Int32,
+    "J_min": pl.Float64,
+    "min_alpha_to_consider": pl.Float64,
+}
+
 
 @dataclass
 class PSFDFittingBase[T: FitParams](ABC):
@@ -222,15 +237,25 @@ class PSFDFittingBase[T: FitParams](ABC):
                 params_dict[param_name].append(param_value)
                 params_dict[f"{param_name}_err"].append(param_error)
 
-        return DataFrame(
-            {"seed": seed_vals_to_run} |
-            params_dict,
-        ).with_columns(  # Extra metadata
-            pl.lit(self.LAD_min).alias("LAD_min"),
-            pl.lit(self.S_manual_interp_Jaccard_threshold).alias("J_min"),
-            pl.lit(np.float64(self.min_alpha_to_consider)).alias(
-                "min_alpha_to_consider")
+        base_dict = {
+            "seed": seed_vals_to_run,
+            **params_dict,
+            "LAD_min": np.int32(self.LAD_min),
+            "J_min": np.float64(self.S_manual_interp_Jaccard_threshold),
+            "min_alpha_to_consider": np.float64(self.min_alpha_to_consider),
+        }
+
+        schema = STANDARD_MULTI_MLE_SCHEMA | {
+            **{name: pl.Float64 for name in optimize_params.get_labels()},
+            **{f"{name}_err": pl.Float64 for name in optimize_params.get_labels()},
+        }
+
+        df = pl.DataFrame(
+            base_dict,
+            schema=schema,
         )
+
+        return df
 
     @property
     def plot_range(self) -> Tuple[float, float]:
