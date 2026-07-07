@@ -6,6 +6,7 @@ import numpy as np
 import polars as pl
 from joblib import Parallel, delayed
 from polars import DataFrame, LazyFrame
+from tqdm import tqdm
 from tqdm_joblib import ParallelPbar
 
 from boulder_statistics.analysis.data_product_encyclopedia import FACES
@@ -66,8 +67,9 @@ class ChunkingTools:
 
         export_folder.mkdir(exist_ok=True, parents=True)
 
-        for chunk in chunks:
+        for chunk in tqdm(chunks, desc="Processing chunks"):
             chunk_lf: LazyFrame = chunk.filter_lf(target_lf)
+
             arr: np.ndarray = process_chunk(chunk)
 
             chunk_df: DataFrame = chunk_lf.collect()
@@ -82,4 +84,5 @@ class ChunkingTools:
             )
 
             chunk_df.write_parquet(
-                export_folder / f"{chunk.short_name}.parquet")
+                export_folder / f"{chunk.short_name}.parquet"
+            )

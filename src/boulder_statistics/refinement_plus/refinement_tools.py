@@ -93,7 +93,7 @@ def restrict_by_clipped_sigma_log_space(
         arr: np.ndarray, reduced_sigma=5) -> np.ndarray:
     arr_flat = arr.flatten()
 
-    lower, upper = np.percentile(arr, [5, 95])
+    lower, upper = np.percentile(arr[arr != 0], [5, 95])
     masked_arr_flat = arr_flat[(arr_flat >= lower) & (arr_flat <= upper)]
 
     reduced_std: np.floating = np.log(masked_arr_flat).std()
