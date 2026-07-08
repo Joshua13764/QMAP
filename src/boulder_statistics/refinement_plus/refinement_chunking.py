@@ -144,7 +144,6 @@ class ChunkingTools:
 
         for chunk in tqdm(chunks, desc="Processing chunks"):
             chunk_lf: LazyFrame = chunk.filter_lf(target_lf)
-
             chunk_df: DataFrame = chunk_lf.collect()
 
             for arr, col_name in zip(process_chunk(chunk), col_names):

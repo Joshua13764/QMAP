@@ -57,6 +57,22 @@ class DataTirMaps:
                 if verbose:
                     print(f"{file_name} done")
 
+        # Give this a shot
+        # merged_pds4_df = (
+        #     pl.concat(pds4_dfs, how="diagonal")
+        #     .with_columns(
+        #         lon_corrected=(
+        #             -((pl.col("longitude") + 180) % 360 - 180)
+        #         ).radians(),
+        #         lat_rad=pl.col("latitude").radians()
+        #     )
+        #     .with_columns(
+        #         x_hat=pl.col("lat_rad").cos() * pl.col("lon_corrected").cos(),
+        #         y_hat=pl.col("lat_rad").cos() * pl.col("lon_corrected").sin(),
+        #         z_hat=pl.col("lat_rad").sin(),
+        #     )
+        # )
+
         merged_pds4_df: pl.DataFrame = pl.concat(pds4_dfs, how="diagonal").with_columns(
             x_hat=pl.col("latitude").radians().cos() *
             pl.col("longitude").radians().cos(),
