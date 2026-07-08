@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, List, Tuple
 
 import datashader as ds
 import datashader.utils as du
@@ -85,8 +85,7 @@ class FacetParser:
     @staticmethod
     def rasterize_facets(
             points: pl.DataFrame, tris: pl.DataFrame,
-            chunk: QCubeChunk,
-            colour_column_name: Callable[[str], str] = lambda face: f'{face}_ratio'):
+            chunk: QCubeChunk):
 
         pd_verts: pd.DataFrame = (points
                                   .select([f'{chunk.face}_u', f'{chunk.face}_v'])
@@ -94,14 +93,12 @@ class FacetParser:
                                   .to_pandas())
 
         pd_tris: pd.DataFrame = (tris
-                                 .select(['0', '1', '2', colour_column_name(chunk.face)])
+                                 .select(['0', '1', '2', "tri_id"])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
                                      pl.col('1').cast(pl.Int32),
                                      pl.col('2').cast(pl.Int32),
-                                     pl.col(
-                                         colour_column_name(chunk.face)).cast(
-                                         pl.Float64),
+                                     pl.col("tri_id").cast(pl.Float64),
                                  ])
                                  .to_pandas())
 
@@ -121,8 +118,53 @@ class FacetParser:
             pd_verts,
             pd_tris,
             mesh=mesh,
-            agg=ds.first(
-                colour_column_name(chunk.face)),
+            agg=ds.first("tri_id"),
             interp=False)
 
-        return agg.astype('float64').values
+        return agg.values
+
+    # @staticmethod
+    # def rasterize_facets(
+    #         points: pl.DataFrame, tris: pl.DataFrame,
+    #         chunk: QCubeChunk,
+    # colour_column_name: Callable[[str], str] = lambda face:
+    # f'{face}_ratio'):
+
+    #     pd_verts: pd.DataFrame = (points
+    #                               .select([f'{chunk.face}_u', f'{chunk.face}_v'])
+    #                               .rename({f'{chunk.face}_u': 'x', f'{chunk.face}_v': 'y'})
+    #                               .to_pandas())
+
+    #     pd_tris: pd.DataFrame = (tris
+    #                              .select(['0', '1', '2', colour_column_name(chunk.face)])
+    #                              .with_columns([
+    #                                  pl.col('0').cast(pl.Int32),
+    #                                  pl.col('1').cast(pl.Int32),
+    #                                  pl.col('2').cast(pl.Int32),
+    #                                  pl.col(
+    #                                      colour_column_name(chunk.face)).cast(
+    #                                      pl.Float64),
+    #                              ])
+    #                              .to_pandas())
+
+    #     W, H = chunk.length, chunk.length
+    #     cvs = ds.Canvas(
+    #         plot_width=W, plot_height=H,
+    #         x_range=chunk.x_range,
+    #         y_range=chunk.y_range,
+    #     )
+
+    #     if pd_tris.shape[0] == 0:
+    #         return np.zeros((W, H), dtype=np.float64)
+
+    #     mesh = du.mesh(pd_verts, pd_tris)
+
+    #     agg = cvs.trimesh(
+    #         pd_verts,
+    #         pd_tris,
+    #         mesh=mesh,
+    #         agg=ds.first(
+    #             colour_column_name(chunk.face)),
+    #         interp=False)
+
+    #     return agg.astype('float64').values
