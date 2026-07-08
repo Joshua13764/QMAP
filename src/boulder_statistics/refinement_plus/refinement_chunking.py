@@ -10,10 +10,44 @@ from tqdm import tqdm
 from tqdm_joblib import ParallelPbar
 
 from boulder_statistics.analysis.data_product_encyclopedia import FACES
+from boulder_statistics.refinement_plus.bounding_box import BoundingBox
 from boulder_statistics.refinement_plus.qcube_chunk import QCubeChunk
 
 
 class ChunkingTools:
+    @staticmethod
+    def get_chunk_bbox(
+        lf: LazyFrame,
+        chunk: QCubeChunk,
+        xyz_columns: list[str] = ["x", "y", "z"],
+    ) -> BoundingBox:
+        lf_filtered: LazyFrame = chunk.filter_lf(lf)
+
+        x, y, z = xyz_columns
+
+        result = (
+            lf_filtered
+            .select(
+                pl.col(x).min().alias("x_min"),
+                pl.col(x).max().alias("x_max"),
+                pl.col(y).min().alias("y_min"),
+                pl.col(y).max().alias("y_max"),
+                pl.col(z).min().alias("z_min"),
+                pl.col(z).max().alias("z_max"),
+            )
+            .collect()
+            .row(0)
+        )
+
+        return BoundingBox(
+            x_min=np.float64(result[0]),
+            x_max=np.float64(result[1]),
+            y_min=np.float64(result[2]),
+            y_max=np.float64(result[3]),
+            z_min=np.float64(result[4]),
+            z_max=np.float64(result[5]),
+        )
+
     @staticmethod
     def extract_chunks(lf: LazyFrame, chunk: QCubeChunk,
                        columns: List[str], numb_workers: int = 4,
