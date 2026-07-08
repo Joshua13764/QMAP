@@ -22,6 +22,20 @@ class QCubeChunk():
     def j_max(self) -> int:
         return self.j_min + self.length
 
+    @property
+    def x_range(self) -> tuple[float, float]:
+        return (
+            self.i_min / 8192,
+            self.i_max / 8192
+        )
+
+    @property
+    def y_range(self) -> tuple[float, float]:
+        return (
+            self.j_min / 8192,
+            self.j_max / 8192
+        )
+
     def filter_lf(self, lf: LazyFrame) -> LazyFrame:
         return lf.filter(
             pl.col("face") == self.face,

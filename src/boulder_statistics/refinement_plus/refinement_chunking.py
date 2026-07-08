@@ -63,8 +63,11 @@ class ChunkingTools:
             i = col_data["i"].to_numpy()
             j = col_data["j"].to_numpy()
 
-            arr = np.empty((i.max() + 1, j.max() + 1), dtype=values.dtype)
-            arr[i, j] = values
+            arr = np.empty(
+                (i.max() - i.min() + 1,
+                 j.max() - j.min() + 1),
+                dtype=values.dtype)
+            arr[i - i.min(), j - j.min()] = values
 
             return arr
 
@@ -109,13 +112,51 @@ class ChunkingTools:
             chunk_df: DataFrame = chunk_lf.collect()
 
             values: np.ndarray = arr[
-                chunk_df["i"].to_numpy(),
-                chunk_df["j"].to_numpy()
+                chunk_df["i"].to_numpy() - chunk.i_min,
+                chunk_df["j"].to_numpy() - chunk.j_min
             ]
 
             chunk_df = chunk_df.with_columns(
                 pl.Series(col_name, values)
             )
+
+            chunk_df.write_parquet(
+                export_folder / f"{chunk.short_name}.parquet"
+            )
+
+    @staticmethod
+    def bulk_append_by_chunks(
+            target_lf: LazyFrame, export_folder: Path, col_names: List[str],
+            process_chunk: Callable[[QCubeChunk], List[np.ndarray]],
+            chunks: List[QCubeChunk] = QCubeChunk.generate(depth=1),
+            skip_if_exists=False) -> None:
+
+        assert export_folder.suffix == "", (
+            f"export_folder should not have an extension, got: {export_folder}"
+        )
+
+        if export_folder.exists() and skip_if_exists:
+            return
+        elif export_folder.exists() and (not skip_if_exists):
+            shutil.rmtree(export_folder)
+
+        export_folder.mkdir(exist_ok=True, parents=True)
+
+        for chunk in tqdm(chunks, desc="Processing chunks"):
+            chunk_lf: LazyFrame = chunk.filter_lf(target_lf)
+
+            chunk_df: DataFrame = chunk_lf.collect()
+
+            for arr, col_name in zip(process_chunk(chunk), col_names):
+
+                values: np.ndarray = arr[
+                    chunk_df["i"].to_numpy() - chunk.i_min,
+                    chunk_df["j"].to_numpy() - chunk.j_min
+                ]
+
+                chunk_df = chunk_df.with_columns(
+                    pl.Series(col_name, values)
+                )
 
             chunk_df.write_parquet(
                 export_folder / f"{chunk.short_name}.parquet"

@@ -1,11 +1,9 @@
 import operator
 from functools import reduce
-from math import e
 from pathlib import Path
 from typing import Callable, List, Tuple
 
 import datashader as ds
-import datashader.transfer_functions as tf
 import datashader.utils as du
 import matplotlib
 import matplotlib.pyplot as plt

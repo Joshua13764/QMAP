@@ -57,13 +57,7 @@ class DataTirMaps:
                 if verbose:
                     print(f"{file_name} done")
 
-        merged_pds4_df: pl.DataFrame = pl.concat(pds4_dfs, how="diagonal")
-
-        if cache_file_path is not None:
-            cache_file_path.parent.mkdir(parents=True, exist_ok=True)
-            merged_pds4_df.write_parquet(cache_file_path)
-
-        return merged_pds4_df.with_columns(
+        merged_pds4_df: pl.DataFrame = pl.concat(pds4_dfs, how="diagonal").with_columns(
             x_hat=pl.col("latitude").radians().cos() *
             pl.col("longitude").radians().cos(),
             y_hat=pl.col("latitude").radians().cos() *
@@ -116,8 +110,14 @@ class DataTirMaps:
             .first()
             .alias("sigma ratio 1000"),
 
-            pl.col("x").first(),
-            pl.col("y").first(),
-            pl.col("z").first(),
+            pl.col("x").first().alias("x"),
+            pl.col("y").first().alias("y"),
+            pl.col("z").first().alias("z"),
             pl.len().alias("count")
         )
+
+        if cache_file_path is not None:
+            cache_file_path.parent.mkdir(parents=True, exist_ok=True)
+            merged_pds4_df.write_parquet(cache_file_path)
+
+        return merged_pds4_df
