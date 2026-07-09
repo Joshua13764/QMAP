@@ -11,18 +11,29 @@ from boulder_statistics.analysis.external_data_encyclopedia import \
     ExternalDataEncyclopedia
 
 FACET_SHAPE_MODELS: Dict[str, str] = {
-    "detailed_survey": "g_06310mm_spc_obj_0000n00000_v020.obj",
+    "detailed_survey": "g_03170mm_spc_obj_0000n00000_v020.obj",
     "recona": "g_01600mm_spc_obj_0000n00000_v042.obj",
     "reconb": "g_01600mm_spc_obj_0000n00000_v042.obj",
-    "reconc": "g_01600mm_spc_obj_0000n00000_v042.obj"
+    "reconc": "g_00800mm_spc_obj_0000n00000_v042.obj"
 }
 
+VNIR_MEASUREMENT_NAMES: List[str] = [
+    "band depth",
+    "reflectance",
+    "slope1 poly",
+    "slope2 poly"]
 
-class DataTirMaps:
+VNIR_SIGMA_MEASUREMENT_NAMES: List[str] = [
+    f"sigma {vnir_measurement_name}"
+    for vnir_measurement_name in VNIR_MEASUREMENT_NAMES
+]
+
+
+class DataVnirMaps:
     @staticmethod
     def bulk_parse(ed: ExternalDataEncyclopedia,
                    cache_file_path: Path | None = Path(
-                       ".cache/data_tir_maps_parse_cache.parquet"),
+                       ".cache/data_vnir_maps_parse_cache.parquet"),
                    verbose=False) -> pl.DataFrame:
 
         if (cache_file_path is not None) and cache_file_path.exists():
@@ -30,8 +41,8 @@ class DataTirMaps:
 
         pds4_dfs: List[pl.DataFrame] = []
 
-        for mission_phase_folder_name in os.listdir(ed.data_tir_maps_path):
-            mission_phase_folder_path: Path = ed.data_tir_maps_path / mission_phase_folder_name
+        for mission_phase_folder_name in os.listdir(ed.data_vnir_maps_path):
+            mission_phase_folder_path: Path = ed.data_vnir_maps_path / mission_phase_folder_name
             facet_shape_model_name = FACET_SHAPE_MODELS[mission_phase_folder_name]
 
             for file_name in os.listdir(mission_phase_folder_path):
@@ -69,52 +80,28 @@ class DataTirMaps:
 
             z_hat=pl.col("latitude").radians().sin(),
 
+
+
         ).with_columns(
             x=pl.col("x_hat") * pl.col("radius"),
             y=pl.col("y_hat") * pl.col("radius"),
             z=pl.col("z_hat") * pl.col("radius")
-
         ).group_by("facet_num", "mission_phase").agg(
-            pl.col("band depth 350")
-            .filter(pl.col("band depth 350").is_not_null())
-            .first()
-            .alias("band depth 350"),
-
-            pl.col("band depth 440")
-            .filter(pl.col("band depth 440").is_not_null())
-            .first()
-            .alias("band depth 440"),
-
-            pl.col("slope 1000")
-            .filter(pl.col("slope 1000").is_not_null())
-            .first()
-            .alias("slope 1000"),
-
-            pl.col("ratio 1000")
-            .filter(pl.col("ratio 1000").is_not_null())
-            .first()
-            .alias("ratio 1000"),
-
-            pl.col("sigma")
-            .filter(pl.col("band depth 350").is_not_null())
-            .first()
-            .alias("sigma band depth 350"),
-
-            pl.col("sigma")
-            .filter(pl.col("band depth 440").is_not_null())
-            .first()
-            .alias("sigma band depth 440"),
-
-            pl.col("sigma")
-            .filter(pl.col("slope 1000").is_not_null())
-            .first()
-            .alias("sigma slope 1000"),
-
-            pl.col("sigma")
-            .filter(pl.col("ratio 1000").is_not_null())
-            .first()
-            .alias("sigma ratio 1000"),
-
+            *[
+                pl.col(vnir_measurement_name)
+                .filter(pl.col(vnir_measurement_name).is_not_null())
+                .first()
+                .alias(vnir_measurement_name)
+                for vnir_measurement_name in VNIR_MEASUREMENT_NAMES
+            ],
+            *[
+                pl.col("sigma")
+                .filter(pl.col(vnir_measurement_name).is_not_null())
+                .first()
+                .alias(vnir_sigma_measurement_name)
+                for vnir_measurement_name, vnir_sigma_measurement_name in zip(
+                    VNIR_MEASUREMENT_NAMES, VNIR_SIGMA_MEASUREMENT_NAMES)
+            ],
             pl.col("x").first().alias("x"),
             pl.col("y").first().alias("y"),
             pl.col("z").first().alias("z"),
