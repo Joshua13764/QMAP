@@ -220,3 +220,4 @@ analysis/PSFD/results_jacobian*
 manual_detection_overlaid.png
 .plots
 dp_export_tests
+refine_plus_export_pool
