@@ -89,7 +89,6 @@ class FacetParser:
 
     @staticmethod
     def get_project_points_additional_calibration() -> List[pl.Expr]:
-        print("e")
         return [
             # posx = flip(flip(posx.T, axis=1), axis=0)
             (pl.col("posx_v")).alias("posx_u"),
