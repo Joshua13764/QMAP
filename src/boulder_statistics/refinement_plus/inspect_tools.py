@@ -21,7 +21,7 @@ class InspectTools:
         )
 
     @staticmethod
-    def extract_column_as_faces(df: LazyFrame, column_name: str, chunk_depth: int = 2,
+    def extract_column_as_faces(df: LazyFrame, column_name: str, chunk_depth: int = 1,
                                 target_face_size: int = 1024, source_face_size: int = 8192):
 
         faces = {}

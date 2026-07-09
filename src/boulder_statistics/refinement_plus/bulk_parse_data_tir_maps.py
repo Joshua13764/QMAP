@@ -48,6 +48,9 @@ class DataTirMaps:
                 pds4_df = pl.DataFrame({
                     column.lower(): struc_data[column].astype(np.float64) for column in column_names_to_extract
                 }).with_columns(
+                    pl.lit(mission_phase_folder_name).alias(
+                        "mission_phase"
+                    ),
                     pl.lit(facet_shape_model_name).alias(
                         "facet_shape_model_name")
                 )
@@ -76,8 +79,10 @@ class DataTirMaps:
         merged_pds4_df: pl.DataFrame = pl.concat(pds4_dfs, how="diagonal").with_columns(
             x_hat=pl.col("latitude").radians().cos() *
             pl.col("longitude").radians().cos(),
+
             y_hat=pl.col("latitude").radians().cos() *
             pl.col("longitude").radians().sin(),
+
             z_hat=pl.col("latitude").radians().sin(),
 
         ).with_columns(
@@ -85,7 +90,7 @@ class DataTirMaps:
             y=pl.col("y_hat") * pl.col("radius"),
             z=pl.col("z_hat") * pl.col("radius")
 
-        ).group_by("facet_num", "facet_shape_model_name").agg(
+        ).group_by("facet_num", "mission_phase").agg(
             pl.col("band depth 350")
             .filter(pl.col("band depth 350").is_not_null())
             .first()
@@ -130,6 +135,8 @@ class DataTirMaps:
             pl.col("y").first().alias("y"),
             pl.col("z").first().alias("z"),
             pl.len().alias("count")
+        ).with_columns(
+            pl.col("facet_num").cast(pl.Int32)
         )
 
         if cache_file_path is not None:
