@@ -206,19 +206,19 @@ class BetterPolars3DExpressions:
         sx, sy, sz = x.abs(), y.abs(), z.abs()
 
         return [
-            (0.5 * ((z / sx) + 1.0)).alias("posx_u"),
+            (0.5 * ((-z / sx) + 1.0)).alias("posx_u"),
             (0.5 * ((-y / sx) + 1.0)).alias("posx_v"),
             x.alias("posx_N"),
 
-            (0.5 * ((-z / sx) + 1.0)).alias("negx_u"),
+            (0.5 * ((z / sx) + 1.0)).alias("negx_u"),
             (0.5 * ((-y / sx) + 1.0)).alias("negx_v"),
             (-x).alias("negx_N"),
 
-            (0.5 * ((-x / sy) + 1.0)).alias("posy_u"),
+            (0.5 * ((x / sy) + 1.0)).alias("posy_u"),
             (0.5 * ((z / sy) + 1.0)).alias("posy_v"),
             y.alias("posy_N"),
 
-            (0.5 * ((-x / sy) + 1.0)).alias("negy_u"),
+            (0.5 * ((x / sy) + 1.0)).alias("negy_u"),
             (0.5 * ((-z / sy) + 1.0)).alias("negy_v"),
             (-y).alias("negy_N"),
 

@@ -33,10 +33,16 @@ class FacetParser:
             tris=pl.LazyFrame(faces, schema=VERT_ID_COLS)
         )
 
-        points: pl.LazyFrame = BetterPolars3DExpressions._project_points(
-            obj_data.verts)
+        verts: pl.LazyFrame = obj_data.verts.with_columns(
+            FacetParser.get_project_points_expression()
+        ).with_columns(
+            BetterPolars3DExpressions.get_project_points_calibration()
+        ).with_columns(
+            FacetParser.get_project_points_additional_calibration()
+        )
+
         tris: pl.LazyFrame = BetterPolars3DExpressions._attach_points_to_tris(
-            points, obj_data.tris)
+            verts, obj_data.tris)
         tris: pl.LazyFrame = BetterPolars3DExpressions._add_area_and_ratio_columns(
             tris)
         tris: pl.LazyFrame = tris.with_columns(
@@ -46,7 +52,75 @@ class FacetParser:
             BetterPolars3DExpressions.get_mean_z().alias("z_tri_mean")
         )
 
-        return points.collect(), tris.collect().with_row_index("tri_num")
+        return verts.collect(), tris.collect().with_row_index("tri_num")
+
+    @staticmethod
+    def get_project_points_expression() -> List[pl.Expr]:
+        """Projects directions (x, y, z) onto a cubemap (faces posx/negx/...) with
+        UV in [0, 1] matching sample_face_roi. Calibration has been applied"""
+        x, y, z = pl.col("x"), pl.col("y"), pl.col("z")
+        sx, sy, sz = x.abs(), y.abs(), z.abs()
+
+        return [
+            (0.5 * ((z / sx) + 1.0)).alias("posx_u"),
+            (0.5 * ((-y / sx) + 1.0)).alias("posx_v"),
+            x.alias("posx_N"),
+
+            (0.5 * ((-z / sx) + 1.0)).alias("negx_u"),
+            (0.5 * ((-y / sx) + 1.0)).alias("negx_v"),
+            (-x).alias("negx_N"),
+
+            (0.5 * ((-x / sy) + 1.0)).alias("posy_u"),
+            (0.5 * ((z / sy) + 1.0)).alias("posy_v"),
+            y.alias("posy_N"),
+
+            (0.5 * ((-x / sy) + 1.0)).alias("negy_u"),
+            (0.5 * ((-z / sy) + 1.0)).alias("negy_v"),
+            (-y).alias("negy_N"),
+
+            (0.5 * ((x / sz) + 1.0)).alias("posz_u"),
+            (0.5 * ((-y / sz) + 1.0)).alias("posz_v"),
+            z.alias("posz_N"),
+
+            (0.5 * ((-x / sz) + 1.0)).alias("negz_u"),
+            (0.5 * ((-y / sz) + 1.0)).alias("negz_v"),
+            (-z).alias("negz_N"),
+        ]
+
+    @staticmethod
+    def get_project_points_additional_calibration() -> List[pl.Expr]:
+        print("e")
+        return [
+            # posx = flip(flip(posx.T, axis=1), axis=0)
+            (pl.col("posx_v")).alias("posx_u"),
+            (1.0 - pl.col("posx_u")).alias("posx_v"),
+            pl.col("posx_N").alias("posx_N"),
+
+            # negx = flip(flip(negx.T, axis=1), axis=0)
+            (pl.col("negx_v")).alias("negx_u"),
+            (1.0 - pl.col("negx_u")).alias("negx_v"),
+            pl.col("negx_N").alias("negx_N"),
+
+            # posy = flip(posy.T, axis=1)
+            (pl.col("posy_v")).alias("posy_u"),
+            (pl.col("posy_u")).alias("posy_v"),
+            pl.col("posy_N").alias("posy_N"),
+
+            # negy = flip(negy.T, axis=1)
+            (pl.col("negy_v")).alias("negy_u"),
+            (pl.col("negy_u")).alias("negy_v"),
+            pl.col("negy_N").alias("negy_N"),
+
+            # posz = flip(flip(posz.T, axis=1), axis=0)
+            (1.0 - pl.col("posz_v")).alias("posz_u"),
+            (pl.col("posz_u")).alias("posz_v"),
+            pl.col("posz_N").alias("posz_N"),
+
+            # negz = flip(flip(negz.T, axis=1), axis=0)
+            (1.0 - pl.col("negz_v")).alias("negz_u"),
+            (pl.col("negz_u")).alias("negz_v"),
+            pl.col("negz_N").alias("negz_N"),
+        ]
 
     @staticmethod
     def join_with_facet_tri_data(
