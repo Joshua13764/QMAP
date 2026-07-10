@@ -1,30 +1,18 @@
 import operator
 from functools import reduce
-from math import e
 from pathlib import Path
 from typing import Callable, List, Tuple
 
 import datashader as ds
-import datashader.transfer_functions as tf
 import datashader.utils as du
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import polars as pl
-import scienceplots
 from numpy.typing import NDArray
 
 from boulder_statistics.steps.utils.polars_3D_expressions import (
     PROJECTED_POINT_ATTRS, VERT_ID_COLS)
-
-# Plot settings
-matplotlib.use("Agg")
-plt.style.use('science')
-plt.rcParams["figure.figsize"] = (7, 7 * ((5**0.5 - 1) / 2))
-DPI = 400
-plt.rcParams["figure.dpi"] = 400
-plt.ioff()
 
 
 class ProjectionPlotting:

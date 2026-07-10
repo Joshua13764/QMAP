@@ -15,8 +15,11 @@ from boulder_statistics.environment_tools.fs_paths.fs_path_local_disk import \
     FSPathLocalDisk
 from boulder_statistics.lods.img_lod_position import ImgLODPosition
 from boulder_statistics.lods.img_lod_tile import LODImageTile
+from boulder_statistics.steps.utils.plot_settings import PlotSettings
 from boulder_statistics.steps.utils.projection_plotting import \
     ProjectionPlotting
+
+PlotSettings.load_default()
 
 
 @dataclass(frozen=True)

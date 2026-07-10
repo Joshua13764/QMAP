@@ -8,10 +8,13 @@ from boulder_statistics.file_storage_adapters.adapter_custom_classes.PL_obj_data
     PLOBJData
 from boulder_statistics.lods.cubemap_generator_base import CubemapGeneratorBase
 from boulder_statistics.lods.cubemap_lod_position import CubemapLodPosition
+from boulder_statistics.steps.utils.plot_settings import PlotSettings
 from boulder_statistics.steps.utils.projection_plotting import \
     ProjectionPlotting
 
 ArrayType = NDArray[np.float64]
+
+PlotSettings.load_default()
 
 
 @dataclass
