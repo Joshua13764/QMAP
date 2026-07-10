@@ -17,6 +17,17 @@ FACET_SHAPE_MODELS: Dict[str, str] = {
     "reconc": "g_01600mm_spc_obj_0000n00000_v042.obj"
 }
 
+TIR_MEASUREMENT_NAMES: List[str] = [
+    "band depth 350",
+    "band depth 440",
+    "slope 1000",
+    "ratio 1000"]
+
+TIR_SIGMA_MEASUREMENT_NAMES: List[str] = [
+    f"sigma {tir_measurement_name}"
+    for tir_measurement_name in TIR_MEASUREMENT_NAMES
+]
+
 
 class DataTirMaps:
     @staticmethod
@@ -75,46 +86,21 @@ class DataTirMaps:
             z=pl.col("z_hat") * pl.col("radius")
 
         ).group_by("facet_num", "mission_phase").agg(
-            pl.col("band depth 350")
-            .filter(pl.col("band depth 350").is_not_null())
-            .first()
-            .alias("band depth 350"),
-
-            pl.col("band depth 440")
-            .filter(pl.col("band depth 440").is_not_null())
-            .first()
-            .alias("band depth 440"),
-
-            pl.col("slope 1000")
-            .filter(pl.col("slope 1000").is_not_null())
-            .first()
-            .alias("slope 1000"),
-
-            pl.col("ratio 1000")
-            .filter(pl.col("ratio 1000").is_not_null())
-            .first()
-            .alias("ratio 1000"),
-
-            pl.col("sigma")
-            .filter(pl.col("band depth 350").is_not_null())
-            .first()
-            .alias("sigma band depth 350"),
-
-            pl.col("sigma")
-            .filter(pl.col("band depth 440").is_not_null())
-            .first()
-            .alias("sigma band depth 440"),
-
-            pl.col("sigma")
-            .filter(pl.col("slope 1000").is_not_null())
-            .first()
-            .alias("sigma slope 1000"),
-
-            pl.col("sigma")
-            .filter(pl.col("ratio 1000").is_not_null())
-            .first()
-            .alias("sigma ratio 1000"),
-
+            *[
+                pl.col(tir_measurement_name)
+                .filter(pl.col(tir_measurement_name).is_not_null())
+                .first()
+                .alias(tir_measurement_name)
+                for tir_measurement_name in TIR_MEASUREMENT_NAMES
+            ],
+            *[
+                pl.col("sigma")
+                .filter(pl.col(tir_measurement_name).is_not_null())
+                .first()
+                .alias(tir_sigma_measurement_name)
+                for tir_measurement_name, tir_sigma_measurement_name in zip(
+                    TIR_MEASUREMENT_NAMES, TIR_SIGMA_MEASUREMENT_NAMES)
+            ],
             pl.col("x").first().alias("x"),
             pl.col("y").first().alias("y"),
             pl.col("z").first().alias("z"),

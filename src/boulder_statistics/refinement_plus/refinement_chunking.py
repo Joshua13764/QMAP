@@ -162,11 +162,9 @@ class ChunkingTools:
                 export_folder / f"{chunk.short_name}.parquet"
             )
 
-        with tqdm_joblib(tqdm(desc="Processing chunks", total=len(chunks))):
-            Parallel(n_jobs=n_jobs)(
-                delayed(process_chunk)(chunk)
-                for chunk in chunks
-            )
+        ParallelPbar("My calculation")(n_jobs=n_jobs)(
+            delayed(process_chunk)(chunk) for chunk in chunks
+        )
 
     @staticmethod
     def bulk_append_by_chunks(

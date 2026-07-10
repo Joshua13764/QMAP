@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import cv2
 import numpy as np
@@ -22,7 +22,7 @@ class InspectTools:
 
     @staticmethod
     def extract_column_as_faces(df: LazyFrame, column_name: str, chunk_depth: int = 1,
-                                target_face_size: int = 1024, source_face_size: int = 8192):
+                                target_face_size: int = 1024, source_face_size: int = 8192) -> Dict[str, np.ndarray]:
 
         faces = {}
 
@@ -248,3 +248,59 @@ class InspectTools:
         sample_face("negz", U, V, mask)
 
         return result
+
+    @staticmethod
+    def faces_to_cubemap_net(
+        faces: dict[str, np.ndarray]
+    ) -> np.ndarray:
+        """
+        Packs cubemap faces into the same horizontal cross layout:
+
+                negy
+        negx     posz     posx     negz
+                posy
+
+        Matches:
+
+            negy: (1,0)
+            posy: (1,2)
+            negx: (0,1)
+            posz: (1,1)
+            posx: (2,1)
+            negz: (3,1)
+
+        """
+
+        face = faces["posx"]
+
+        h, w = face.shape[:2]
+
+        if face.ndim == 2:
+            cubemap = np.zeros(
+                (3 * h, 4 * w),
+                dtype=face.dtype
+            )
+        else:
+            cubemap = np.zeros(
+                (3 * h, 4 * w, face.shape[2]),
+                dtype=face.dtype
+            )
+
+        # x, y positions in the net
+
+        layout = {
+            "negy": (1, 0),
+            "posy": (1, 2),
+            "negx": (0, 1),
+            "posz": (1, 1),
+            "posx": (2, 1),
+            "negz": (3, 1),
+        }
+
+        for name, (cx, cy) in layout.items():
+            cubemap[
+                cy * h:(cy + 1) * h,
+                cx * w:(cx + 1) * w
+            ] = faces[name]
+
+        return cubemap
