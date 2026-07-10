@@ -6,7 +6,7 @@ from typing import Callable, Iterable, List
 import numpy as np
 import polars as pl
 from joblib import Parallel, delayed
-from polars import DataFrame, LazyFrame
+from polars import DataFrame, Expr, LazyFrame
 from tqdm import tqdm
 from tqdm_joblib import ParallelPbar, tqdm_joblib
 
@@ -162,9 +162,46 @@ class ChunkingTools:
                 export_folder / f"{chunk.short_name}.parquet"
             )
 
-        ParallelPbar("My calculation")(n_jobs=n_jobs)(
+        ParallelPbar("Joining")(n_jobs=n_jobs)(
             delayed(process_chunk)(chunk) for chunk in chunks
         )
+
+    @staticmethod
+    def agg_in_slices(
+            export_df_path: Path,
+            lf_to_agg: LazyFrame,
+            agg_group: str,
+            agg_exprs: List[Expr],
+            slice_size: int = 1_000,
+            skip_if_exists=False, n_jobs=4) -> None:
+
+        if export_df_path.exists() and skip_if_exists:
+            return
+
+        export_df_path.parent.mkdir(exist_ok=True, parents=True)
+        groups: pl.Series = lf_to_agg.group_by(
+            agg_group).agg().collect()[agg_group].sort()
+        print(f"Found {len(groups)} groups")
+
+        group_slices: List[pl.Series] = [
+            groups.slice(i, slice_size)
+            for i in range(0, len(groups), slice_size)
+        ]
+
+        def process_group_slice(group_slice: pl.Series) -> DataFrame:
+            agg_data: DataFrame = lf_to_agg.filter(pl.col(agg_group).is_in(
+                group_slice.implode())).collect().group_by(
+                    agg_group
+            ).agg(*agg_exprs)
+
+            return agg_data
+
+        agg_data_dfs: List[DataFrame | None] = list(ParallelPbar("Joining")(n_jobs=n_jobs)(
+            delayed(process_group_slice)(group_slice) for group_slice in group_slices
+        ))
+
+        merged_df: pl.DataFrame = pl.concat(agg_data_dfs)
+        merged_df.write_parquet(export_df_path)
 
     @staticmethod
     def bulk_append_by_chunks(
