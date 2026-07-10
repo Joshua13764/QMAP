@@ -1,4 +1,5 @@
 import shutil
+from functools import reduce
 from pathlib import Path
 from typing import Callable, Iterable, List
 
@@ -7,7 +8,7 @@ import polars as pl
 from joblib import Parallel, delayed
 from polars import DataFrame, LazyFrame
 from tqdm import tqdm
-from tqdm_joblib import ParallelPbar
+from tqdm_joblib import ParallelPbar, tqdm_joblib
 
 from boulder_statistics.analysis.data_product_encyclopedia import FACES
 from boulder_statistics.refinement_plus.bounding_box import BoundingBox
@@ -122,6 +123,49 @@ class ChunkingTools:
 
             chunk_df.write_parquet(
                 export_folder / f"{chunk.short_name}.parquet"
+            )
+
+    @staticmethod
+    def join_in_chunks(
+            export_folder: Path,
+            lfs_to_join: List[LazyFrame],
+            join_on: str | List[str] = ["i", "j", "face"],
+            chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
+            skip_if_exists=False, n_jobs=4) -> None:
+
+        assert export_folder.suffix == "", (
+            f"export_folder should not have an extension, got: {export_folder}"
+        )
+
+        if export_folder.exists() and skip_if_exists:
+            return
+        elif export_folder.exists() and (not skip_if_exists):
+            shutil.rmtree(export_folder)
+
+        export_folder.mkdir(exist_ok=True, parents=True)
+
+        def process_chunk(chunk):
+            combined_df = reduce(
+                lambda left, right: left.join(
+                    right,
+                    on=join_on,
+                    how="full",
+                    coalesce=True
+                ),
+                [
+                    chunk.filter_lf(df).collect()
+                    for df in lfs_to_join
+                ]
+            )
+
+            combined_df.write_parquet(
+                export_folder / f"{chunk.short_name}.parquet"
+            )
+
+        with tqdm_joblib(tqdm(desc="Processing chunks", total=len(chunks))):
+            Parallel(n_jobs=n_jobs)(
+                delayed(process_chunk)(chunk)
+                for chunk in chunks
             )
 
     @staticmethod
