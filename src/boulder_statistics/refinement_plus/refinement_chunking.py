@@ -126,12 +126,46 @@ class ChunkingTools:
             )
 
     @staticmethod
+    def join_full_with_agg(
+            export_folder: Path,
+            full_db: pl.LazyFrame,
+            agg_db: pl.DataFrame,
+            join_on: List[str] = ["boulder_id"],
+            chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
+            skip_if_exists=False, n_jobs=4) -> None:
+
+        assert export_folder.suffix == "", (
+            f"export_folder should not have an extension, got: {export_folder}"
+        )
+
+        if export_folder.exists() and skip_if_exists:
+            return
+        elif export_folder.exists() and (not skip_if_exists):
+            shutil.rmtree(export_folder)
+
+        export_folder.mkdir(exist_ok=True, parents=True)
+
+        def process_chunk(chunk: QCubeChunk) -> None:
+            full_chunked_df: DataFrame = chunk.filter_lf(full_db).collect()
+            full_chunked_df.join(
+                agg_db,
+                on=join_on,
+                how="inner"
+            ).write_parquet(
+                export_folder / f"{chunk.short_name}.parquet"
+            )
+
+        ParallelPbar("Joining full with agg")(n_jobs=n_jobs)(
+            delayed(process_chunk)(chunk) for chunk in chunks
+        )
+
+    @staticmethod
     def join_in_chunks(
             export_folder: Path,
             lfs_to_join: List[LazyFrame],
-            join_on: str | List[str] = ["i", "j", "face"],
+            join_on: List[str] = ["i", "j", "face"],
             chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
-            skip_if_exists=False, n_jobs=4) -> None:
+            skip_if_exists=False, n_jobs=4, how="full") -> None:
 
         assert export_folder.suffix == "", (
             f"export_folder should not have an extension, got: {export_folder}"
@@ -149,7 +183,7 @@ class ChunkingTools:
                 lambda left, right: left.join(
                     right,
                     on=join_on,
-                    how="full",
+                    how=how,
                     coalesce=True
                 ),
                 [
