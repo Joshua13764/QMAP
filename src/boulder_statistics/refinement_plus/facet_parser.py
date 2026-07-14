@@ -225,10 +225,6 @@ class FacetParser:
 
         mesh = du.mesh(pd_verts, pd_tris)
 
-        print(pd_verts.shape)
-        print(pd_tris.shape)
-        print(chunk.length)
-
         agg = cvs.trimesh(
             pd_verts,
             pd_tris,
