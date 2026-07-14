@@ -22,11 +22,10 @@ from boulder_statistics.steps.utils.projection_plotting import \
 class FacetParser:
 
     @staticmethod
-    def load_mesh(mesh_path: Path) -> Tuple[pl.DataFrame, pl.DataFrame]:
+    def load_mesh(verts: np.ndarray,
+                  faces: np.ndarray) -> Tuple[pl.DataFrame, pl.DataFrame]:
         # Meshes can be found here
         # https://sbnarchive.psi.edu/pds4/orex/orex.altimetry/data_derived_altimetry_global_models/global_digital_terrain_models/SPCv20/
-
-        verts, faces = igl.read_triangle_mesh(mesh_path)
 
         obj_data = PLOBJData(
             verts=pl.LazyFrame(
