@@ -8,7 +8,6 @@ import polars as pl
 from joblib import Parallel, delayed
 from polars import DataFrame, Expr, LazyFrame
 from tqdm import tqdm
-from tqdm_joblib import ParallelPbar, tqdm_joblib
 
 from boulder_statistics.analysis.data_product_encyclopedia import FACES
 from boulder_statistics.refinement_plus.bounding_box import BoundingBox
@@ -162,10 +161,11 @@ class ChunkingTools:
     @staticmethod
     def join_in_chunks(
             export_folder: Path,
+            # Left join so the first one needs to be full
             lfs_to_join: List[LazyFrame],
             join_on: List[str] = ["i", "j", "face"],
             chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
-            skip_if_exists=False, n_jobs=4, how="full") -> None:
+            skip_if_exists=False) -> None:
 
         assert export_folder.suffix == "", (
             f"export_folder should not have an extension, got: {export_folder}"
@@ -178,27 +178,32 @@ class ChunkingTools:
 
         export_folder.mkdir(exist_ok=True, parents=True)
 
-        def process_chunk(chunk):
-            combined_df = reduce(
+        if lfs_to_join[0].filter(
+                pl.col("i") == 1).collect().height != 8192 * 6:
+            print("Cannot do merge as first input lf is not full for i, j and face")
+            return
+
+        def process_chunk(chunk) -> None:
+            filtered: List[pl.LazyFrame] = [
+                chunk.filter_lf(df)
+                for df in lfs_to_join
+            ]
+
+            combined: LazyFrame = reduce(
                 lambda left, right: left.join(
                     right,
                     on=join_on,
-                    how=how,
-                    coalesce=True
+                    how="left",
+                    coalesce=True,
                 ),
-                [
-                    chunk.filter_lf(df).collect()
-                    for df in lfs_to_join
-                ]
+                filtered,
             )
 
-            combined_df.write_parquet(
-                export_folder / f"{chunk.short_name}.parquet"
-            )
+            combined.sink_parquet(
+                export_folder / f"{chunk.short_name}.parquet")
 
-        ParallelPbar("Joining")(n_jobs=n_jobs)(
-            delayed(process_chunk)(chunk) for chunk in chunks
-        )
+        for chunk in tqdm(chunks, desc="Joining"):
+            process_chunk(chunk)
 
     @staticmethod
     def agg_in_slices(
