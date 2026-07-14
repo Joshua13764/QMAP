@@ -157,11 +157,11 @@ class ProjectionPlotting:
             [f"{face}_v0", f"{face}_v1", f"{face}_v2"])
 
         triangle_render_condition: pl.Expr = (
-            (tri_min_x >= pl.lit(x_min)) &
-            (tri_max_x <= pl.lit(x_max)) &
-            (tri_min_y >= pl.lit(y_min)) &
-            (tri_max_y <= pl.lit(y_max))
-        )
+            (tri_min_x < pl.lit(x_min)) |
+            (tri_max_x > pl.lit(x_max)) |
+            (tri_min_y < pl.lit(y_min)) |
+            (tri_max_y > pl.lit(y_max))
+        ).not_()
 
         return triangle_render_condition
 

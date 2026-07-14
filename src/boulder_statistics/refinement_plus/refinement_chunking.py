@@ -1,13 +1,14 @@
 import shutil
 from functools import reduce
 from pathlib import Path
-from typing import Callable, Iterable, List
+from typing import Callable, Dict, Iterable, List, Tuple
 
 import numpy as np
 import polars as pl
 from joblib import Parallel, delayed
 from polars import DataFrame, Expr, LazyFrame
 from tqdm import tqdm
+from tqdm_joblib import ParallelPbar
 
 from boulder_statistics.analysis.data_product_encyclopedia import FACES
 from boulder_statistics.refinement_plus.bounding_box import BoundingBox
@@ -123,6 +124,45 @@ class ChunkingTools:
             chunk_df.write_parquet(
                 export_folder / f"{chunk.short_name}.parquet"
             )
+
+    @staticmethod
+    def join_full_with_aggs(
+            export_folder: Path,
+            full_db: pl.LazyFrame,
+            aggs_to_join_with: Dict[Tuple[str], pl.DataFrame],  # Join on : df
+            chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
+            skip_if_exists=False) -> None:
+
+        assert export_folder.suffix == "", (
+            f"export_folder should not have an extension, got: {export_folder}"
+        )
+
+        if export_folder.exists() and skip_if_exists:
+            return
+        elif export_folder.exists() and (not skip_if_exists):
+            shutil.rmtree(export_folder)
+
+        export_folder.mkdir(exist_ok=True, parents=True)
+
+        def process_chunk(chunk: QCubeChunk) -> None:
+            full_chunked_df: pl.LazyFrame = chunk.filter_lf(full_db)
+
+            reduce(
+                lambda left, right:
+                    left.join(
+                        right[1].lazy(),
+                        on=list(right[0]),
+                        how="left",
+                        coalesce=True,
+                    ),
+                aggs_to_join_with.items(),
+                full_chunked_df,
+            ).sink_parquet(
+                export_folder / f"{chunk.short_name}.parquet"
+            )
+
+        for chunk in tqdm(chunks, desc="Joining full with aggs"):
+            process_chunk(chunk)
 
     @staticmethod
     def join_full_with_agg(
