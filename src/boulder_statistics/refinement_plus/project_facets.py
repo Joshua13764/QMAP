@@ -53,24 +53,24 @@ class ProjectFacets():
                 self.get_facets(),
                 on="facet_num"
             )
+        ).with_columns(
+            pl.col("tri_num").cast(
+                pl.Float64).alias(
+                self.tri_num_export_col_name)
+        ).select(
+            self.measurement_types_of_interest +
+            [self.tri_num_export_col_name]
         )
 
         pl.scan_parquet(self.cache_export_folder).join(
-            tris_facets_joined
-            .with_columns(
-                pl.col("tri_num").cast(
-                    pl.Float64).alias(
-                    self.tri_num_export_col_name)
-            )
-            .lazy()
-            .select(
-                self.measurement_types_of_interest + [self.tri_num_export_col_name]),
+            tris_facets_joined.lazy(),
             on=self.tri_num_export_col_name,
             how="left"
         ).rename(
             {
                 name: f"{self.instrument_type} {self.mission_phase} {name}"
-                for name in self.measurement_types_of_interest + [self.tri_num_export_col_name]
+                # self.tri_num_export_col_name not needed as name will be ok
+                for name in self.measurement_types_of_interest
             }
         ).sink_parquet(
             self.result_export_folder, engine="streaming"
