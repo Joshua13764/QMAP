@@ -1,4 +1,5 @@
 from pathlib import Path
+from time import perf_counter
 from typing import Callable, List, Tuple
 
 import datashader as ds
@@ -223,6 +224,10 @@ class FacetParser:
             return np.zeros((W, H), dtype=np.float64)
 
         mesh = du.mesh(pd_verts, pd_tris)
+
+        print(pd_verts.shape)
+        print(pd_tris.shape)
+        print(chunk.length)
 
         agg = cvs.trimesh(
             pd_verts,

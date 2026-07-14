@@ -224,3 +224,5 @@ refine_plus_export_pool
 combined_db
 combined_db_agg.parquet
 combined_db_agg_join
+combined_db_export_pool
+agg_export_pool
