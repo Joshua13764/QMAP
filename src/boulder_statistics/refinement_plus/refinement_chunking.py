@@ -158,7 +158,8 @@ class ChunkingTools:
                 aggs_to_join_with.items(),
                 full_chunked_df,
             ).sink_parquet(
-                export_folder / f"{chunk.short_name}.parquet"
+                export_folder / f"{chunk.short_name}.parquet",
+                engine="streaming"
             )
 
         for chunk in tqdm(chunks, desc="Joining full with aggs"):

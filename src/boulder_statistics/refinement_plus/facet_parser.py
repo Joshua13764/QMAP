@@ -201,8 +201,8 @@ class FacetParser:
                                   .to_pandas())
 
         pd_tris: pd.DataFrame = (tris
-                                 .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(chunk.face, chunk.x_range, chunk.y_range)
-                                         & ProjectionPlotting.get_lazy_filter_faces_for_rasterization_by_face(chunk.face))
+                                 #  .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(chunk.face, chunk.x_range, chunk.y_range)
+                                 .filter(ProjectionPlotting.get_lazy_filter_faces_for_rasterization_by_face(chunk.face))
                                  .select(['0', '1', '2', "tri_num"])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
