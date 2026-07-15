@@ -99,7 +99,7 @@ class ProjectFacets():
                 project_points_df,
                 project_tris_df,
                 chunk,
-            )]
+            ).T]  # The transpose is very important!!!
 
         ChunkingTools.bulk_append_by_chunks(
             self.dp.combined_atlas.select("i", "j", "face"),
