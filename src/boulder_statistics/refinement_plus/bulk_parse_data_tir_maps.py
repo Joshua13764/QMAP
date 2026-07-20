@@ -108,6 +108,7 @@ class DataTirMaps:
                 .alias(tir_measurement_name)
                 for tir_measurement_name in TIR_MEASUREMENT_NAMES
             ],
+
             *[
                 pl.col("sigma")
                 .filter(pl.col(tir_measurement_name).is_not_null())
@@ -116,9 +117,13 @@ class DataTirMaps:
                 for tir_measurement_name, tir_sigma_measurement_name in zip(
                     TIR_MEASUREMENT_NAMES, TIR_SIGMA_MEASUREMENT_NAMES)
             ],
+
             pl.col("x").first().alias("x"),
             pl.col("y").first().alias("y"),
             pl.col("z").first().alias("z"),
+
+            pl.col("facet_shape_model_name").first(),
+
             pl.len().alias("count")
         ).with_columns(
             pl.col("facet_num").cast(pl.Int32)
