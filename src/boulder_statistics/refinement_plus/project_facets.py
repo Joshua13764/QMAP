@@ -6,14 +6,9 @@ from typing import List, Literal, Tuple
 import igl
 import numpy as np
 import polars as pl
-from sympy import false
 
 from boulder_statistics.analysis.data_product_encyclopedia import \
     DataProductEncyclopedia
-from boulder_statistics.refinement_plus.bulk_parse_data_tir_maps import \
-    FACET_SHAPE_MODELS as TIR_FACET_SHAPE_MODELS
-from boulder_statistics.refinement_plus.bulk_parse_data_vnir_maps import \
-    FACET_SHAPE_MODELS as VNIR_FACET_SHAPE_MODELS
 from boulder_statistics.refinement_plus.facet_parser import FacetParser
 from boulder_statistics.refinement_plus.qcube_chunk import QCubeChunk
 from boulder_statistics.refinement_plus.refinement_chunking import \
@@ -111,13 +106,13 @@ class ProjectFacets():
 
     @property
     def facet_shape_model_path(self) -> Path:
-        match self.instrument_type:
-            case "TIR":
-                return self.mesh_folder / \
-                    TIR_FACET_SHAPE_MODELS[self.mission_phase]
-            case "VNIR":
-                return self.mesh_folder / \
-                    VNIR_FACET_SHAPE_MODELS[self.mission_phase]
+        models_needed: pl.Series = self.facet_maps["facet_shape_model_name"].unique(
+        )
+
+        if models_needed.len() != 1:
+            raise ValueError("More than one models needed!")
+
+        return models_needed[0]
 
     def get_facets(self) -> pl.DataFrame:
         return self.facet_maps.filter(

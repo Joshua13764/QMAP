@@ -4,18 +4,12 @@ from typing import Dict, List
 
 import numpy as np
 import polars as pl
+from lxml import etree
 from pds4_tools import pds4_read
 from pds4_tools.reader.general_objects import StructureList
 
 from boulder_statistics.analysis.external_data_encyclopedia import \
     ExternalDataEncyclopedia
-
-FACET_SHAPE_MODELS: Dict[str, str] = {
-    "detailed_survey": "g_06310mm_spc_obj_0000n00000_v020.obj",
-    "recona": "g_01600mm_spc_obj_0000n00000_v042.obj",
-    "reconb": "g_01600mm_spc_obj_0000n00000_v042.obj",
-    "reconc": "g_01600mm_spc_obj_0000n00000_v042.obj"
-}
 
 TIR_MEASUREMENT_NAMES: List[str] = [
     "band depth 350",
@@ -31,6 +25,24 @@ TIR_SIGMA_MEASUREMENT_NAMES: List[str] = [
 
 class DataTirMaps:
     @staticmethod
+    def get_shape_model_name(xml_path: Path) -> str:
+        tree = etree.parse(xml_path)
+
+        namespaces = {
+            "orex": "http://pds.nasa.gov/pds4/mission/orex/v1"
+        }
+
+        obj_file = tree.find(
+            ".//orex:Shape_Data_Source/orex:obj_file",
+            namespaces
+        )
+
+        if obj_file is None:
+            raise ValueError(f"No obj_file found in {xml_path}")
+
+        return obj_file.text
+
+    @staticmethod
     def bulk_parse(ed: ExternalDataEncyclopedia,
                    cache_file_path: Path | None = Path(
                        ".cache/data_tir_maps_parse_cache.parquet"),
@@ -43,13 +55,16 @@ class DataTirMaps:
 
         for mission_phase_folder_name in os.listdir(ed.data_tir_maps_path):
             mission_phase_folder_path: Path = ed.data_tir_maps_path / mission_phase_folder_name
-            facet_shape_model_name = FACET_SHAPE_MODELS[mission_phase_folder_name]
 
             for file_name in os.listdir(mission_phase_folder_path):
                 if ".xml" not in file_name:
                     continue
 
                 pds4_xml_path: Path = mission_phase_folder_path / file_name
+
+                facet_shape_model_name = DataTirMaps.get_shape_model_name(
+                    pds4_xml_path)
+
                 struc: StructureList = pds4_read(
                     pds4_xml_path.as_posix(), quiet=True, lazy_load=True)
                 struc_data = struc[2].data
