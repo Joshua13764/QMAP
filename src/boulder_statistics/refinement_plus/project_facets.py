@@ -32,11 +32,13 @@ class ProjectFacets():
             f"rasterized_tri_id_lookup_for_{mesh_stem}"
 
         if rasterized_tri_id_db_cache_folder.exists():
+            print(f"Found cached tri_id lookup for mesh {mesh_stem}")
             return pl.scan_parquet(rasterized_tri_id_db_cache_folder)
 
         project_points_df, project_tris_df = FacetParser.load_mesh(
             verts, tris)
 
+        print(f"Building tri_id lookup for mesh {mesh_stem}")
         tri_id_lookup: pl.LazyFrame = self.rasterize_facets(
             project_points_df,
             project_tris_df,
@@ -52,10 +54,12 @@ class ProjectFacets():
             f"rasterized_facet_id_lookup_for_{mesh_stem}.parquet"
 
         if rasterized_facet_id_db_cache_folder.exists():
+            print(f"Found cached facet_id lookup for mesh {mesh_stem}")
             return pl.scan_parquet(rasterized_facet_id_db_cache_folder)
 
         verts, tris = self.get_triangle_mesh_data(DTM_path)
 
+        print(f"Creating facet_id lookup for mesh {mesh_stem}")
         tri_id_lookup: pl.LazyFrame = self.get_tri_id_lookup(
             verts, tris, mesh_stem)
 
@@ -77,7 +81,9 @@ class ProjectFacets():
     def process_mission_phase(self) -> List[pl.LazyFrame]:
         export_folders: List[Path] = []
 
-        for mesh_name in self.facet_maps["facet_shape_model_name"].unique():
+        for mesh_name in self.facet_maps.filter(
+                pl.col("mission_phase") == self.mission_phase)["facet_shape_model_name"].unique():
+
             mesh_stem: str = Path(mesh_name).stem
             part_export_folder: Path = self.result_export_folder(mesh_stem)
 
@@ -110,7 +116,7 @@ class ProjectFacets():
                     ]
                 )
                 .rename(
-                    {"facet_num": f"{mesh_name} facet_id"} | {
+                    {"facet_num": f"{mesh_stem} facet_id"} | {
                         measurement_type: f"{
                             self.instrument_type} {
                             self.mission_phase} {measurement_type}"
@@ -195,8 +201,8 @@ class ProjectFacets():
     def get_facet_to_tri_lookup(
             self, verts: np.ndarray, tris: np.ndarray, mesh_name: str) -> pl.DataFrame:
 
-        facets: pl.DataFrame = self.get_facet_map_data_for_mesh_and_phase(
-            mesh_name)
+        facets: pl.DataFrame = self.facet_maps.filter(
+            pl.col("facet_shape_model_name") == mesh_name)
 
         facet_data_arr = (
             facets
