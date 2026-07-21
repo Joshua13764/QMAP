@@ -8,150 +8,94 @@
 | `g_01600mm_spc_obj_0000n00000_v042 facet_id` | `UInt64` |  |
 | `g_03170mm_spc_obj_0000n00000_v020 facet_id` | `UInt64` |  |
 | `g_06310mm_spc_obj_0000n00000_v020 facet_id` | `UInt64` |  |
-| `TIR detailed_survey band depth 350` | `Float64` |  |
-| `TIR detailed_survey band depth 440` | `Float64` |  |
-| `TIR detailed_survey slope 1000` | `Float64` |  |
-| `TIR detailed_survey ratio 1000` | `Float64` |  |
-| `TIR detailed_survey sigma band depth 350` | `Float64` |  |
-| `TIR detailed_survey sigma band depth 440` | `Float64` |  |
-| `TIR detailed_survey sigma slope 1000` | `Float64` |  |
-| `TIR detailed_survey sigma ratio 1000` | `Float64` |  |
-| `TIR detailed_survey band depth 350 facet mesh` | `String` |  |
-| `TIR detailed_survey band depth 440 facet mesh` | `String` |  |
-| `TIR detailed_survey slope 1000 facet mesh` | `String` |  |
-| `TIR detailed_survey ratio 1000 facet mesh` | `String` |  |
-| `TIR detailed_survey sigma band depth 350 facet mesh` | `String` |  |
-| `TIR detailed_survey sigma band depth 440 facet mesh` | `String` |  |
-| `TIR detailed_survey sigma slope 1000 facet mesh` | `String` |  |
-| `TIR detailed_survey sigma ratio 1000 facet mesh` | `String` |  |
-| `TIR recona band depth 350` | `Float64` |  |
-| `TIR recona band depth 440` | `Float64` |  |
-| `TIR recona slope 1000` | `Float64` |  |
-| `TIR recona ratio 1000` | `Float64` |  |
-| `TIR recona sigma band depth 350` | `Float64` |  |
-| `TIR recona sigma band depth 440` | `Float64` |  |
-| `TIR recona sigma slope 1000` | `Float64` |  |
-| `TIR recona sigma ratio 1000` | `Float64` |  |
-| `TIR recona band depth 350 facet mesh` | `String` |  |
-| `TIR recona band depth 440 facet mesh` | `String` |  |
-| `TIR recona slope 1000 facet mesh` | `String` |  |
-| `TIR recona ratio 1000 facet mesh` | `String` |  |
-| `TIR recona sigma band depth 350 facet mesh` | `String` |  |
-| `TIR recona sigma band depth 440 facet mesh` | `String` |  |
-| `TIR recona sigma slope 1000 facet mesh` | `String` |  |
-| `TIR recona sigma ratio 1000 facet mesh` | `String` |  |
-| `TIR reconb band depth 350` | `Float64` |  |
-| `TIR reconb band depth 440` | `Float64` |  |
-| `TIR reconb slope 1000` | `Float64` |  |
-| `TIR reconb ratio 1000` | `Float64` |  |
-| `TIR reconb sigma band depth 350` | `Float64` |  |
-| `TIR reconb sigma band depth 440` | `Float64` |  |
-| `TIR reconb sigma slope 1000` | `Float64` |  |
-| `TIR reconb sigma ratio 1000` | `Float64` |  |
-| `TIR reconb band depth 350 facet mesh` | `String` |  |
-| `TIR reconb band depth 440 facet mesh` | `String` |  |
-| `TIR reconb slope 1000 facet mesh` | `String` |  |
-| `TIR reconb ratio 1000 facet mesh` | `String` |  |
-| `TIR reconb sigma band depth 350 facet mesh` | `String` |  |
-| `TIR reconb sigma band depth 440 facet mesh` | `String` |  |
-| `TIR reconb sigma slope 1000 facet mesh` | `String` |  |
-| `TIR reconb sigma ratio 1000 facet mesh` | `String` |  |
-| `TIR reconc band depth 350` | `Float64` |  |
-| `TIR reconc band depth 440` | `Float64` |  |
-| `TIR reconc slope 1000` | `Float64` |  |
-| `TIR reconc ratio 1000` | `Float64` |  |
-| `TIR reconc sigma band depth 350` | `Float64` |  |
-| `TIR reconc sigma band depth 440` | `Float64` |  |
-| `TIR reconc sigma slope 1000` | `Float64` |  |
-| `TIR reconc sigma ratio 1000` | `Float64` |  |
-| `TIR reconc band depth 350 facet mesh` | `String` |  |
-| `TIR reconc band depth 440 facet mesh` | `String` |  |
-| `TIR reconc slope 1000 facet mesh` | `String` |  |
-| `TIR reconc ratio 1000 facet mesh` | `String` |  |
-| `TIR reconc sigma band depth 350 facet mesh` | `String` |  |
-| `TIR reconc sigma band depth 440 facet mesh` | `String` |  |
-| `TIR reconc sigma slope 1000 facet mesh` | `String` |  |
-| `TIR reconc sigma ratio 1000 facet mesh` | `String` |  |
-| `TIR reconc band depth 350_right` | `Float64` |  |
-| `TIR reconc band depth 440_right` | `Float64` |  |
-| `TIR reconc slope 1000_right` | `Float64` |  |
-| `TIR reconc ratio 1000_right` | `Float64` |  |
-| `TIR reconc sigma band depth 350_right` | `Float64` |  |
-| `TIR reconc sigma band depth 440_right` | `Float64` |  |
-| `TIR reconc sigma slope 1000_right` | `Float64` |  |
-| `TIR reconc sigma ratio 1000_right` | `Float64` |  |
-| `TIR reconc band depth 350 facet mesh_right` | `String` |  |
-| `TIR reconc band depth 440 facet mesh_right` | `String` |  |
-| `TIR reconc slope 1000 facet mesh_right` | `String` |  |
-| `TIR reconc ratio 1000 facet mesh_right` | `String` |  |
-| `TIR reconc sigma band depth 350 facet mesh_right` | `String` |  |
-| `TIR reconc sigma band depth 440 facet mesh_right` | `String` |  |
-| `TIR reconc sigma slope 1000 facet mesh_right` | `String` |  |
-| `TIR reconc sigma ratio 1000 facet mesh_right` | `String` |  |
-| `VNIR detailed_survey band depth` | `Float64` |  |
-| `VNIR detailed_survey reflectance` | `Float64` |  |
-| `VNIR detailed_survey slope1 poly` | `Float64` |  |
-| `VNIR detailed_survey slope2 poly` | `Float64` |  |
-| `VNIR detailed_survey sigma band depth` | `Float64` |  |
-| `VNIR detailed_survey sigma reflectance` | `Float64` |  |
-| `VNIR detailed_survey sigma slope1 poly` | `Float64` |  |
-| `VNIR detailed_survey sigma slope2 poly` | `Float64` |  |
-| `VNIR detailed_survey band depth facet mesh` | `String` |  |
-| `VNIR detailed_survey reflectance facet mesh` | `String` |  |
-| `VNIR detailed_survey slope1 poly facet mesh` | `String` |  |
-| `VNIR detailed_survey slope2 poly facet mesh` | `String` |  |
-| `VNIR detailed_survey sigma band depth facet mesh` | `String` |  |
-| `VNIR detailed_survey sigma reflectance facet mesh` | `String` |  |
-| `VNIR detailed_survey sigma slope1 poly facet mesh` | `String` |  |
-| `VNIR detailed_survey sigma slope2 poly facet mesh` | `String` |  |
-| `VNIR recona band depth` | `Float64` |  |
-| `VNIR recona reflectance` | `Float64` |  |
-| `VNIR recona slope1 poly` | `Float64` |  |
-| `VNIR recona slope2 poly` | `Float64` |  |
-| `VNIR recona sigma band depth` | `Float64` |  |
-| `VNIR recona sigma reflectance` | `Float64` |  |
-| `VNIR recona sigma slope1 poly` | `Float64` |  |
-| `VNIR recona sigma slope2 poly` | `Float64` |  |
-| `VNIR recona band depth facet mesh` | `String` |  |
-| `VNIR recona reflectance facet mesh` | `String` |  |
-| `VNIR recona slope1 poly facet mesh` | `String` |  |
-| `VNIR recona slope2 poly facet mesh` | `String` |  |
-| `VNIR recona sigma band depth facet mesh` | `String` |  |
-| `VNIR recona sigma reflectance facet mesh` | `String` |  |
-| `VNIR recona sigma slope1 poly facet mesh` | `String` |  |
-| `VNIR recona sigma slope2 poly facet mesh` | `String` |  |
-| `VNIR reconb band depth` | `Float64` |  |
-| `VNIR reconb reflectance` | `Float64` |  |
-| `VNIR reconb slope1 poly` | `Float64` |  |
-| `VNIR reconb slope2 poly` | `Float64` |  |
-| `VNIR reconb sigma band depth` | `Float64` |  |
-| `VNIR reconb sigma reflectance` | `Float64` |  |
-| `VNIR reconb sigma slope1 poly` | `Float64` |  |
-| `VNIR reconb sigma slope2 poly` | `Float64` |  |
-| `VNIR reconb band depth facet mesh` | `String` |  |
-| `VNIR reconb reflectance facet mesh` | `String` |  |
-| `VNIR reconb slope1 poly facet mesh` | `String` |  |
-| `VNIR reconb slope2 poly facet mesh` | `String` |  |
-| `VNIR reconb sigma band depth facet mesh` | `String` |  |
-| `VNIR reconb sigma reflectance facet mesh` | `String` |  |
-| `VNIR reconb sigma slope1 poly facet mesh` | `String` |  |
-| `VNIR reconb sigma slope2 poly facet mesh` | `String` |  |
-| `VNIR reconc band depth` | `Float64` |  |
-| `VNIR reconc reflectance` | `Float64` |  |
-| `VNIR reconc slope1 poly` | `Float64` |  |
-| `VNIR reconc slope2 poly` | `Float64` |  |
-| `VNIR reconc sigma band depth` | `Float64` |  |
-| `VNIR reconc sigma reflectance` | `Float64` |  |
-| `VNIR reconc sigma slope1 poly` | `Float64` |  |
-| `VNIR reconc sigma slope2 poly` | `Float64` |  |
-| `VNIR reconc band depth facet mesh` | `String` |  |
-| `VNIR reconc reflectance facet mesh` | `String` |  |
-| `VNIR reconc slope1 poly facet mesh` | `String` |  |
-| `VNIR reconc slope2 poly facet mesh` | `String` |  |
-| `VNIR reconc sigma band depth facet mesh` | `String` |  |
-| `VNIR reconc sigma reflectance facet mesh` | `String` |  |
-| `VNIR reconc sigma slope1 poly facet mesh` | `String` |  |
-| `VNIR reconc sigma slope2 poly facet mesh` | `String` |  |
+| `TIR detailed_survey Slope1000` | `Float64` |  |
+| `TIR detailed_survey BD350` | `Float64` |  |
+| `TIR detailed_survey BD440` | `Float64` |  |
+| `TIR detailed_survey Ratio1000` | `Float64` |  |
+| `TIR detailed_survey sigma Slope1000` | `Float64` |  |
+| `TIR detailed_survey sigma BD350` | `Float64` |  |
+| `TIR detailed_survey sigma BD440` | `Float64` |  |
+| `TIR detailed_survey sigma Ratio1000` | `Float64` |  |
+| `TIR detailed_survey facet mesh` | `String` |  |
+| `TIR recona Slope1000` | `Float64` |  |
+| `TIR recona BD350` | `Float64` |  |
+| `TIR recona BD440` | `Float64` |  |
+| `TIR recona Ratio1000` | `Float64` |  |
+| `TIR recona sigma Slope1000` | `Float64` |  |
+| `TIR recona sigma BD350` | `Float64` |  |
+| `TIR recona sigma BD440` | `Float64` |  |
+| `TIR recona sigma Ratio1000` | `Float64` |  |
+| `TIR recona facet mesh` | `String` |  |
+| `TIR reconb Slope1000` | `Float64` |  |
+| `TIR reconb BD350` | `Float64` |  |
+| `TIR reconb BD440` | `Float64` |  |
+| `TIR reconb Ratio1000` | `Float64` |  |
+| `TIR reconb sigma Slope1000` | `Float64` |  |
+| `TIR reconb sigma BD350` | `Float64` |  |
+| `TIR reconb sigma BD440` | `Float64` |  |
+| `TIR reconb sigma Ratio1000` | `Float64` |  |
+| `TIR reconb facet mesh` | `String` |  |
+| `TIR reconc Slope1000` | `Float64` |  |
+| `TIR reconc BD350` | `Float64` |  |
+| `TIR reconc BD440` | `Float64` |  |
+| `TIR reconc Ratio1000` | `Float64` |  |
+| `TIR reconc sigma Slope1000` | `Float64` |  |
+| `TIR reconc sigma BD350` | `Float64` |  |
+| `TIR reconc sigma BD440` | `Float64` |  |
+| `TIR reconc sigma Ratio1000` | `Float64` |  |
+| `TIR reconc facet mesh` | `String` |  |
+| `VNIR detailed_survey BandArea3200to3600nm` | `Float64` |  |
+| `VNIR detailed_survey OH2700nm` | `Float64` |  |
+| `VNIR detailed_survey Pyroxene920nm` | `Float64` |  |
+| `VNIR detailed_survey Refl550nm` | `Float64` |  |
+| `VNIR detailed_survey Slope1polyfit` | `Float64` |  |
+| `VNIR detailed_survey Slope2polyfit` | `Float64` |  |
+| `VNIR detailed_survey sigma BandArea3200to3600nm` | `Float64` |  |
+| `VNIR detailed_survey sigma OH2700nm` | `Float64` |  |
+| `VNIR detailed_survey sigma Pyroxene920nm` | `Float64` |  |
+| `VNIR detailed_survey sigma Refl550nm` | `Float64` |  |
+| `VNIR detailed_survey sigma Slope1polyfit` | `Float64` |  |
+| `VNIR detailed_survey sigma Slope2polyfit` | `Float64` |  |
+| `VNIR detailed_survey facet mesh` | `String` |  |
+| `VNIR recona BandArea3200to3600nm` | `Float64` |  |
+| `VNIR recona OH2700nm` | `Float64` |  |
+| `VNIR recona Pyroxene920nm` | `Float64` |  |
+| `VNIR recona Refl550nm` | `Float64` |  |
+| `VNIR recona Slope1polyfit` | `Float64` |  |
+| `VNIR recona Slope2polyfit` | `Float64` |  |
+| `VNIR recona sigma BandArea3200to3600nm` | `Float64` |  |
+| `VNIR recona sigma OH2700nm` | `Float64` |  |
+| `VNIR recona sigma Pyroxene920nm` | `Float64` |  |
+| `VNIR recona sigma Refl550nm` | `Float64` |  |
+| `VNIR recona sigma Slope1polyfit` | `Float64` |  |
+| `VNIR recona sigma Slope2polyfit` | `Float64` |  |
+| `VNIR recona facet mesh` | `String` |  |
+| `VNIR reconb BandArea3200to3600nm` | `Float64` |  |
+| `VNIR reconb OH2700nm` | `Float64` |  |
+| `VNIR reconb Pyroxene920nm` | `Float64` |  |
+| `VNIR reconb Refl550nm` | `Float64` |  |
+| `VNIR reconb Slope1polyfit` | `Float64` |  |
+| `VNIR reconb Slope2polyfit` | `Float64` |  |
+| `VNIR reconb sigma BandArea3200to3600nm` | `Float64` |  |
+| `VNIR reconb sigma OH2700nm` | `Float64` |  |
+| `VNIR reconb sigma Pyroxene920nm` | `Float64` |  |
+| `VNIR reconb sigma Refl550nm` | `Float64` |  |
+| `VNIR reconb sigma Slope1polyfit` | `Float64` |  |
+| `VNIR reconb sigma Slope2polyfit` | `Float64` |  |
+| `VNIR reconb facet mesh` | `String` |  |
+| `VNIR reconc BandArea3200to3600nm` | `Float64` |  |
+| `VNIR reconc OH2700nm` | `Float64` |  |
+| `VNIR reconc Pyroxene920nm` | `Float64` |  |
+| `VNIR reconc Refl550nm` | `Float64` |  |
+| `VNIR reconc Slope1polyfit` | `Float64` |  |
+| `VNIR reconc Slope2polyfit` | `Float64` |  |
+| `VNIR reconc sigma BandArea3200to3600nm` | `Float64` |  |
+| `VNIR reconc sigma OH2700nm` | `Float64` |  |
+| `VNIR reconc sigma Pyroxene920nm` | `Float64` |  |
+| `VNIR reconc sigma Refl550nm` | `Float64` |  |
+| `VNIR reconc sigma Slope1polyfit` | `Float64` |  |
+| `VNIR reconc sigma Slope2polyfit` | `Float64` |  |
+| `VNIR reconc facet mesh` | `String` |  |
 | `uint8_reflectance` | `UInt8` |  |
 | `32bit_reflectance` | `Float32` |  |
 | `positions_x` | `Float32` |  |

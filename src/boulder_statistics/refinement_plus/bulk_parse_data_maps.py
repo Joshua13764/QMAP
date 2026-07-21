@@ -14,7 +14,7 @@ VNIR_COLUMN_NAMES: List[str] = [
     "BandArea3200to3600nm",
     "OH2700nm",
     "Pyroxene920nm",
-    "RatRefl550nmio1000",
+    "Refl550nm",
     "Slope1polyfit",
     "Slope2polyfit"]
 
@@ -27,11 +27,11 @@ MEASUREMENT_FILE_TO_COLUMN_LOOKUP: dict[str, str] = {
 
     # VNIR
     "_bandarea3200to3600nm_": "BandArea3200to3600nm",
-    "_oh2700nm_": "OH2700nm",
-    "_pyroxene920nm_ratio_": "Pyroxene920nm",
+    "_oh27": "OH2700nm",
+    "_pyroxene920nm": "Pyroxene920nm",
     "_refl550nm_": "Refl550nm",
     "_slope1poly_": "Slope1polyfit",
-    "_slope2poly_": "Slope2polyfit"
+    "_slope2": "Slope2polyfit",
 }
 
 

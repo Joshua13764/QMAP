@@ -60,7 +60,7 @@ class ProjectFacets():
             export_mesh_measurements_lfs, how="vertical")
 
         print(
-            f"Exporting whole mission face measurements to {
+            f"Exporting whole mission facet measurements to {
                 self.mission_phase_export_folder().name}")
 
         merged_mesh_measurements_exported.sink_parquet(
@@ -148,11 +148,8 @@ class ProjectFacets():
                 )
             )
             .with_columns(
-                [
-                    pl.lit(mesh_stem).alias(
-                        f"{self.instrument_type} {self.mission_phase} {measurement_type} facet mesh")
-                    for measurement_type in self.measurement_types_of_interest
-                ]
+                pl.lit(mesh_stem).alias(
+                    f"{self.instrument_type} {self.mission_phase} facet mesh")
             )
             .rename(
                 {
