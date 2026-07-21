@@ -110,21 +110,20 @@ class ChunkingTools:
         export_folder.mkdir(exist_ok=True, parents=True)
 
         def process_chunk(chunk: QCubeChunk) -> None:
-            full_chunked_df: pl.LazyFrame = chunk.filter_lf(full_db)
+            full_chunked_df: pl.DataFrame = chunk.filter_lf(full_db).collect()
 
             reduce(
                 lambda left, right:
                     left.join(
-                        right[1].lazy(),
+                        right[1],
                         on=list(right[0]),
                         how="left",
                         coalesce=True,
                     ),
                 aggs_to_join_with.items(),
                 full_chunked_df,
-            ).sink_parquet(
-                export_folder / f"{chunk.short_name}.parquet",
-                engine="streaming"
+            ).write_parquet(
+                export_folder / f"{chunk.short_name}.parquet"
             )
 
         for chunk in tqdm(chunks, desc="Joining full with aggs"):
