@@ -190,12 +190,12 @@ class ChunkingTools:
             return
 
         def process_chunk(chunk) -> None:
-            filtered: List[pl.LazyFrame] = [
+            filtered: List[pl.DataFrame] = pl.collect_all([
                 chunk.filter_lf(df)
                 for df in lfs_to_join
-            ]
+            ])
 
-            combined: LazyFrame = reduce(
+            combined: DataFrame = reduce(
                 lambda left, right: left.join(
                     right,
                     on=join_on,
@@ -205,7 +205,7 @@ class ChunkingTools:
                 filtered,
             )
 
-            combined.sink_parquet(
+            combined.write_parquet(
                 export_folder / f"{chunk.short_name}.parquet")
 
         for chunk in tqdm(chunks, desc="Joining"):

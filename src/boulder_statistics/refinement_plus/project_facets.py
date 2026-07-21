@@ -20,11 +20,31 @@ class ProjectFacets():
     export_pool_folder: Path
     facet_maps: pl.DataFrame  # For example for TIR then would be data_tir_maps
     measurement_types_of_interest: List[str]
-    mission_phase: Literal["detailed_survey", "recona", "reconb", "reconc"]
+    mission_phase: str | Literal["detailed_survey",
+                                 "recona", "reconb", "reconc"]  # The str is just do the type safe linter is happy
     instrument_type: Literal["TIR", "VNIR"]
     dp: DataProductEncyclopedia
     pipeline_from_here_needs_running: bool
     cache_folder: Path = field(default=Path(".cache"))
+
+    def process_mission_phase(self) -> None:
+        for mesh_name in self.facet_maps.filter(
+                pl.col("mission_phase") == self.mission_phase)["facet_shape_model_name"].unique():
+
+            mesh_stem: str = Path(mesh_name).stem
+            facet_id_lookup: pl.LazyFrame = self.get_facet_id_lookup(mesh_name)
+
+            merged_lf: pl.LazyFrame = (
+                facet_id_lookup
+                .join(
+                    self.get_facet_map_data_for_mesh_and_phase(
+                        mesh_name).with_columns(pl.col("facet_num").cast(pl.Float64)).lazy(),
+                    on="facet_num"
+                )
+            )
+
+            self.export_measurements(merged_lf, mesh_stem)
+            self.export_mesh(merged_lf, mesh_stem)
 
     def get_tri_id_lookup(self, verts: np.ndarray,
                           tris: np.ndarray, mesh_stem: str) -> pl.LazyFrame:
@@ -78,71 +98,82 @@ class ProjectFacets():
 
         return facet_id_lookup
 
-    def process_mission_phase(self) -> List[pl.LazyFrame]:
-        export_folders: List[Path] = []
+    def export_measurements(self, merged_lf: pl.LazyFrame,
+                            mesh_stem: str) -> None:
 
-        for mesh_name in self.facet_maps.filter(
-                pl.col("mission_phase") == self.mission_phase)["facet_shape_model_name"].unique():
+        measurements_export_path: Path = self.measurement_export_folder(
+            mesh_stem)
+        if measurements_export_path.exists() and (
+                not self.pipeline_from_here_needs_running):
+            print(
+                f"Export for measurements {measurements_export_path.stem} already found, skipping")
+            return
 
-            mesh_stem: str = Path(mesh_name).stem
-            part_export_folder: Path = self.result_export_folder(mesh_stem)
+        print(f"Exporting mesh for {measurements_export_path.stem}")
 
-            export_folders.append(
-                part_export_folder
+        (
+            merged_lf
+            .select(
+                ["i", "j", "face"] +
+                [measurement_type for measurement_type in self.measurement_types_of_interest]
             )
-
-            if part_export_folder.exists() and (
-                    self.pipeline_from_here_needs_running == False):
-                continue
-
-            facet_id_lookup: pl.LazyFrame = self.get_facet_id_lookup(mesh_name)
-
-            (
-                facet_id_lookup
-                .join(
-                    self.get_facet_map_data_for_mesh_and_phase(
-                        mesh_name).with_columns(pl.col("facet_num").cast(pl.Float64)).lazy(),
-                    on="facet_num"
-                )
-                .select(
-                    ["i", "j", "face", "facet_num"] +
-                    [measurement_type for measurement_type in self.measurement_types_of_interest]
-                )
-                .with_columns(
-                    [
-                        pl.lit(mesh_stem).alias(
-                            f"{self.instrument_type} {self.mission_phase} {measurement_type} facet mesh")
-                        for measurement_type in self.measurement_types_of_interest
-                    ]
-                )
-                .rename(
-                    {"facet_num": f"{mesh_stem} facet_id"} | {
-                        measurement_type: f"{
-                            self.instrument_type} {
-                            self.mission_phase} {measurement_type}"
-                        # self.tri_num_export_col_name not needed as name will
-                        # be ok
-                        for measurement_type in self.measurement_types_of_interest
-                    }
-
-                ).sink_parquet(
-                    part_export_folder, engine="streaming"
-                )
+            .with_columns(
+                [
+                    pl.lit(mesh_stem).alias(
+                        f"{self.instrument_type} {self.mission_phase} {measurement_type} facet mesh")
+                    for measurement_type in self.measurement_types_of_interest
+                ]
             )
+            .rename(
+                {
+                    measurement_type: f"{
+                        self.instrument_type} {
+                        self.mission_phase} {measurement_type}"
+                    # self.tri_num_export_col_name not needed as name will
+                    # be ok
+                    for measurement_type in self.measurement_types_of_interest
+                }
+            )
+            .sink_parquet(
+                measurements_export_path, engine="streaming"
+            )
+        )
 
-        return [
-            pl.scan_parquet(db_path)
-            for db_path in export_folders
-        ]
+    def export_mesh(self, merged_lf: pl.LazyFrame, mesh_stem: str) -> None:
+
+        mesh_export_path: Path = self.mesh_export_folder(mesh_stem)
+        if mesh_export_path.exists() and (not self.pipeline_from_here_needs_running):
+            print(
+                f"Export for mesh {mesh_export_path.stem} already found, skipping")
+            return
+
+        print(f"Exporting mesh for {mesh_export_path.stem}")
+
+        (
+            merged_lf
+            .select(
+                ["i", "j", "face", "facet_num"]
+            )
+            .rename(
+                {"facet_num": f"{mesh_stem} facet_id"}
+            )
+            .sink_parquet(
+                mesh_export_path, engine="streaming"
+            )
+        )
 
     @property
     def cache_export_folder(self) -> Path:
         return self.cache_folder / \
             f"{self.instrument_type}_{self.mission_phase}"
 
-    def result_export_folder(self, mesh_stem: str) -> Path:
+    def measurement_export_folder(self, mesh_stem: str) -> Path:
         return self.export_pool_folder / \
             f"{self.instrument_type}_{self.mission_phase}_{mesh_stem}.parquet"
+
+    def mesh_export_folder(self, mesh_stem: str) -> Path:
+        return self.export_pool_folder / \
+            f"{mesh_stem}.parquet"
 
     def tri_id_export_col_name(self, measurement_type: str) -> str:
         return f"{self.instrument_type} {measurement_type} {self.mission_phase} tri_id"
