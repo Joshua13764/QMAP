@@ -2,8 +2,8 @@ from typing import Dict, List, Tuple
 
 import cv2
 import numpy as np
+import polars as pl
 from polars import LazyFrame
-from scipy.datasets import face
 
 from boulder_statistics.refinement_plus.qcube_chunk import QCubeChunk
 from boulder_statistics.refinement_plus.refinement_chunking import \

@@ -1,54 +1,19 @@
 import shutil
 from functools import reduce
 from pathlib import Path
-from typing import Callable, Iterable, List
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 import polars as pl
 from joblib import Parallel, delayed
 from polars import DataFrame, Expr, LazyFrame
 from tqdm import tqdm
-from tqdm_joblib import ParallelPbar, tqdm_joblib
+from tqdm_joblib import ParallelPbar
 
-from boulder_statistics.analysis.data_product_encyclopedia import FACES
-from boulder_statistics.refinement_plus.bounding_box import BoundingBox
 from boulder_statistics.refinement_plus.qcube_chunk import QCubeChunk
 
 
 class ChunkingTools:
-    @staticmethod
-    def get_chunk_bbox(
-        lf: LazyFrame,
-        chunk: QCubeChunk,
-        xyz_columns: list[str] = ["x", "y", "z"],
-    ) -> BoundingBox:
-        lf_filtered: LazyFrame = chunk.filter_lf(lf)
-
-        x, y, z = xyz_columns
-
-        result = (
-            lf_filtered
-            .select(
-                pl.col(x).min().alias("x_min"),
-                pl.col(x).max().alias("x_max"),
-                pl.col(y).min().alias("y_min"),
-                pl.col(y).max().alias("y_max"),
-                pl.col(z).min().alias("z_min"),
-                pl.col(z).max().alias("z_max"),
-            )
-            .collect()
-            .row(0)
-        )
-
-        return BoundingBox(
-            x_min=np.float64(result[0]),
-            x_max=np.float64(result[1]),
-            y_min=np.float64(result[2]),
-            y_max=np.float64(result[3]),
-            z_min=np.float64(result[4]),
-            z_max=np.float64(result[5]),
-        )
-
     @staticmethod
     def extract_chunks(lf: LazyFrame, chunk: QCubeChunk,
                        columns: List[str], numb_workers: int = 4,
@@ -126,10 +91,50 @@ class ChunkingTools:
             )
 
     @staticmethod
-    def join_in_chunks(
+    def join_full_with_aggs(
             export_folder: Path,
-            lfs_to_join: List[LazyFrame],
-            join_on: str | List[str] = ["i", "j", "face"],
+            full_db: pl.LazyFrame,
+            aggs_to_join_with: Dict[Tuple[str], pl.DataFrame],  # Join on : df
+            chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
+            skip_if_exists=False) -> None:
+
+        assert export_folder.suffix == "", (
+            f"export_folder should not have an extension, got: {export_folder}"
+        )
+
+        if export_folder.exists() and skip_if_exists:
+            return
+        elif export_folder.exists() and (not skip_if_exists):
+            shutil.rmtree(export_folder)
+
+        export_folder.mkdir(exist_ok=True, parents=True)
+
+        def process_chunk(chunk: QCubeChunk) -> None:
+            full_chunked_df: pl.DataFrame = chunk.filter_lf(full_db).collect()
+
+            reduce(
+                lambda left, right:
+                    left.join(
+                        right[1],
+                        on=list(right[0]),
+                        how="left",
+                        coalesce=True,
+                    ),
+                aggs_to_join_with.items(),
+                full_chunked_df,
+            ).write_parquet(
+                export_folder / f"{chunk.short_name}.parquet"
+            )
+
+        for chunk in tqdm(chunks, desc="Joining full with aggs"):
+            process_chunk(chunk)
+
+    @staticmethod
+    def join_full_with_agg(
+            export_folder: Path,
+            full_db: pl.LazyFrame,
+            agg_db: pl.DataFrame,
+            join_on: List[str] = ["boulder_id"],
             chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
             skip_if_exists=False, n_jobs=4) -> None:
 
@@ -144,27 +149,66 @@ class ChunkingTools:
 
         export_folder.mkdir(exist_ok=True, parents=True)
 
-        def process_chunk(chunk):
-            combined_df = reduce(
-                lambda left, right: left.join(
-                    right,
-                    on=join_on,
-                    how="full",
-                    coalesce=True
-                ),
-                [
-                    chunk.filter_lf(df).collect()
-                    for df in lfs_to_join
-                ]
-            )
-
-            combined_df.write_parquet(
+        def process_chunk(chunk: QCubeChunk) -> None:
+            full_chunked_df: DataFrame = chunk.filter_lf(full_db).collect()
+            full_chunked_df.join(
+                agg_db,
+                on=join_on,
+                how="inner"
+            ).write_parquet(
                 export_folder / f"{chunk.short_name}.parquet"
             )
 
-        ParallelPbar("Joining")(n_jobs=n_jobs)(
+        ParallelPbar("Joining full with agg")(n_jobs=n_jobs)(
             delayed(process_chunk)(chunk) for chunk in chunks
         )
+
+    @staticmethod
+    def join_in_chunks(
+            export_folder: Path,
+            # Left join so the first one needs to be full
+            lfs_to_join: List[LazyFrame],
+            join_on: List[str] = ["i", "j", "face"],
+            chunks: List[QCubeChunk] = QCubeChunk.generate(depth=3),
+            skip_if_exists=False) -> None:
+
+        assert export_folder.suffix == "", (
+            f"export_folder should not have an extension, got: {export_folder}"
+        )
+
+        if export_folder.exists() and skip_if_exists:
+            return
+        elif export_folder.exists() and (not skip_if_exists):
+            shutil.rmtree(export_folder)
+
+        export_folder.mkdir(exist_ok=True, parents=True)
+
+        if lfs_to_join[0].filter(
+                pl.col("i") == 1).collect().height != 8192 * 6:
+            print("Cannot do merge as first input lf is not full for i, j and face")
+            return
+
+        def process_chunk(chunk) -> None:
+            filtered: List[pl.DataFrame] = pl.collect_all([
+                chunk.filter_lf(df)
+                for df in lfs_to_join
+            ])
+
+            combined: DataFrame = reduce(
+                lambda left, right: left.join(
+                    right,
+                    on=join_on,
+                    how="left",
+                    coalesce=True,
+                ),
+                filtered,
+            )
+
+            combined.write_parquet(
+                export_folder / f"{chunk.short_name}.parquet")
+
+        for chunk in tqdm(chunks, desc="Joining"):
+            process_chunk(chunk)
 
     @staticmethod
     def agg_in_slices(

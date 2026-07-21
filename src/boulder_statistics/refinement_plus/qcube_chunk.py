@@ -3,6 +3,7 @@ from itertools import product
 
 import polars as pl
 from polars import LazyFrame
+from shapely import length
 
 from boulder_statistics.analysis.data_product_encyclopedia import FACES
 
@@ -21,6 +22,10 @@ class QCubeChunk():
     @property
     def j_max(self) -> int:
         return self.j_min + self.length
+
+    @property
+    def area(self) -> int:
+        return self.length ** 2
 
     @property
     def x_range(self) -> tuple[float, float]:

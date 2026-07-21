@@ -1,4 +1,5 @@
 from pathlib import Path
+from time import perf_counter
 from typing import Callable, List, Tuple
 
 import datashader as ds
@@ -21,11 +22,10 @@ from boulder_statistics.steps.utils.projection_plotting import \
 class FacetParser:
 
     @staticmethod
-    def load_mesh(mesh_path: Path) -> Tuple[pl.DataFrame, pl.DataFrame]:
+    def load_mesh(verts: np.ndarray,
+                  faces: np.ndarray) -> Tuple[pl.DataFrame, pl.DataFrame]:
         # Meshes can be found here
         # https://sbnarchive.psi.edu/pds4/orex/orex.altimetry/data_derived_altimetry_global_models/global_digital_terrain_models/SPCv20/
-
-        verts, faces = igl.read_triangle_mesh(mesh_path)
 
         obj_data = PLOBJData(
             verts=pl.LazyFrame(
@@ -201,8 +201,8 @@ class FacetParser:
                                   .to_pandas())
 
         pd_tris: pd.DataFrame = (tris
-                                 .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(chunk.face, chunk.x_range, chunk.y_range)
-                                         & ProjectionPlotting.get_lazy_filter_faces_for_rasterization_by_face(chunk.face))
+                                 #  .filter(ProjectionPlotting.get_lazy_filter_tris_not_in_view(chunk.face, chunk.x_range, chunk.y_range)
+                                 .filter(ProjectionPlotting.get_lazy_filter_faces_for_rasterization_by_face(chunk.face))
                                  .select(['0', '1', '2', "tri_num"])
                                  .with_columns([
                                      pl.col('0').cast(pl.Int32),
