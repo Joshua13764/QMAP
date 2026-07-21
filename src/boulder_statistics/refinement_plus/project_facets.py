@@ -28,6 +28,12 @@ class ProjectFacets():
     cache_folder: Path = field(default=Path(".cache"))
 
     def process_mission_phase(self) -> None:
+        export_mesh_measurements_lfs: List[pl.LazyFrame] = []
+
+        if self.mission_phase_export_folder().exists() and (
+                not self.pipeline_from_here_needs_running):
+            return
+
         for mesh_name in self.facet_maps.filter(
                 pl.col("mission_phase") == self.mission_phase)["facet_shape_model_name"].unique():
 
@@ -43,8 +49,23 @@ class ProjectFacets():
                 )
             )
 
-            self.export_measurements(merged_lf, mesh_stem)
             self.export_mesh(merged_lf, mesh_stem)
+
+            mesh_measurements_exported_lf: pl.LazyFrame = self.export_mesh_measurements(
+                merged_lf, mesh_stem)
+
+            export_mesh_measurements_lfs.append(mesh_measurements_exported_lf)
+
+        merged_mesh_measurements_exported: pl.LazyFrame = pl.concat(
+            export_mesh_measurements_lfs, how="vertical")
+
+        print(
+            f"Exporting whole mission face measurements to {
+                self.mission_phase_export_folder().name}")
+
+        merged_mesh_measurements_exported.sink_parquet(
+            self.mission_phase_export_folder()
+        )
 
     def get_tri_id_lookup(self, verts: np.ndarray,
                           tris: np.ndarray, mesh_stem: str) -> pl.LazyFrame:
@@ -98,16 +119,16 @@ class ProjectFacets():
 
         return facet_id_lookup
 
-    def export_measurements(self, merged_lf: pl.LazyFrame,
-                            mesh_stem: str) -> None:
+    def export_mesh_measurements(self, merged_lf: pl.LazyFrame,
+                                 mesh_stem: str) -> pl.LazyFrame:
 
-        measurements_export_path: Path = self.measurement_export_folder(
+        measurements_export_path: Path = self.mesh_measurement_export_folder(
             mesh_stem)
         if measurements_export_path.exists() and (
                 not self.pipeline_from_here_needs_running):
             print(
                 f"Export for measurements {measurements_export_path.stem} already found, skipping")
-            return
+            return pl.scan_parquet(measurements_export_path)
 
         print(f"Exporting mesh for {measurements_export_path.stem}")
 
@@ -116,6 +137,15 @@ class ProjectFacets():
             .select(
                 ["i", "j", "face"] +
                 [measurement_type for measurement_type in self.measurement_types_of_interest]
+            ).filter(  # For rows with no usable data remove
+                pl.any_horizontal(
+                    [
+                        (pl.col(col).is_not_null())
+                        & (pl.col(col).is_not_nan())
+                        & (pl.col(col) != -9999.0)
+                        for col in self.measurement_types_of_interest
+                    ]
+                )
             )
             .with_columns(
                 [
@@ -139,12 +169,15 @@ class ProjectFacets():
             )
         )
 
+        return pl.scan_parquet(measurements_export_path)
+
     def export_mesh(self, merged_lf: pl.LazyFrame, mesh_stem: str) -> None:
 
         mesh_export_path: Path = self.mesh_export_folder(mesh_stem)
         if mesh_export_path.exists() and (not self.pipeline_from_here_needs_running):
             print(
-                f"Export for mesh {mesh_export_path.stem} already found, skipping")
+                f"Export for mesh {
+                    mesh_export_path.stem} already found, skipping")
             return
 
         print(f"Exporting mesh for {mesh_export_path.stem}")
@@ -167,13 +200,16 @@ class ProjectFacets():
         return self.cache_folder / \
             f"{self.instrument_type}_{self.mission_phase}"
 
-    def measurement_export_folder(self, mesh_stem: str) -> Path:
+    def mission_phase_export_folder(self) -> Path:
         return self.export_pool_folder / \
+            f"{self.instrument_type}_{self.mission_phase}.parquet"
+
+    def mesh_measurement_export_folder(self, mesh_stem: str) -> Path:
+        return self.cache_folder / \
             f"{self.instrument_type}_{self.mission_phase}_{mesh_stem}.parquet"
 
     def mesh_export_folder(self, mesh_stem: str) -> Path:
-        return self.export_pool_folder / \
-            f"{mesh_stem}.parquet"
+        return self.export_pool_folder / f"{mesh_stem}.parquet"
 
     def tri_id_export_col_name(self, measurement_type: str) -> str:
         return f"{self.instrument_type} {measurement_type} {self.mission_phase} tri_id"
@@ -208,9 +244,7 @@ class ProjectFacets():
     def check_valid(self, facet_nums_to_tri_nums_lookup: pl.DataFrame) -> bool:
         # Sanity checks
         if not np.all(
-            facet_nums_to_tri_nums_lookup["associate_distance"].to_numpy()
-            < 1e-5
-        ):
+           facet_nums_to_tri_nums_lookup["associate_distance"].to_numpy() < 1e-5):
             print("Facets not lining up, skipping")
             return False
 

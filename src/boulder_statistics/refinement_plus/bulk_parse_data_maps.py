@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Literal
 
 import numpy as np
 import polars as pl
@@ -9,12 +9,45 @@ from lxml import etree
 from pds4_tools import pds4_read
 from pds4_tools.reader.general_objects import StructureList
 
+TIR_COLUMN_NAMES: List[str] = ["Slope1000", "BD350", "BD440", "Ratio1000"]
+VNIR_COLUMN_NAMES: List[str] = [
+    "BandArea3200to3600nm",
+    "OH2700nm",
+    "Pyroxene920nm",
+    "RatRefl550nmio1000",
+    "Slope1polyfit",
+    "Slope2polyfit"]
+
+MEASUREMENT_FILE_TO_COLUMN_LOOKUP: dict[str, str] = {
+    # TIR
+    "_slope1000_": "Slope1000",
+    "_bd350_": "BD350",
+    "_bd440_": "BD440",
+    "_ratio1000_": "Ratio1000",
+
+    # VNIR
+    "_bandarea3200to3600nm_": "BandArea3200to3600nm",
+    "_oh2700nm_": "OH2700nm",
+    "_pyroxene920nm_ratio_": "Pyroxene920nm",
+    "_refl550nm_": "Refl550nm",
+    "_slope1poly_": "Slope1polyfit",
+    "_slope2poly_": "Slope2polyfit"
+}
+
 
 @dataclass
 class BulkParseDataMaps():
-    measurement_names: List[str]
+    data_type: Literal["TIR", "VNIR"]
     cache_file_path: Path | None
     data_maps_path: Path  # From ExternalDataEncyclopedia in most cases
+
+    @property
+    def measurement_names(self) -> List[str]:
+        match self.data_type:
+            case "TIR":
+                return TIR_COLUMN_NAMES
+            case "VNIR":
+                return VNIR_COLUMN_NAMES
 
     @property
     def get_all_measurement_types_of_interest(self) -> List[str]:
@@ -44,6 +77,56 @@ class BulkParseDataMaps():
 
         return obj_file.text
 
+    def get_table_name(self, xml_path: Path) -> str:
+        tree = etree.parse(xml_path)
+
+        namespaces = {
+            "pds": "http://pds.nasa.gov/pds4/pds/v1"
+        }
+
+        name = tree.find(
+            ".//pds:Table_Binary/pds:name",
+            namespaces
+        )
+
+        if name is None:
+            raise ValueError(f"No Table_Binary name found in {xml_path}")
+
+        return name.text
+
+    def find_measurement_name(self, columns_to_extract: List[str]) -> str:
+        excluded: set[str] = {
+            "SIGMA",
+            "RADIUS",
+            "LONGITUDE",
+            "LATITUDE",
+            "FACET_NUM"}
+
+        remaining: List[str] = [
+            name for name in columns_to_extract if name not in excluded]
+
+        assert len(remaining) == 1, (
+            f"Expected exactly one non-standard column, found {remaining}"
+        )
+
+        column_name = remaining[0]
+
+        return column_name
+
+    def column_name_from_XML(self, xml_path: Path) -> str:
+        matches: List[str] = [
+            value
+            for key, value in MEASUREMENT_FILE_TO_COLUMN_LOOKUP.items()
+            if key in xml_path.stem
+        ]
+
+        assert len(matches) == 1, (
+            f"Expected exactly one measurement column for '{xml_path.stem}', "
+            f"found {matches}"
+        )
+
+        return matches[0]
+
     def bulk_parse(self, verbose=False) -> pl.DataFrame:
 
         if (self.cache_file_path is not None) and self.cache_file_path.exists():
@@ -69,14 +152,19 @@ class BulkParseDataMaps():
 
                 column_names_to_extract = struc_data.dtype.names
 
-                pds4_df = pl.DataFrame({
+                pds4_df = (pl.DataFrame({
                     column.lower(): struc_data[column].astype(np.float64) for column in column_names_to_extract
-                }).with_columns(
+                })
+                    .rename({  # To avoid duplications we set the names manually
+                        self.find_measurement_name(column_names_to_extract).lower(): self.column_name_from_XML(pds4_xml_path)
+                    })
+                    .with_columns(
                     pl.lit(mission_phase_folder_name).alias(
                         "mission_phase"
                     ),
                     pl.lit(facet_shape_model_name).alias(
-                        "facet_shape_model_name")
+                        "facet_shape_model_name"),
+                )
                 )
 
                 pds4_dfs.append(pds4_df)
