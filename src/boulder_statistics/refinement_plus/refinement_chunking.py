@@ -217,7 +217,7 @@ class ChunkingTools:
             agg_group: str,
             agg_exprs: List[Expr],
             slice_size: int = 1_000,
-            skip_if_exists=False, n_jobs=4) -> None:
+            skip_if_exists=False) -> None:
 
         if export_df_path.exists() and skip_if_exists:
             return
@@ -240,9 +240,10 @@ class ChunkingTools:
 
             return agg_data
 
-        agg_data_dfs: List[DataFrame | None] = list(ParallelPbar("Joining")(n_jobs=n_jobs)(
-            delayed(process_group_slice)(group_slice) for group_slice in group_slices
-        ))
+        agg_data_dfs: List[DataFrame] = [
+            process_group_slice(group_slice)
+            for group_slice in tqdm(group_slices, desc="Aggregating slice")
+        ]
 
         merged_df: pl.DataFrame = pl.concat(agg_data_dfs)
         merged_df.write_parquet(export_df_path)
