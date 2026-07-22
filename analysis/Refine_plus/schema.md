@@ -108,6 +108,7 @@
 | `r32_max` | `Float32` |  |
 | `r32_range` | `Float32` |  |
 | `r32_mean` | `Float32` |  |
+| `r32_median` | `Float32` |  |
 | `r32_std` | `Float32` |  |
 | `r32_variance` | `Float32` |  |
 | `r32_q25` | `Float32` |  |
@@ -116,6 +117,8 @@
 | `r32_q95` | `Float32` |  |
 | `r32_sum` | `Float32` |  |
 | `r32_product` | `Float32` |  |
+| `r32_skew` | `Float64` |  |
+| `r32_kurtosis` | `Float64` |  |
 | `Area` | `Float32` |  |
 | `center_x` | `Float32` |  |
 | `min_x` | `Float32` |  |
